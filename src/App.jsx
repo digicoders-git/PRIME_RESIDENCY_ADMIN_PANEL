@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -12,16 +12,23 @@ import Loader from './components/Loader';
 // Pages
 import Dashboard from './pages/Dashboard';
 import Rooms from './pages/Rooms';
+import AddRoom from './pages/AddRoom';
 import Bookings from './pages/Bookings';
 import Guests from './pages/Guests';
 import Reviews from './pages/Reviews';
 import Gallery from './pages/Gallery';
-import Settings from './pages/Settings';
+
 import Login from './pages/Login';
+import RoomDetail from './pages/RoomDetail';
+import CreateBooking from './pages/CreateBooking';
+import EditRoom from './pages/EditRoom';
+
+
+
 
 import './App.css';
 
-const AnimatedRoutes = () => {
+const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
 
@@ -37,22 +44,37 @@ const AnimatedRoutes = () => {
         {loading && <Loader key="loader" />}
       </AnimatePresence>
       <Routes location={location} key={location.pathname}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/rooms" element={<Rooms />} />
-        <Route path="/bookings" element={<Bookings />} />
-        <Route path="/guests" element={<Guests />} />
-        <Route path="/reviews" element={<Reviews />} />
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/login" element={!isAuthenticated ? <Login setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/" replace />} />
+        <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} />
+        <Route path="/rooms" element={isAuthenticated ? <Rooms /> : <Navigate to="/login" replace />} />
+        <Route path="/add-room" element={isAuthenticated ? <AddRoom /> : <Navigate to="/login" replace />} />
+        <Route path="/bookings" element={isAuthenticated ? <Bookings /> : <Navigate to="/login" replace />} />
+        <Route path="/guests" element={isAuthenticated ? <Guests /> : <Navigate to="/login" replace />} />
+        <Route path="/reviews" element={isAuthenticated ? <Reviews /> : <Navigate to="/login" replace />} />
+        <Route path="/gallery" element={isAuthenticated ? <Gallery /> : <Navigate to="/login" replace />} />
+
+        <Route path="/room-detail/:id" element={isAuthenticated ? <RoomDetail /> : <Navigate to="/login" replace />} />
+        <Route path="/edit-room/:id" element={isAuthenticated ? <EditRoom /> : <Navigate to="/login" replace />} />
+        <Route path="/create-booking" element={isAuthenticated ? <CreateBooking /> : <Navigate to="/login" replace />} />
+
+        <Route path="/create-booking/:roomId" element={isAuthenticated ? <CreateBooking /> : <Navigate to="/login" replace />} />
+
+
+
       </Routes>
     </>
   );
 };
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('isAuthenticated') === 'true';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    localStorage.setItem('isAuthenticated', isAuthenticated.toString());
+  }, [isAuthenticated]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -63,18 +85,18 @@ function App() {
       <Router>
         {isAuthenticated ? (
           <div className="flex">
-            <Sidebar isOpen={sidebarOpen} />
+            <Sidebar isOpen={sidebarOpen} setIsAuthenticated={setIsAuthenticated} />
             <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
               <Navbar toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
               <main className="p-6 mt-16 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen  ">
-                <AnimatedRoutes />
+                <AnimatedRoutes isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
               </main>
             </div>
           </div>
         ) : (
-          <AnimatedRoutes />
+          <AnimatedRoutes isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
         )}
-        <ToastContainer position="bottom-right" theme="dark" />
+        <ToastContainer position="top-right" theme="dark" />
       </Router>
     </div>
   );

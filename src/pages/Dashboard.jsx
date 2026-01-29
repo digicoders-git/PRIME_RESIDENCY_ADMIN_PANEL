@@ -1,19 +1,128 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaBed, FaUsers, FaCalendarAlt, FaRupeeSign, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import {
+  FaBed, FaUsers, FaCalendarAlt, FaRupeeSign, FaArrowUp,
+  FaStar, FaImages, FaClock, FaCheckCircle, FaUserPlus,
+  FaChartBar, FaPercent, FaMoneyBillWave, FaExternalLinkAlt
+} from 'react-icons/fa';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const [data, setData] = useState({
+    rooms: [],
+    bookings: [],
+    guests: [],
+    reviews: [],
+    gallery: []
+  });
+
+  useEffect(() => {
+    // 1. Fetch Rooms
+    const initialRooms = [
+      { id: 1, name: 'Classic Room', price: '3,500' },
+      { id: 2, name: 'Deluxe Suite', price: '6,500' },
+      { id: 3, name: 'Presidential Suite', price: '15,000' },
+      { id: 4, name: 'Family Suite', price: '10,500' },
+      { id: 5, name: 'Executive Room', price: '8,000' },
+      { id: 6, name: 'Garden Room', price: '4,200' },
+    ];
+    const savedRooms = JSON.parse(localStorage.getItem('rooms') || '[]');
+    const roomsMap = new Map(initialRooms.map(r => [r.id, r]));
+    savedRooms.forEach(room => roomsMap.set(room.id, room));
+    const allRooms = Array.from(roomsMap.values());
+
+    // 2. Fetch Bookings
+    const initialBookings = [
+      { id: 'BK001', guest: 'John Doe', room: 'Presidential Suite', amount: 45000, status: 'Confirmed', date: '2024-01-15' },
+      { id: 'BK002', guest: 'Jane Smith', room: 'Deluxe Suite', amount: 19500, status: 'Pending', date: '2024-01-16' },
+      { id: 'BK003', guest: 'Mike Johnson', room: 'Executive Room', amount: 24000, status: 'Confirmed', date: '2024-01-17' },
+      { id: 'BK005', guest: 'David Brown', room: 'Classic Room', amount: 10500, status: 'Checked-in', date: '2024-01-18' }
+    ];
+    const savedBookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+    const allBookings = [...savedBookings, ...initialBookings];
+
+    // 3. Fetch Guests
+    const initialGuests = [
+      { id: 'GST-001', name: 'John Doe', status: 'VIP' },
+      { id: 'GST-002', name: 'Jane Smith', status: 'Regular' },
+      { id: 'GST-003', name: 'Mike Johnson', status: 'VIP' },
+    ];
+    const savedGuests = JSON.parse(localStorage.getItem('guests') || '[]');
+    const allGuests = savedGuests.length > 0 ? savedGuests : initialGuests;
+
+    // 4. Fetch Reviews
+    const savedReviews = JSON.parse(localStorage.getItem('hotel_reviews') || '[]');
+    const allReviews = savedReviews.length > 0 ? savedReviews : [
+      { id: 'REV-001', rating: 5 }, { id: 'REV-002', rating: 4 }, { id: 'REV-003', rating: 5 }
+    ];
+
+    // 5. Fetch Gallery
+    const savedGallery = JSON.parse(localStorage.getItem('hotel_gallery') || '[]');
+    const allGallery = savedGallery.length > 0 ? savedGallery : [{ id: 1 }, { id: 2 }];
+
+    setData({
+      rooms: allRooms,
+      bookings: allBookings,
+      guests: allGuests,
+      reviews: allReviews,
+      gallery: allGallery
+    });
+  }, []);
+
+  const totalRevenue = data.bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+  const avgRating = (data.reviews.reduce((sum, r) => sum + r.rating, 0) / data.reviews.length || 0).toFixed(1);
+  const occupiedRooms = data.bookings.filter(b => b.status === 'Checked-in').length;
+  const occupancyRate = ((occupiedRooms / data.rooms.length) * 100 || 0).toFixed(0);
+
   const stats = [
-    { title: 'Total Rooms', value: '18', change: '+2', icon: FaBed, color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-    { title: 'Active Bookings', value: '24', change: '+5', icon: FaCalendarAlt, color: 'bg-gradient-to-r from-emerald-500 to-emerald-600' },
-    { title: 'Total Guests', value: '156', change: '+12', icon: FaUsers, color: 'bg-gradient-to-r from-purple-500 to-purple-600' },
-    { title: 'Revenue', value: '₹2.5L', change: '+8%', icon: FaRupeeSign, color: 'bg-gradient-to-r from-[#D4AF37] to-[#B8860B]' },
+    {
+      title: 'Total Revenue',
+      value: `₹${(totalRevenue / 1000).toFixed(1)}k`,
+      change: '+12.5%',
+      icon: FaRupeeSign,
+      color: 'bg-gradient-to-br from-amber-400 to-amber-600',
+      label: 'Gross Earnings',
+      path: '/bookings'
+    },
+    {
+      title: 'Active Bookings',
+      value: data.bookings.filter(b => b.status !== 'Cancelled').length,
+      change: '+4',
+      icon: FaCalendarAlt,
+      color: 'bg-gradient-to-br from-emerald-400 to-emerald-600',
+      label: 'Total Reservations',
+      path: '/bookings'
+    },
+    {
+      title: 'Occupancy Rate',
+      value: `${occupancyRate}%`,
+      change: '+2%',
+      icon: FaChartBar,
+      color: 'bg-gradient-to-br from-blue-400 to-blue-600',
+      label: 'Room Usage',
+      path: '/rooms'
+    },
+    {
+      title: 'Guest Satisfaction',
+      value: `${avgRating}/5`,
+      change: '+0.2',
+      icon: FaStar,
+      color: 'bg-gradient-to-br from-purple-400 to-purple-600',
+      label: 'Avg Star Rating',
+      path: '/reviews'
+    },
   ];
 
-  const recentBookings = [
-    { id: 1, guest: 'John Doe', room: 'Presidential Suite', date: '2024-01-15', status: 'Confirmed' },
-    { id: 2, guest: 'Jane Smith', room: 'Deluxe Room', date: '2024-01-16', status: 'Pending' },
-    { id: 3, guest: 'Mike Johnson', room: 'Executive Room', date: '2024-01-17', status: 'Confirmed' },
+  // Revenue Chart Mock Data
+  const chartData = [
+    { day: 'Mon', value: 45 },
+    { day: 'Tue', value: 52 },
+    { day: 'Wed', value: 38 },
+    { day: 'Thu', value: 65 },
+    { day: 'Fri', value: 78 },
+    { day: 'Sat', value: 92 },
+    { day: 'Sun', value: 85 },
   ];
 
   return (
@@ -21,14 +130,39 @@ const Dashboard = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="space-y-6"
+      className="max-w-[1600px] mx-auto space-y-12 pb-12"
     >
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Welcome back, Admin!</p>
+      {/* Welcome Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 text-[#D4AF37]/5 -rotate-12 translate-x-12">
+          <FaBed size={150} />
+        </div>
+        <div className="text-left relative z-10">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">Administrator Dashboard</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
+          </div>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight">Welcome to <span className="text-[#D4AF37]">Prime Residency</span></h1>
+          <p className="text-gray-500 font-medium mt-1">Manage your hotel operations and property performance from one place.</p>
+        </div>
+        <div className="flex items-center gap-4 mt-3 relative z-10">
+          <button
+            onClick={() => navigate('/create-booking')}
+            className="px-6 py-3 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-black transition-all cursor-pointer"
+          >
+            Quick Booking
+          </button>
+          <div className="flex items-center gap-3 bg-emerald-50 py-3 px-5 rounded-xl border border-emerald-100">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">System live</span>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Primary Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 mt-3 lg:grid-cols-4 gap-6">
+
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -37,73 +171,227 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all cursor-pointer group hover:border-[#D4AF37]/30"
+              onClick={() => navigate(stat.path)}
+              className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-pointer group relative overflow-hidden flex items-center gap-5 text-left"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                  <div className="flex items-center mt-2">
-                    <FaArrowUp className="text-emerald-500 text-xs mr-1" />
-                    <span className="text-sm text-emerald-500 font-medium">{stat.change}</span>
-                  </div>
+              <div className={`w-16 h-16 ${stat.color} rounded-2xl flex items-center justify-center shadow-lg shadow-gray-200 group-hover:scale-105 transition-transform flex-shrink-0 relative z-10`}>
+                <Icon className="text-white text-3xl" />
+              </div>
+
+              <div className="relative z-10 flex-1 min-w-0 ">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mb-1.5">{stat.title}</p>
+                <p className="text-2xl font-black text-gray-900 leading-none">{stat.value}</p>
+                <div className="flex items-center mt-2 gap-2">
+                  <span className="text-[9px] font-black text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded uppercase tracking-widest">{stat.change}</span>
+                  <span className="text-[9px] font-bold text-gray-300 uppercase tracking-tighter truncate">{stat.label}</span>
                 </div>
-                <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                  <Icon className="text-white text-xl" />
-                </div>
+              </div>
+
+              {/* Watermark Icon */}
+              <div className="absolute right-2 bottom-18 opacity-[0.03] group-hover:scale-105 group-hover:opacity-[0.08] transition-all duration-700 text-black pointer-events-none">
+                <Icon size={40} />
               </div>
             </motion.div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Bookings</h3>
-          <div className="space-y-4">
-            {recentBookings.map((booking) => (
-              <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">{booking.guest}</p>
-                  <p className="text-sm text-gray-500">{booking.room}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-900">{booking.date}</p>
-                  <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                    booking.status === 'Confirmed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {booking.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="space-y-3">
-            <button className="w-full p-3 bg-[#C6A87C] text-white rounded-lg hover:bg-[#B8996F] transition-colors cursor-pointer">
-              Add New Booking
-            </button>
-            <button className="w-full p-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
-              Manage Rooms
-            </button>
-            <button className="w-full p-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
-              View Reports
-            </button>
+        {/* Recent Bookings Table & Chart */}
+        <div className="lg:col-span-8 space-y-12">
+          {/* Revenue Chart Visualization */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white p-7 rounded-3xl shadow-sm border border-gray-100 text-left mt-3"
+
+          >
+            <div className="flex justify-between items-center mb-10">
+              <div>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Revenue Analytics</h3>
+                <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest">Performance trend this week</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Online</span>
+                <span className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-slate-500"></span> Offline</span>
+              </div>
+            </div>
+
+            <div className="flex items-end justify-between h-48 gap-4 px-4">
+              {chartData.map((d, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
+                  <div className="w-full relative flex flex-col items-center justify-end h-40">
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${d.value}%` }}
+                      transition={{ delay: i * 0.1, duration: 1, ease: "easeOut" }}
+                      className="w-full max-w-[40px] bg-gradient-to-t from-amber-500 to-amber-300 rounded-xl relative group-hover:from-[#D4AF37] group-hover:to-amber-400 transition-all duration-300 shadow-lg shadow-amber-200/20"
+                    >
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        {d.value}%
+                      </div>
+                    </motion.div>
+                    {/* Offline filler mock */}
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${d.value * 0.4}%` }}
+                      className="w-full max-w-[40px] bg-slate-600 mt-1 rounded-t-sm"
+                    ></motion.div>
+                  </div>
+                  <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">{d.day}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Table */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white p-7 rounded-3xl mt-3 shadow-sm border border-gray-100"
+
+          >
+            <div className="flex justify-between items-center mb-10">
+              <div className="text-left space-y-1">
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Live Booking Stream</h3>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Latest arrivals and stays</p>
+              </div>
+              <button
+                onClick={() => navigate('/bookings')}
+                className="text-[10px] font-black text-[#D4AF37] bg-amber-50 px-5 py-2.5 rounded-xl uppercase tracking-widest border border-amber-100 hover:bg-[#D4AF37] hover:text-white transition-all cursor-pointer"
+              >
+                Explore All Bookings
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-separate border-spacing-y-4">
+                <thead>
+                  <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                    <th className="pb-4 pl-4">Guest Identity</th>
+                    <th className="pb-4">Stay Unit</th>
+                    <th className="pb-4">Status</th>
+                    <th className="pb-4 text-right pr-4">Finance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.bookings.slice(0, 5).map((booking, idx) => (
+                    <tr
+                      key={idx}
+                      onClick={() => navigate('/bookings')}
+                      className="group hover:bg-slate-50 transition-all rounded-2xl cursor-pointer"
+                    >
+                      <td className="py-5 pl-4 bg-slate-50/50 group-hover:bg-slate-100 rounded-l-2xl border-y border-l border-transparent group-hover:border-slate-200">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:text-amber-600 transition-all shadow-sm">
+                            {booking.guest.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-black text-gray-900 text-sm leading-none mb-1">{booking.guest}</p>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">{booking.id}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-5 bg-slate-50/50 group-hover:bg-slate-100 border-y border-transparent group-hover:border-slate-200">
+                        <p className="text-xs font-bold text-gray-700">{booking.room}</p>
+                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Premium Unit</p>
+                      </td>
+                      <td className="py-5 bg-slate-50/50 group-hover:bg-slate-100 border-y border-transparent group-hover:border-slate-200">
+                        <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${booking.status === 'Confirmed' || booking.status === 'Checked-in'
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                          : 'bg-amber-50 text-amber-600 border-amber-100'
+                          }`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="py-5 text-right pr-4 bg-slate-50/50 group-hover:bg-slate-100 rounded-r-2xl border-y border-r border-transparent group-hover:border-slate-200">
+                        <p className="text-sm font-black text-gray-900 italic">₹{(booking.amount || 0).toLocaleString()}</p>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{booking.date}</p>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Quick Operations & Resource Mix */}
+        <div className="lg:col-span-4 space-y-8">
+
+          {/* Resource Mix Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white p-7 rounded-3xl shadow-sm border border-gray-100 text-left mt-3"
+
+          >
+            <h3 className="text-xl font-black text-gray-900 mb-8 tracking-tight">Property Asset Mix</h3>
+            <div className="space-y-6">
+              {[
+                { label: 'Room Units', count: data.rooms.length, icon: FaBed, color: 'text-blue-500', bg: 'bg-blue-50', path: '/rooms' },
+                { label: 'Verified Guests', count: data.guests.length, icon: FaUsers, color: 'text-purple-500', bg: 'bg-purple-50', path: '/guests' },
+                { label: 'Media Assets', count: data.gallery.length, icon: FaImages, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/gallery' },
+                { label: 'Guest Feedback', count: data.reviews.length, icon: FaStar, color: 'text-amber-500', bg: 'bg-amber-50', path: '/reviews' }
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  onClick={() => navigate(item.path)}
+                  className="flex items-center justify-between group cursor-pointer hover:bg-slate-50 p-3 rounded-2xl transition-all border border-transparent hover:border-slate-100"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm`}>
+                      <item.icon size={16} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{item.label}</p>
+                      <p className="text-lg font-black text-gray-900">{item.count} Active</p>
+                    </div>
+                  </div>
+                  <FaExternalLinkAlt size={10} className="text-gray-200 group-hover:text-amber-500 transition-colors" />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Quick Connect & Ops */}
+          <div className="bg-slate-900 p-8 rounded-[2rem] mt-3 shadow-2xl text-left relative overflow-hidden group">
+
+            <div className="absolute top-0 right-0 p-10 opacity-10 text-white group-hover:scale-110 transition-transform duration-700">
+              <FaUserPlus size={100} />
+            </div>
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-2xl flex items-center justify-center mb-6 border border-[#D4AF37]/30">
+                <FaChartBar className="text-[#D4AF37]" />
+              </div>
+              <h3 className="text-white text-2xl font-black tracking-tight mb-2 italic">Operation Center</h3>
+              <p className="text-slate-400 text-xs font-medium mb-10 pr-10 leading-relaxed">Execute primary workflows for front-desk and room management instantly.</p>
+              <div className="grid grid-cols-1 gap-4">
+                <button
+                  onClick={() => navigate('/create-booking')}
+                  className="w-full py-5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-slate-900 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg hover:translate-y-[-2px] active:translate-y-0 transition-all cursor-pointer"
+                >
+                  Create New Booking
+                </button>
+                <button
+                  onClick={() => navigate('/add-room')}
+                  className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all cursor-pointer border border-white/10"
+                >
+                  Register New Room
+                </button>
+                <button
+                  onClick={() => navigate('/guests')}
+                  className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all cursor-pointer border border-white/10"
+                >
+                  Manage Profiles
+                </button>
+              </div>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   );

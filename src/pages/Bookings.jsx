@@ -1,143 +1,731 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaCalendarAlt, FaUser, FaPhone, FaEnvelope } from 'react-icons/fa';
+
+import {
+  FaCalendarAlt, FaUser, FaPhone, FaEnvelope, FaSearch, FaFilter,
+  FaEye, FaEdit, FaTrash, FaPlus, FaDownload, FaChevronLeft,
+  FaChevronRight, FaBed, FaMapMarkerAlt, FaCreditCard, FaClock,
+  FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaSpinner,
+  FaBuilding, FaGlobe, FaLaptop
+} from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 
 const Bookings = () => {
-  const [bookings] = useState([
-    { 
-      id: 1, 
-      guest: 'John Doe', 
-      email: 'john@example.com', 
+  const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [dateFilter, setDateFilter] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+
+  const [bookings, setBookings] = useState([
+    {
+      id: 'BK001',
+      guest: 'John Doe',
+      email: 'john@example.com',
       phone: '+91 98765 43210',
-      room: 'Presidential Suite', 
-      checkIn: '2024-01-15', 
+      room: 'Presidential Suite',
+      roomNumber: 'PH-01',
+      checkIn: '2024-01-15',
       checkOut: '2024-01-18',
+      nights: 3,
+      adults: 2,
+      children: 1,
       status: 'Confirmed',
-      amount: '45000'
+      amount: 45000,
+      advance: 15000,
+      balance: 30000,
+      paymentStatus: 'Partial',
+      bookingDate: '2024-01-10',
+      source: 'Website',
+      specialRequests: 'Late checkout, Extra bed'
     },
-    { 
-      id: 2, 
-      guest: 'Jane Smith', 
-      email: 'jane@example.com', 
+    {
+      id: 'BK002',
+      guest: 'Jane Smith',
+      email: 'jane@example.com',
       phone: '+91 87654 32109',
-      room: 'Deluxe Suite', 
-      checkIn: '2024-01-16', 
+      room: 'Deluxe Suite',
+      roomNumber: 'A-501',
+      checkIn: '2024-01-16',
       checkOut: '2024-01-19',
+      nights: 3,
+      adults: 2,
+      children: 0,
       status: 'Pending',
-      amount: '19500'
+      amount: 19500,
+      advance: 0,
+      balance: 19500,
+      paymentStatus: 'Pending',
+      bookingDate: '2024-01-12',
+      source: 'Dashboard',
+      specialRequests: 'Sea view room'
     },
-    { 
-      id: 3, 
-      guest: 'Mike Johnson', 
-      email: 'mike@example.com', 
+    {
+      id: 'BK003',
+      guest: 'Mike Johnson',
+      email: 'mike@example.com',
       phone: '+91 76543 21098',
-      room: 'Executive Room', 
-      checkIn: '2024-01-17', 
+      room: 'Executive Room',
+      roomNumber: 'E-401',
+      checkIn: '2024-01-17',
       checkOut: '2024-01-20',
+      nights: 3,
+      adults: 1,
+      children: 0,
       status: 'Confirmed',
-      amount: '24000'
+      amount: 24000,
+      advance: 24000,
+      balance: 0,
+      paymentStatus: 'Paid',
+      bookingDate: '2024-01-08',
+      source: 'Dashboard',
+      specialRequests: 'Airport pickup'
     },
+    {
+      id: 'BK004',
+      guest: 'Sarah Wilson',
+      email: 'sarah@example.com',
+      phone: '+91 65432 10987',
+      room: 'Family Suite',
+      roomNumber: 'G-301',
+      checkIn: '2024-01-20',
+      checkOut: '2024-01-23',
+      nights: 3,
+      adults: 2,
+      children: 2,
+      status: 'Cancelled',
+      amount: 31500,
+      advance: 10000,
+      balance: 21500,
+      paymentStatus: 'Refunded',
+      bookingDate: '2024-01-05',
+      source: 'Agent',
+      specialRequests: 'Ground floor room'
+    },
+    {
+      id: 'BK005',
+      guest: 'David Brown',
+      email: 'david@example.com',
+      phone: '+91 54321 09876',
+      room: 'Classic Room',
+      roomNumber: '201',
+      checkIn: '2024-01-18',
+      checkOut: '2024-01-21',
+      nights: 3,
+      adults: 2,
+      children: 0,
+      status: 'Checked-in',
+      amount: 10500,
+      advance: 10500,
+      balance: 0,
+      paymentStatus: 'Paid',
+      bookingDate: '2024-01-14',
+      source: 'Website',
+      specialRequests: 'None'
+    }
   ]);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Confirmed': return 'bg-green-100 text-green-800';
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedBookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+    if (savedBookings.length > 0) {
+      setBookings(prev => {
+        // Only add if not already in list to prevent duplicates
+        const existingIds = new Set(prev.map(b => b.id));
+        const uniqueSaved = savedBookings.filter(b => !existingIds.has(b.id));
+        return [...uniqueSaved, ...prev];
+      });
     }
+  }, []);
+
+
+  const statusOptions = ['All', 'Pending', 'Confirmed', 'Checked-in', 'Checked-out', 'Cancelled'];
+
+  // Filter bookings
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = booking.guest.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.room.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || booking.status === statusFilter;
+    const matchesDate = !dateFilter || booking.checkIn === dateFilter;
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentBookings = filteredBookings.slice(startIndex, startIndex + itemsPerPage);
+
+  // Analytics
+  const analytics = {
+    total: bookings.length,
+    confirmed: bookings.filter(b => b.status === 'Confirmed').length,
+    pending: bookings.filter(b => b.status === 'Pending').length,
+    checkedIn: bookings.filter(b => b.status === 'Checked-in').length,
+    totalRevenue: bookings.reduce((sum, b) => sum + b.amount, 0),
+    paidAmount: bookings.reduce((sum, b) => sum + b.advance, 0),
+    pendingAmount: bookings.reduce((sum, b) => sum + b.balance, 0)
   };
 
   const handleStatusChange = (id, newStatus) => {
-    toast.success(`Booking status updated to ${newStatus}`);
+    setBookings(prev => prev.map(booking =>
+      booking.id === id ? { ...booking, status: newStatus } : booking
+    ));
+    toast.success(`Booking ${id} status updated to ${newStatus}`);
   };
+
+  const handleDelete = (id, guest) => {
+    Swal.fire({
+      title: 'Cancel Booking?',
+      text: `Cancel booking for ${guest}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#D4AF37',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, cancel it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setBookings(prev => prev.map(booking =>
+          booking.id === id ? { ...booking, status: 'Cancelled' } : booking
+        ));
+        toast.success('Booking cancelled successfully!');
+      }
+    });
+  };
+
+  const exportBookings = () => {
+    toast.success('Bookings exported successfully!');
+  };
+
+
+  if (selectedBooking) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="space-y-8"
+      >
+        {/* Back Header */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setSelectedBooking(null)}
+            className="flex mb-3 items-center gap-2 text-gray-500 hover:text-gray-900 font-bold transition-colors cursor-pointer"
+          >
+            <FaChevronLeft /> Back to Bookings
+          </button>
+          <div className="flex  items-center gap-3">
+            <button className="flex mb-3 items-center px-4 py-2 bg-white border border-gray-200 text-amber-600 rounded-xl hover:bg-gray-50 transition-all font-bold shadow-sm cursor-pointer">
+              <FaEdit className="mr-2" /> Edit Booking
+            </button>
+            <button
+              onClick={() => handleDelete(selectedBooking.id, selectedBooking.guest)}
+              className="flex items-center px-4 mb-3 py-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all font-bold cursor-pointer"
+            >
+              <FaTrash className="mr-2" /> Cancel Booking
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content Card (Clean Minimalist) */}
+        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl overflow-hidden min-h-[700px]">
+          {/* Refined Header */}
+          <div className="p-10 pb-0 flex flex-col md:flex-row justify-between items-start md:items-end gap-8 bg-gradient-to-b from-gray-50/50 to-white">
+            <div className="flex items-end gap-8 flex-wrap lg:flex-nowrap">
+              <div className="relative">
+                <div className="w-32 h-32 rounded-3xl bg-white p-1.5 shadow-lg border border-gray-100 ring-4 ring-white">
+                  <div className="w-full h-full rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center text-amber-600 text-4xl font-extrabold shadow-inner">
+                    {selectedBooking.guest.charAt(0)}
+                  </div>
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-emerald-500 shadow-sm">
+                  <FaCheckCircle size={14} />
+                </div>
+              </div>
+              <div className="mb-4 space-y-2 text-left">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{selectedBooking.guest}</h2>
+                  <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${selectedBooking.status === 'Confirmed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                    selectedBooking.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                      selectedBooking.status === 'Checked-in' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        selectedBooking.status === 'Cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-500 border-gray-100'
+                    }`}>
+                    {selectedBooking.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-gray-400 font-bold tracking-wider text-xs font-serif">
+                  <span className="flex items-center gap-2"><FaUser className="text-gray-300" size={10} /> {selectedBooking.id}</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-200"></span>
+                  <span className="flex items-center gap-2">Room <span className="text-gray-900 font-black">#{selectedBooking.roomNumber}</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-32 p-12 grid grid-cols-1 lg:grid-cols-12 gap-16">
+            {/* Left Section: Details (Span 8) */}
+            <div className="lg:col-span-8 space-y-16">
+
+              {/* Information Cards (Grid) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Guest Profile Card */}
+                <div className="bg-white p-8 rounded-3xl border border-gray-100 space-y-6">
+                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Guest Information</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100"><FaPhone size={14} /></div>
+                      <div className="text-left">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Contact Number</p>
+                        <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100"><FaEnvelope size={14} /></div>
+                      <div className="text-left">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Email Address</p>
+                        <p className="text-sm font-black text-gray-900 tracking-tight truncate max-w-[200px]">{selectedBooking.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stay Summary Card */}
+                <div className="bg-white p-8 rounded-3xl border border-gray-100 space-y-6">
+                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Stay Configuration</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100"><FaBed size={14} /></div>
+                      <div className="text-left">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Room Selection</p>
+                        <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.room}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100"><FaUser size={14} /></div>
+                      <div className="text-left">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Guest Count</p>
+                        <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.adults} Adults, {selectedBooking.children} Kids</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Refined Timeline (Minimalist) */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
+                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Reservation Period</h3>
+                </div>
+
+                <div className="bg-gray-50/50 rounded-[2.5rem] p-8 border border-gray-100/50 flex flex-col md:flex-row items-center gap-10">
+                  <div className="flex-1 text-center md:text-left">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Arrival</p>
+                    <p className="text-2xl font-black text-gray-900 leading-tight">
+                      {new Date(selectedBooking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </p>
+                    <p className="text-xs font-bold text-emerald-600 mt-1 uppercase tracking-widest">12:00 PM Check-in</p>
+                  </div>
+
+                  <div className="flex items-center gap-4 px-8 py-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <FaCalendarAlt className="text-amber-500" size={14} />
+                    <span className="text-xs font-black text-gray-900 uppercase tracking-widest">{selectedBooking.nights} Nights</span>
+                  </div>
+
+                  <div className="flex-1 text-center md:text-right">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Departure</p>
+                    <p className="text-2xl font-black text-gray-900 leading-tight">
+                      {new Date(selectedBooking.checkOut).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </p>
+                    <p className="text-xs font-bold text-rose-600 mt-1 uppercase tracking-widest">11:00 AM Check-out</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clean Special Instructions */}
+              <div className="bg-amber-50/50 p-8 rounded-3xl border border-amber-100/50 text-left">
+                <div className="flex items-center gap-3 mb-4 text-amber-600">
+                  <FaEdit size={14} />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest">Additional Notes</h3>
+                </div>
+                <p className="text-base font-medium text-amber-900/80 leading-relaxed italic">
+                  {selectedBooking.specialRequests || 'No additional instructions or special requests provided for this booking.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Right Section: Sidebar (Span 4) */}
+            <div className="lg:col-span-4 space-y-12">
+
+              {/* Clean Payment Box */}
+              <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 space-y-8">
+                <div className="flex justify-between items-center text-left">
+                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Financial Summary</h3>
+                  <div className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border ${selectedBooking.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                    selectedBooking.paymentStatus === 'Partial' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                    }`}>
+                    {selectedBooking.paymentStatus} Status
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-center">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Valuation</p>
+                  <p className="text-5xl font-extrabold text-gray-900 tracking-tighter italic">
+                    ₹{selectedBooking.amount.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100/50 text-center">
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prepaid</p>
+                    <p className="text-lg font-black text-gray-900 tracking-tight">₹{selectedBooking.advance.toLocaleString()}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100/50 text-center">
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Balance</p>
+                    <p className="text-lg font-black text-rose-600 tracking-tight">₹{selectedBooking.balance.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-gray-200 hover:bg-black transition-all">
+                  Process Transaction
+                </button>
+              </div>
+
+              {/* Source Card */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100">
+                    {selectedBooking.source === 'Website' ? <FaGlobe size={14} /> : <FaLaptop size={14} />}
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Booking Channel</p>
+                    <p className="text-sm font-black text-gray-900 leading-none">{selectedBooking.source}</p>
+                  </div>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-50"></div>
+              </div>
+
+              {/* Control Console */}
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">System Controls</h3>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-amber-500">
+                    <FaSpinner className="animate-spin text-xs" />
+                  </div>
+                  <select
+                    className="w-full text-xs font-black appearance-none bg-white border-2 border-gray-100 rounded-2xl px-12 py-4 focus:outline-none focus:border-amber-500 transition-all cursor-pointer shadow-sm uppercase tracking-widest"
+                    value={selectedBooking.status}
+                    onChange={(e) => {
+                      handleStatusChange(selectedBooking.id, e.target.value);
+                      setSelectedBooking(prev => ({ ...prev, status: e.target.value }));
+                    }}
+                  >
+                    {['Pending', 'Confirmed', 'Checked-in', 'Checked-out', 'Cancelled'].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <FaChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-300 rotate-90" size={12} />
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
+      className="space-y-8"
     >
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Bookings Management</h1>
-        <div className="flex space-x-3">
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] cursor-pointer">
-            <option>All Status</option>
-            <option>Confirmed</option>
-            <option>Pending</option>
-            <option>Cancelled</option>
-          </select>
-          <input 
-            type="date" 
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] cursor-pointer"
-          />
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Bookings Management</h1>
+          <p className="text-gray-600 text-lg">Manage hotel reservations, guest check-ins, and booking status.</p>
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={exportBookings}
+            className="flex items-center px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
+          >
+            <FaDownload className="mr-2 text-gray-500" />
+            Export Data
+          </button>
+          <button
+            onClick={() => navigate('/create-booking')}
+            className="flex items-center px-6 py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl hover:translate-y-[-2px] hover:shadow-xl transition-all duration-300 font-bold cursor-pointer"
+          >
+            <FaPlus className="mr-2" />
+            New Booking
+          </button>
+
         </div>
       </div>
 
-      <div className="grid gap-6">
-        {bookings.map((booking, index) => (
+      {/* Analytics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-2">
+
+        {[
+          { label: 'Total Bookings', value: analytics.total, icon: FaCalendarAlt, bg: 'bg-blue-50', text: 'text-blue-500' },
+          { label: 'Confirmed', value: analytics.confirmed, icon: FaCheckCircle, bg: 'bg-emerald-50', text: 'text-emerald-500' },
+          { label: 'Total Revenue', value: `₹${analytics.totalRevenue.toLocaleString()}`, icon: FaCreditCard, bg: 'bg-amber-50', text: 'text-amber-500' },
+          { label: 'Pending Amount', value: `₹${analytics.pendingAmount.toLocaleString()}`, icon: FaClock, bg: 'bg-rose-50', text: 'text-rose-500' }
+        ].map((item, index) => (
           <motion.div
-            key={booking.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+            key={index}
+            whileHover={{ y: -4, shadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
+            className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 transition-all"
           >
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-[#C6A87C] rounded-full flex items-center justify-center">
-                  <FaUser className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{booking.guest}</h3>
-                  <p className="text-sm text-gray-500">Booking #{booking.id}</p>
-                </div>
-              </div>
-              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                {booking.status}
-              </span>
+            <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center flex-shrink-0 transition-transform`}>
+              <item.icon className={`${item.text} text-xl`} />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="flex items-center space-x-2">
-                <FaEnvelope className="text-gray-400" />
-                <span className="text-sm text-gray-600">{booking.email}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <FaPhone className="text-gray-400" />
-                <span className="text-sm text-gray-600">{booking.phone}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <FaCalendarAlt className="text-gray-400" />
-                <span className="text-sm text-gray-600">{booking.checkIn} to {booking.checkOut}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-              <div>
-                <p className="text-sm text-gray-500">Room: <span className="font-medium text-gray-900">{booking.room}</span></p>
-                <p className="text-sm text-gray-500">Amount: <span className="font-medium text-[#C6A87C]">₹{booking.amount}</span></p>
-              </div>
-              <div className="flex space-x-2">
-                <select 
-                  onChange={(e) => handleStatusChange(booking.id, e.target.value)}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C6A87C]"
-                  defaultValue={booking.status}
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-                <button className="px-4 py-1 text-sm bg-[#C6A87C] text-white rounded hover:bg-[#B8996F] transition-colors cursor-pointer">
-                  View Details
-                </button>
-              </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{item.label}</p>
+              <p className="text-xl font-extrabold text-gray-900 truncate tracking-tight">{item.value}</p>
             </div>
           </motion.div>
         ))}
       </div>
-    </motion.div>
+
+      {/* Filters and Search */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row gap-6 items-center">
+          <div className="w-full lg:flex-1 relative">
+            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by guest, booking ID, or room..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:bg-white transition-all"
+            />
+          </div>
+          <div className="w-full lg:w-auto flex flex-wrap gap-4">
+            <div className="relative flex-1 lg:flex-none">
+              <FaFilter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full pl-10 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 appearance-none cursor-pointer"
+              >
+                {statusOptions.map(status => (
+                  <option key={status} value={status}>{status} Status</option>
+                ))}
+              </select>
+            </div>
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="flex-1 lg:flex-none px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Pagination Summary */}
+      <div className="flex justify-end items-center mt-4 mb-4">
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-gray-500 font-medium">Items per page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white border-2 border-gray-100 px-4 py-2 rounded-xl text-gray-700 font-bold focus:outline-none focus:border-[#D4AF37] transition-colors cursor-pointer"
+            >
+              {[5, 10, 20, 50].map(val => <option key={val} value={val}>{val}</option>)}
+            </select>
+          </div>
+          <span className="text-gray-400">|</span>
+          <span className="text-gray-600 font-medium">
+            Showing <span className="text-gray-900">{startIndex + 1}</span> to <span className="text-gray-900">{Math.min(startIndex + itemsPerPage, filteredBookings.length)}</span> of {filteredBookings.length}
+          </span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden text-[13px]">
+        <div className="overflow-x-auto no-scrollbar">
+
+
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Guest Identity</th>
+                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Room Selection</th>
+                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Stay Duration</th>
+                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Source</th>
+                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Current Status</th>
+                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Financials</th>
+                <th className="px-4 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Actions</th>
+
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {currentBookings.map((booking) => (
+                <motion.tr
+                  key={booking.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="group hover:bg-gray-50/50 transition-colors duration-300"
+                >
+                  <td className="px-4 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm group-hover:scale-110 group-hover:bg-amber-50 group-hover:text-amber-600 group-hover:border-amber-100 transition-all">
+                        <FaUser size={11} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 truncate text-xs">{booking.guest}</div>
+
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{booking.id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-5">
+                    <div className="flex flex-col text-left">
+                      <span className="font-bold text-gray-800 text-xs tracking-tight">{booking.room}</span>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Premium Unit</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-5">
+                    <div className="flex flex-col text-left">
+                      <span className="font-black text-gray-900 tracking-tight text-xs">{new Date(booking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                      <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{booking.nights} Nights stay</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-5">
+                    <div className="flex items-center gap-1.5">
+                      {booking.source === 'Website' ? (
+                        <div className="flex items-center gap-2 text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 uppercase tracking-widest">
+                          <FaGlobe className="text-[9px]" /> Web
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-[8px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-lg border border-purple-100 uppercase tracking-widest">
+                          <FaLaptop className="text-[9px]" /> Desk
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all ${booking.status === 'Confirmed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                      booking.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        booking.status === 'Checked-in' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                          booking.status === 'Cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-500 border-gray-100'
+                      }`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-5">
+                    <div className="flex flex-col leading-tight text-left">
+                      <span className="font-black text-gray-900 text-xs italic">₹{booking.amount.toLocaleString()}</span>
+                      <span className={`text-[8px] font-black uppercase tracking-widest mt-0.5 ${booking.paymentStatus === 'Paid' ? 'text-emerald-500' :
+                        booking.paymentStatus === 'Partial' ? 'text-amber-500' : 'text-rose-500'
+                        }`}>
+                        {booking.paymentStatus}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-5">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button
+                        onClick={() => setSelectedBooking(booking)}
+                        className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] hover:shadow-lg transition-all cursor-pointer"
+                      >
+                        <FaEye size={10} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(booking.id, booking.guest)}
+                        className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-rose-500 hover:border-rose-100 hover:shadow-lg transition-all cursor-pointer"
+                      >
+                        <FaTrash size={10} />
+                      </button>
+                    </div>
+                  </td>
+
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      {
+        totalPages > 1 && (
+          <div className="flex justify-center mt-12">
+            <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-3 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <FaChevronLeft />
+              </button>
+
+              <div className="flex items-center">
+                {[...Array(totalPages)].map((_, i) => {
+                  const pageNum = i + 1;
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-12 h-12 rounded-xl text-sm font-bold transition-all ${currentPage === pageNum
+                          ? 'bg-[#D4AF37] text-white shadow-lg shadow-[#D4AF37]/30'
+                          : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
+                          }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  } else if (
+                    pageNum === currentPage - 2 ||
+                    pageNum === currentPage + 2
+                  ) {
+                    return <span key={pageNum} className="px-2 text-gray-300">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-3 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <FaChevronRight />
+              </button>
+            </div>
+          </div>
+        )
+      }
+
+      {/* No Results */}
+      {
+        currentBookings.length === 0 && (
+          <div className="text-center py-16">
+            <div className=" flex text-gray-400 text-6xl mb-6 justify-center"><FaBuilding /></div>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No bookings found</h3>
+            <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          </div>
+        )
+      }
+    </motion.div >
   );
 };
 
