@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaTimes, FaPlus, FaTrash, FaHotel, FaDollarSign, FaImage, FaBed, 
+import {
+  FaTimes, FaPlus, FaTrash, FaHotel, FaDollarSign, FaImage, FaBed,
   FaUsers, FaClock, FaCog, FaWifi, FaTv, FaSnowflake, FaFire,
   FaBalanceScale, FaUtensils, FaShieldAlt, FaDesktop, FaCube,
   FaBatteryFull, FaSmoking, FaPaw, FaEye, FaStar, FaChartBar, FaUpload, FaArrowLeft,
@@ -10,8 +10,11 @@ import {
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
+import api from '../api/api';
+
 const AddRoom = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     // 1. Basic Room Information
     roomName: '',
@@ -22,7 +25,7 @@ const AddRoom = () => {
     maxChildren: '',
     roomSize: '',
     floorNumber: '',
-    
+
     // 2. Pricing & Availability
     pricePerNight: '',
     discount: '',
@@ -32,7 +35,7 @@ const AddRoom = () => {
     totalRoomsCount: '',
     availableRooms: '',
     roomStatus: 'Available',
-    
+
     // 3. Images & Media
     mainImage: null,
     mainImagePreview: '',
@@ -40,7 +43,7 @@ const AddRoom = () => {
     galleryPreviews: [],
     video360: '',
     imageAltText: '',
-    
+
     // 4. Amenities
     amenities: {
       ac: false,
@@ -54,12 +57,12 @@ const AddRoom = () => {
       safeLocker: false,
       workDesk: false
     },
-    
+
     // 5. Room Description
     shortDescription: '',
     fullDescription: '',
     specialNotes: '',
-    
+
     // 6. Policies & Rules
     checkInTime: '14:00',
     checkOutTime: '11:00',
@@ -67,26 +70,26 @@ const AddRoom = () => {
     petsAllowed: false,
     cancellationPolicy: '',
     refundPolicy: '',
-    
+
     // 7. Booking Rules
     minNightsStay: '',
     maxNightsStay: '',
     advanceBookingDays: '',
     instantBooking: false,
-    
+
     // 8. Admin Control
     roomVisibility: true,
     featuredRoom: false,
     sortOrder: '',
     createdBy: '',
-    
+
     // 9. Analytics (Read-only)
     totalBookings: 0,
     totalRevenue: 0,
     occupancyRate: 0
   });
 
-  const roomTypes = ['Single', 'Double', 'Family', 'Suite', 'Deluxe', 'Executive'];
+  const roomTypes = ['Classic', 'Deluxe', 'Executive', 'Presidential', 'Family', 'Garden'];
   const bedTypes = ['Single', 'Double', 'King', 'Twin', 'Queen Size', 'Sofa Bed'];
   const roomStatuses = ['Available', 'Booked', 'Under Maintenance', 'Disabled'];
 
@@ -136,38 +139,66 @@ const AddRoom = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const currentTime = new Date().toISOString();
-    const roomData = {
-      id: Date.now(),
-      name: formData.roomName,
-      category: formData.roomType,
-      price: formData.pricePerNight,
-      status: formData.roomStatus,
-      image: formData.mainImagePreview || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=60&w=300',
-      desc: formData.shortDescription,
-      size: formData.roomSize + ' sqft',
-      guests: `${formData.maxAdults} Adults${formData.maxChildren ? `, ${formData.maxChildren} Children` : ''}`,
-      bed: formData.bedType,
-      location: {
-        building: 'Main Building',
-        floor: formData.floorNumber,
-        wing: 'North Wing',
-        roomNumber: formData.roomNumber
-      },
-      ...formData,
-      createdAt: currentTime,
-      lastUpdatedAt: currentTime
-    };
-    
-    // Store in localStorage to pass to rooms page
-    const existingRooms = JSON.parse(localStorage.getItem('rooms') || '[]');
-    existingRooms.push(roomData);
-    localStorage.setItem('rooms', JSON.stringify(existingRooms));
-    
-    toast.success('Room added successfully!', { autoClose: 2000 });
-    navigate('/rooms');
+    setLoading(true);
+
+    try {
+      // Validate required fields
+      if (!formData.roomName || !formData.roomNumber || !formData.roomType || !formData.pricePerNight) {
+        toast.error('Please fill all required fields');
+        setLoading(false);
+        return;
+      }
+
+      const form = new FormData();
+      
+      // Only required fields first
+      form.append('name', formData.roomName.trim());
+      form.append('roomNumber', formData.roomNumber.trim());
+      form.append('type', formData.roomType);
+      form.append('price', formData.pricePerNight);
+      
+      // Status (default to Available if empty)
+      form.append('status', formData.roomStatus || 'Available');
+      
+      // Description (use short description if full is empty)
+      const description = formData.fullDescription || formData.shortDescription || 'No description provided';
+      form.append('description', description);
+
+      // Amenities array
+      const selectedAmenities = Object.keys(formData.amenities).filter(key => formData.amenities[key]);
+      selectedAmenities.forEach(amenity => {
+        form.append('amenities', amenity);
+      });
+
+      // Images
+      if (formData.mainImage) {
+        form.append('image', formData.mainImage);
+      }
+
+      if (formData.galleryImages && formData.galleryImages.length > 0) {
+        formData.galleryImages.forEach(file => {
+          form.append('gallery', file);
+        });
+      }
+
+      const { data } = await api.post('/rooms', form, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (data.success) {
+        toast.success('Room added successfully!', { autoClose: 2000 });
+        navigate('/rooms');
+      }
+    } catch (error) {
+      console.error('Error details:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to add room');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -180,7 +211,7 @@ const AddRoom = () => {
       <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white p-6 rounded-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <button 
+            <button
               onClick={() => navigate('/rooms')}
               className="p-2 hover:bg-white/20 rounded-lg cursor-pointer transition-colors mr-4"
             >
@@ -302,7 +333,7 @@ const AddRoom = () => {
         {/* 2. Pricing & Availability */}
         <div className="bg-green-50 p-6 rounded-xl border border-green-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <FaRupeeSign  className="text-green-600 mr-3" />
+            <FaRupeeSign className="text-green-600 mr-3" />
             <span className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm mr-3">2</span>
             Pricing & Availability
           </h3>
@@ -412,9 +443,9 @@ const AddRoom = () => {
               <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors relative">
                 {formData.mainImagePreview ? (
                   <div className="relative">
-                    <img 
-                      src={formData.mainImagePreview} 
-                      alt="Main room preview" 
+                    <img
+                      src={formData.mainImagePreview}
+                      alt="Main room preview"
                       className="w-full h-48 object-cover rounded-lg mb-4"
                     />
                     <button
@@ -446,9 +477,9 @@ const AddRoom = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                 {formData.galleryPreviews.map((preview, index) => (
                   <div key={index} className="relative">
-                    <img 
-                      src={preview} 
-                      alt={`Gallery ${index + 1}`} 
+                    <img
+                      src={preview}
+                      alt={`Gallery ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg"
                     />
                     <button
@@ -588,9 +619,10 @@ const AddRoom = () => {
           </button>
           <button
             type="submit"
-            className="px-8 py-3 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-lg hover:from-[#B8860B] hover:to-[#D4AF37] cursor-pointer transition-all font-medium shadow-lg hover:shadow-xl"
+            disabled={loading}
+            className={`px-8 py-3 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-lg hover:from-[#B8860B] hover:to-[#D4AF37] cursor-pointer transition-all font-medium shadow-lg hover:shadow-xl ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            Add Room
+            {loading ? 'Adding Room...' : 'Add Room'}
           </button>
         </div>
       </form>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell} from 'react-icons/fa';
 import Swal from 'sweetalert2';
 
 const Sidebar = ({ isOpen, setIsAuthenticated }) => {
@@ -18,6 +18,8 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
       cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         setIsAuthenticated(false);
       }
     });
@@ -29,7 +31,9 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
     { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt },
     { name: 'Guests', path: '/guests', icon: FaUsers },
     { name: 'Reviews', path: '/reviews', icon: FaStar },
+    { name: 'Contacts', path: '/contacts', icon: FaEnvelope },
     { name: 'Gallery', path: '/gallery', icon: FaImages },
+    { name: 'Services', path: '/services', icon: FaConciergeBell},
   ];
 
   return (
@@ -59,8 +63,8 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
               key={item.name}
               to={item.path}
               className={`flex items-center px-3 py-3 text-sm font-medium transition-all cursor-pointer mx-2 rounded-lg group ${isActive
-                  ? 'bg-gradient-to-r from-[#D4AF37]/20 to-[#B8860B]/10 text-[#D4AF37] border-l-4 border-[#D4AF37] shadow-lg'
-                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-[#D4AF37]'
+                ? 'bg-gradient-to-r from-[#D4AF37]/20 to-[#B8860B]/10 text-[#D4AF37] border-l-4 border-[#D4AF37] shadow-lg'
+                : 'text-slate-300 hover:bg-slate-700/50 hover:text-[#D4AF37]'
                 }`}
               title={!isOpen ? item.name : ''}
             >

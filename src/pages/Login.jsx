@@ -4,19 +4,37 @@ import { FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import logo from '../assets/logo.png';
 
+import api from '../api/api';
+
 const Login = ({ setIsAuthenticated }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (formData.email && formData.password) {
-      toast.success('Login successful!', { autoClose: 1500 });
-      setTimeout(() => {
-        setIsAuthenticated(true);
-      }, 500);
-    } else {
+    if (!formData.email || !formData.password) {
       toast.error('Please fill all fields', { autoClose: 2000 });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await api.post('/auth/login', formData);
+
+      if (data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        toast.success('Login successful!', { autoClose: 1500 });
+
+        setTimeout(() => {
+          setIsAuthenticated(true);
+        }, 500);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Login failed', { autoClose: 2000 });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,7 +67,7 @@ const Login = ({ setIsAuthenticated }) => {
             }}
           />
         ))}
-        
+
         {/* Floating hotel icons */}
         {[...Array(6)].map((_, i) => (
           <motion.div
@@ -75,10 +93,10 @@ const Login = ({ setIsAuthenticated }) => {
             {['🏨', '🛏️', '🔑', '⭐', '🍽️', '🛎️'][i]}
           </motion.div>
         ))}
-        
+
         {/* Elegant waves */}
         <motion.div
-          animate={{ 
+          animate={{
             x: [-100, 100, -100],
             opacity: [0.1, 0.3, 0.1]
           }}
@@ -86,7 +104,7 @@ const Login = ({ setIsAuthenticated }) => {
           className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-[#D4AF37]/10 via-[#C6A87C]/20 to-[#D4AF37]/10 transform -skew-y-1"
         />
         <motion.div
-          animate={{ 
+          animate={{
             x: [100, -100, 100],
             opacity: [0.1, 0.2, 0.1]
           }}
@@ -115,7 +133,7 @@ const Login = ({ setIsAuthenticated }) => {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
                 placeholder="Enter your email"
               />
@@ -129,7 +147,7 @@ const Login = ({ setIsAuthenticated }) => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
                 placeholder="Enter your password"
               />
@@ -146,9 +164,10 @@ const Login = ({ setIsAuthenticated }) => {
 
           <button
             type="submit"
-            className="w-full mt-4 py-3 bg-[#C6A87C] text-white rounded-lg hover:bg-[#B8996F] transition-colors font-medium cursor-pointer"
+            disabled={loading}
+            className={`w-full mt-4 py-3 bg-[#C6A87C] text-white rounded-lg hover:bg-[#B8996F] transition-colors font-medium cursor-pointer ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
@@ -158,14 +177,14 @@ const Login = ({ setIsAuthenticated }) => {
             <a href="#" className="text-[#C6A87C] hover:underline ml-1">Contact Administrator</a>
           </p>
         </div> */}
-        
-          <div className="flex items-center justify-between mt-6">
-            <label className="flex items-center cursor-pointer">
-              <input type="checkbox" className="rounded border-gray-300 text-[#C6A87C] focus:ring-[#C6A87C]" />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
-            <a href="#" className="text-sm text-[#C6A87C] hover:underline">Forgot password?</a>
-          </div>
+
+        <div className="flex items-center justify-between mt-6">
+          <label className="flex items-center cursor-pointer">
+            <input type="checkbox" className="rounded border-gray-300 text-[#C6A87C] focus:ring-[#C6A87C]" />
+            <span className="ml-2 text-sm text-gray-600">Remember me</span>
+          </label>
+          <a href="#" className="text-sm text-[#C6A87C] hover:underline">Forgot password?</a>
+        </div>
       </motion.div>
     </div>
   );

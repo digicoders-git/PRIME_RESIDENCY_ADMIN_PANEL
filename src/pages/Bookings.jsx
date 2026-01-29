@@ -12,9 +12,12 @@ import {
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 
+import api from '../api/api';
+
 const Bookings = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,126 +26,30 @@ const Bookings = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
-  const [bookings, setBookings] = useState([
-    {
-      id: 'BK001',
-      guest: 'John Doe',
-      email: 'john@example.com',
-      phone: '+91 98765 43210',
-      room: 'Presidential Suite',
-      roomNumber: 'PH-01',
-      checkIn: '2024-01-15',
-      checkOut: '2024-01-18',
-      nights: 3,
-      adults: 2,
-      children: 1,
-      status: 'Confirmed',
-      amount: 45000,
-      advance: 15000,
-      balance: 30000,
-      paymentStatus: 'Partial',
-      bookingDate: '2024-01-10',
-      source: 'Website',
-      specialRequests: 'Late checkout, Extra bed'
-    },
-    {
-      id: 'BK002',
-      guest: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+91 87654 32109',
-      room: 'Deluxe Suite',
-      roomNumber: 'A-501',
-      checkIn: '2024-01-16',
-      checkOut: '2024-01-19',
-      nights: 3,
-      adults: 2,
-      children: 0,
-      status: 'Pending',
-      amount: 19500,
-      advance: 0,
-      balance: 19500,
-      paymentStatus: 'Pending',
-      bookingDate: '2024-01-12',
-      source: 'Dashboard',
-      specialRequests: 'Sea view room'
-    },
-    {
-      id: 'BK003',
-      guest: 'Mike Johnson',
-      email: 'mike@example.com',
-      phone: '+91 76543 21098',
-      room: 'Executive Room',
-      roomNumber: 'E-401',
-      checkIn: '2024-01-17',
-      checkOut: '2024-01-20',
-      nights: 3,
-      adults: 1,
-      children: 0,
-      status: 'Confirmed',
-      amount: 24000,
-      advance: 24000,
-      balance: 0,
-      paymentStatus: 'Paid',
-      bookingDate: '2024-01-08',
-      source: 'Dashboard',
-      specialRequests: 'Airport pickup'
-    },
-    {
-      id: 'BK004',
-      guest: 'Sarah Wilson',
-      email: 'sarah@example.com',
-      phone: '+91 65432 10987',
-      room: 'Family Suite',
-      roomNumber: 'G-301',
-      checkIn: '2024-01-20',
-      checkOut: '2024-01-23',
-      nights: 3,
-      adults: 2,
-      children: 2,
-      status: 'Cancelled',
-      amount: 31500,
-      advance: 10000,
-      balance: 21500,
-      paymentStatus: 'Refunded',
-      bookingDate: '2024-01-05',
-      source: 'Agent',
-      specialRequests: 'Ground floor room'
-    },
-    {
-      id: 'BK005',
-      guest: 'David Brown',
-      email: 'david@example.com',
-      phone: '+91 54321 09876',
-      room: 'Classic Room',
-      roomNumber: '201',
-      checkIn: '2024-01-18',
-      checkOut: '2024-01-21',
-      nights: 3,
-      adults: 2,
-      children: 0,
-      status: 'Checked-in',
-      amount: 10500,
-      advance: 10500,
-      balance: 0,
-      paymentStatus: 'Paid',
-      bookingDate: '2024-01-14',
-      source: 'Website',
-      specialRequests: 'None'
-    }
-  ]);
+  const [bookings, setBookings] = useState([]);
 
-  // Load from localStorage on mount
+  // Load from API
   useEffect(() => {
-    const savedBookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    if (savedBookings.length > 0) {
-      setBookings(prev => {
-        // Only add if not already in list to prevent duplicates
-        const existingIds = new Set(prev.map(b => b.id));
-        const uniqueSaved = savedBookings.filter(b => !existingIds.has(b.id));
-        return [...uniqueSaved, ...prev];
-      });
-    }
+    fetchBookings();
   }, []);
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/bookings');
+      if (data.success) {
+        setBookings(data.data.map(b => ({
+          ...b,
+          id: b._id, // Map MongoDB _id to id for frontend
+          bookingId: b._id.substring(b._id.length - 6).toUpperCase() // Short display ID
+        })));
+      }
+    } catch (error) {
+      toast.error('Failed to fetch bookings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const statusOptions = ['All', 'Pending', 'Confirmed', 'Checked-in', 'Checked-out', 'Cancelled'];
@@ -173,11 +80,18 @@ const Bookings = () => {
     pendingAmount: bookings.reduce((sum, b) => sum + b.balance, 0)
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    setBookings(prev => prev.map(booking =>
-      booking.id === id ? { ...booking, status: newStatus } : booking
-    ));
-    toast.success(`Booking ${id} status updated to ${newStatus}`);
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const { data } = await api.put(`/bookings/${id}`, { status: newStatus });
+      if (data.success) {
+        setBookings(prev => prev.map(booking =>
+          booking.id === id ? { ...booking, status: newStatus } : booking
+        ));
+        toast.success(`Booking status updated to ${newStatus}`);
+      }
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
   };
 
   const handleDelete = (id, guest) => {
@@ -189,12 +103,22 @@ const Bookings = () => {
       confirmButtonColor: '#D4AF37',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, cancel it!'
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setBookings(prev => prev.map(booking =>
-          booking.id === id ? { ...booking, status: 'Cancelled' } : booking
-        ));
-        toast.success('Booking cancelled successfully!');
+        try {
+          // Instead of hard delete, maybe just update status to Cancelled?
+          // But our route has a DELETE endpoint. Let's use it or status update.
+          // For now, let's update status to Cancelled via API.
+          const { data } = await api.put(`/bookings/${id}`, { status: 'Cancelled' });
+          if (data.success) {
+            setBookings(prev => prev.map(booking =>
+              booking.id === id ? { ...booking, status: 'Cancelled' } : booking
+            ));
+            toast.success('Booking cancelled successfully!');
+          }
+        } catch (error) {
+          toast.error('Failed to cancel booking');
+        }
       }
     });
   };
@@ -446,286 +370,294 @@ const Bookings = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Bookings Management</h1>
-          <p className="text-gray-600 text-lg">Manage hotel reservations, guest check-ins, and booking status.</p>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center min-h-[40vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4AF37]"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading bookings...</p>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={exportBookings}
-            className="flex items-center px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
-          >
-            <FaDownload className="mr-2 text-gray-500" />
-            Export Data
-          </button>
-          <button
-            onClick={() => navigate('/create-booking')}
-            className="flex items-center px-6 py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl hover:translate-y-[-2px] hover:shadow-xl transition-all duration-300 font-bold cursor-pointer"
-          >
-            <FaPlus className="mr-2" />
-            New Booking
-          </button>
-
-        </div>
-      </div>
-
-      {/* Analytics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-2">
-
-        {[
-          { label: 'Total Bookings', value: analytics.total, icon: FaCalendarAlt, bg: 'bg-blue-50', text: 'text-blue-500' },
-          { label: 'Confirmed', value: analytics.confirmed, icon: FaCheckCircle, bg: 'bg-emerald-50', text: 'text-emerald-500' },
-          { label: 'Total Revenue', value: `₹${analytics.totalRevenue.toLocaleString()}`, icon: FaCreditCard, bg: 'bg-amber-50', text: 'text-amber-500' },
-          { label: 'Pending Amount', value: `₹${analytics.pendingAmount.toLocaleString()}`, icon: FaClock, bg: 'bg-rose-50', text: 'text-rose-500' }
-        ].map((item, index) => (
-          <motion.div
-            key={index}
-            whileHover={{ y: -4, shadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
-            className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 transition-all"
-          >
-            <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center flex-shrink-0 transition-transform`}>
-              <item.icon className={`${item.text} text-xl`} />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Bookings Management</h1>
+              <p className="text-gray-600 text-lg">Manage hotel reservations, guest check-ins, and booking status.</p>
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{item.label}</p>
-              <p className="text-xl font-extrabold text-gray-900 truncate tracking-tight">{item.value}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Filters and Search */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex flex-col lg:flex-row gap-6 items-center">
-          <div className="w-full lg:flex-1 relative">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by guest, booking ID, or room..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:bg-white transition-all"
-            />
-          </div>
-          <div className="w-full lg:w-auto flex flex-wrap gap-4">
-            <div className="relative flex-1 lg:flex-none">
-              <FaFilter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full pl-10 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 appearance-none cursor-pointer"
-              >
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>{status} Status</option>
-                ))}
-              </select>
-            </div>
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="flex-1 lg:flex-none px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 cursor-pointer"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Pagination Summary */}
-      <div className="flex justify-end items-center mt-4 mb-4">
-        <div className="flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-gray-500 font-medium">Items per page:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="bg-white border-2 border-gray-100 px-4 py-2 rounded-xl text-gray-700 font-bold focus:outline-none focus:border-[#D4AF37] transition-colors cursor-pointer"
-            >
-              {[5, 10, 20, 50].map(val => <option key={val} value={val}>{val}</option>)}
-            </select>
-          </div>
-          <span className="text-gray-400">|</span>
-          <span className="text-gray-600 font-medium">
-            Showing <span className="text-gray-900">{startIndex + 1}</span> to <span className="text-gray-900">{Math.min(startIndex + itemsPerPage, filteredBookings.length)}</span> of {filteredBookings.length}
-          </span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden text-[13px]">
-        <div className="overflow-x-auto no-scrollbar">
-
-
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Guest Identity</th>
-                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Room Selection</th>
-                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Stay Duration</th>
-                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Source</th>
-                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Current Status</th>
-                <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Financials</th>
-                <th className="px-4 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Actions</th>
-
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {currentBookings.map((booking) => (
-                <motion.tr
-                  key={booking.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="group hover:bg-gray-50/50 transition-colors duration-300"
-                >
-                  <td className="px-4 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm group-hover:scale-110 group-hover:bg-amber-50 group-hover:text-amber-600 group-hover:border-amber-100 transition-all">
-                        <FaUser size={11} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-bold text-gray-900 truncate text-xs">{booking.guest}</div>
-
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{booking.id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <div className="flex flex-col text-left">
-                      <span className="font-bold text-gray-800 text-xs tracking-tight">{booking.room}</span>
-                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Premium Unit</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <div className="flex flex-col text-left">
-                      <span className="font-black text-gray-900 tracking-tight text-xs">{new Date(booking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                      <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{booking.nights} Nights stay</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <div className="flex items-center gap-1.5">
-                      {booking.source === 'Website' ? (
-                        <div className="flex items-center gap-2 text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 uppercase tracking-widest">
-                          <FaGlobe className="text-[9px]" /> Web
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-[8px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-lg border border-purple-100 uppercase tracking-widest">
-                          <FaLaptop className="text-[9px]" /> Desk
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all ${booking.status === 'Confirmed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                      booking.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        booking.status === 'Checked-in' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                          booking.status === 'Cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-500 border-gray-100'
-                      }`}>
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-5">
-                    <div className="flex flex-col leading-tight text-left">
-                      <span className="font-black text-gray-900 text-xs italic">₹{booking.amount.toLocaleString()}</span>
-                      <span className={`text-[8px] font-black uppercase tracking-widest mt-0.5 ${booking.paymentStatus === 'Paid' ? 'text-emerald-500' :
-                        booking.paymentStatus === 'Partial' ? 'text-amber-500' : 'text-rose-500'
-                        }`}>
-                        {booking.paymentStatus}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-5">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <button
-                        onClick={() => setSelectedBooking(booking)}
-                        className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] hover:shadow-lg transition-all cursor-pointer"
-                      >
-                        <FaEye size={10} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(booking.id, booking.guest)}
-                        className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-rose-500 hover:border-rose-100 hover:shadow-lg transition-all cursor-pointer"
-                      >
-                        <FaTrash size={10} />
-                      </button>
-                    </div>
-                  </td>
-
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Pagination */}
-      {
-        totalPages > 1 && (
-          <div className="flex justify-center mt-12">
-            <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
+            <div className="flex flex-wrap gap-4">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-3 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                onClick={exportBookings}
+                className="flex items-center px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-semibold shadow-sm cursor-pointer"
               >
-                <FaChevronLeft />
+                <FaDownload className="mr-2 text-gray-500" />
+                Export Data
+              </button>
+              <button
+                onClick={() => navigate('/create-booking')}
+                className="flex items-center px-6 py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl hover:translate-y-[-2px] hover:shadow-xl transition-all duration-300 font-bold cursor-pointer"
+              >
+                <FaPlus className="mr-2" />
+                New Booking
               </button>
 
-              <div className="flex items-center">
-                {[...Array(totalPages)].map((_, i) => {
-                  const pageNum = i + 1;
-                  if (
-                    pageNum === 1 ||
-                    pageNum === totalPages ||
-                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                  ) {
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`w-12 h-12 rounded-xl text-sm font-bold transition-all ${currentPage === pageNum
-                          ? 'bg-[#D4AF37] text-white shadow-lg shadow-[#D4AF37]/30'
-                          : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
-                          }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  } else if (
-                    pageNum === currentPage - 2 ||
-                    pageNum === currentPage + 2
-                  ) {
-                    return <span key={pageNum} className="px-2 text-gray-300">...</span>;
-                  }
-                  return null;
-                })}
+            </div>
+          </div>
+
+          {/* Analytics Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-2">
+
+            {[
+              { label: 'Total Bookings', value: analytics.total, icon: FaCalendarAlt, bg: 'bg-blue-50', text: 'text-blue-500' },
+              { label: 'Confirmed', value: analytics.confirmed, icon: FaCheckCircle, bg: 'bg-emerald-50', text: 'text-emerald-500' },
+              { label: 'Total Revenue', value: `₹${analytics.totalRevenue.toLocaleString()}`, icon: FaCreditCard, bg: 'bg-amber-50', text: 'text-amber-500' },
+              { label: 'Pending Amount', value: `₹${analytics.pendingAmount.toLocaleString()}`, icon: FaClock, bg: 'bg-rose-50', text: 'text-rose-500' }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ y: -4, shadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 transition-all"
+              >
+                <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center flex-shrink-0 transition-transform`}>
+                  <item.icon className={`${item.text} text-xl`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{item.label}</p>
+                  <p className="text-xl font-extrabold text-gray-900 truncate tracking-tight">{item.value}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Filters and Search */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex flex-col lg:flex-row gap-6 items-center">
+              <div className="w-full lg:flex-1 relative">
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by guest, booking ID, or room..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:bg-white transition-all"
+                />
               </div>
-
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-3 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
-              >
-                <FaChevronRight />
-              </button>
+              <div className="w-full lg:w-auto flex flex-wrap gap-4">
+                <div className="relative flex-1 lg:flex-none">
+                  <FaFilter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full pl-10 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 appearance-none cursor-pointer"
+                  >
+                    {statusOptions.map(status => (
+                      <option key={status} value={status}>{status} Status</option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 cursor-pointer"
+                />
+              </div>
             </div>
           </div>
-        )
-      }
 
-      {/* No Results */}
-      {
-        currentBookings.length === 0 && (
-          <div className="text-center py-16">
-            <div className=" flex text-gray-400 text-6xl mb-6 justify-center"><FaBuilding /></div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No bookings found</h3>
-            <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          {/* Pagination Summary */}
+          <div className="flex justify-end items-center mt-4 mb-4">
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 font-medium">Items per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white border-2 border-gray-100 px-4 py-2 rounded-xl text-gray-700 font-bold focus:outline-none focus:border-[#D4AF37] transition-colors cursor-pointer"
+                >
+                  {[5, 10, 20, 50].map(val => <option key={val} value={val}>{val}</option>)}
+                </select>
+              </div>
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-600 font-medium">
+                Showing <span className="text-gray-900">{startIndex + 1}</span> to <span className="text-gray-900">{Math.min(startIndex + itemsPerPage, filteredBookings.length)}</span> of {filteredBookings.length}
+              </span>
+            </div>
           </div>
-        )
-      }
-    </motion.div >
+
+          <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden text-[13px]">
+            <div className="overflow-x-auto no-scrollbar">
+
+
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Guest Identity</th>
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Room Selection</th>
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Stay Duration</th>
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Source</th>
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Current Status</th>
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Financials</th>
+                    <th className="px-4 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Actions</th>
+
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {currentBookings.map((booking) => (
+                    <motion.tr
+                      key={booking.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="group hover:bg-gray-50/50 transition-colors duration-300"
+                    >
+                      <td className="px-4 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm group-hover:scale-110 group-hover:bg-amber-50 group-hover:text-amber-600 group-hover:border-amber-100 transition-all">
+                            <FaUser size={11} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-gray-900 truncate text-xs">{booking.guest}</div>
+
+                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{booking.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-5">
+                        <div className="flex flex-col text-left">
+                          <span className="font-bold text-gray-800 text-xs tracking-tight">{booking.room}</span>
+                          <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Premium Unit</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-5">
+                        <div className="flex flex-col text-left">
+                          <span className="font-black text-gray-900 tracking-tight text-xs">{new Date(booking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                          <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{booking.nights} Nights stay</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-5">
+                        <div className="flex items-center gap-1.5">
+                          {booking.source === 'Website' ? (
+                            <div className="flex items-center gap-2 text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 uppercase tracking-widest">
+                              <FaGlobe className="text-[9px]" /> Web
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-[8px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-lg border border-purple-100 uppercase tracking-widest">
+                              <FaLaptop className="text-[9px]" /> Desk
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all ${booking.status === 'Confirmed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                          booking.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                            booking.status === 'Checked-in' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                              booking.status === 'Cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-500 border-gray-100'
+                          }`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-5">
+                        <div className="flex flex-col leading-tight text-left">
+                          <span className="font-black text-gray-900 text-xs italic">₹{booking.amount.toLocaleString()}</span>
+                          <span className={`text-[8px] font-black uppercase tracking-widest mt-0.5 ${booking.paymentStatus === 'Paid' ? 'text-emerald-500' :
+                            booking.paymentStatus === 'Partial' ? 'text-amber-500' : 'text-rose-500'
+                            }`}>
+                            {booking.paymentStatus}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-5">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => setSelectedBooking(booking)}
+                            className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] hover:shadow-lg transition-all cursor-pointer"
+                          >
+                            <FaEye size={10} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(booking.id, booking.guest)}
+                            className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-rose-500 hover:border-rose-100 hover:shadow-lg transition-all cursor-pointer"
+                          >
+                            <FaTrash size={10} />
+                          </button>
+                        </div>
+                      </td>
+
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {
+            totalPages > 1 && (
+              <div className="flex justify-center mt-12">
+                <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-3 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                  >
+                    <FaChevronLeft />
+                  </button>
+
+                  <div className="flex items-center">
+                    {[...Array(totalPages)].map((_, i) => {
+                      const pageNum = i + 1;
+                      if (
+                        pageNum === 1 ||
+                        pageNum === totalPages ||
+                        (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-12 h-12 rounded-xl text-sm font-bold transition-all ${currentPage === pageNum
+                              ? 'bg-[#D4AF37] text-white shadow-lg shadow-[#D4AF37]/30'
+                              : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      } else if (
+                        pageNum === currentPage - 2 ||
+                        pageNum === currentPage + 2
+                      ) {
+                        return <span key={pageNum} className="px-2 text-gray-300">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="p-3 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                  >
+                    <FaChevronRight />
+                  </button>
+                </div>
+              </div>
+            )
+          }
+
+          {/* No Results */}
+          {
+            currentBookings.length === 0 && (
+              <div className="text-center py-16">
+                <div className=" flex text-gray-400 text-6xl mb-6 justify-center"><FaBuilding /></div>
+                <h3 className="text-xl font-medium text-gray-900 mb-3">No bookings found</h3>
+                <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+              </div>
+            )}
+        </>
+      )}
+    </motion.div>
   );
 };
 

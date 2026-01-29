@@ -16,7 +16,11 @@ import AddRoom from './pages/AddRoom';
 import Bookings from './pages/Bookings';
 import Guests from './pages/Guests';
 import Reviews from './pages/Reviews';
+import ReviewDetail from './pages/ReviewDetail';
+import Contacts from './pages/Contacts';
 import Gallery from './pages/Gallery';
+import Services from './pages/Services';
+import AddService from './pages/AddService';
 
 import Login from './pages/Login';
 import RoomDetail from './pages/RoomDetail';
@@ -51,7 +55,11 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/bookings" element={isAuthenticated ? <Bookings /> : <Navigate to="/login" replace />} />
         <Route path="/guests" element={isAuthenticated ? <Guests /> : <Navigate to="/login" replace />} />
         <Route path="/reviews" element={isAuthenticated ? <Reviews /> : <Navigate to="/login" replace />} />
+        <Route path="/reviews/:id" element={isAuthenticated ? <ReviewDetail /> : <Navigate to="/login" replace />} />
+        <Route path="/contacts" element={isAuthenticated ? <Contacts /> : <Navigate to="/login" replace />} />
         <Route path="/gallery" element={isAuthenticated ? <Gallery /> : <Navigate to="/login" replace />} />
+        <Route path="/services" element={isAuthenticated ? <Services /> : <Navigate to="/login" replace />} />
+        <Route path="/add-service" element={isAuthenticated ? <AddService /> : <Navigate to="/login" replace />} />
 
         <Route path="/room-detail/:id" element={isAuthenticated ? <RoomDetail /> : <Navigate to="/login" replace />} />
         <Route path="/edit-room/:id" element={isAuthenticated ? <EditRoom /> : <Navigate to="/login" replace />} />
@@ -68,12 +76,18 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('isAuthenticated') === 'true';
+    const token = localStorage.getItem('token');
+    return !!token;
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('isAuthenticated', isAuthenticated.toString());
+    const token = localStorage.getItem('token');
+    if (token && !isAuthenticated) {
+      setIsAuthenticated(true);
+    } else if (!token && isAuthenticated) {
+      setIsAuthenticated(false);
+    }
   }, [isAuthenticated]);
 
   const toggleSidebar = () => {

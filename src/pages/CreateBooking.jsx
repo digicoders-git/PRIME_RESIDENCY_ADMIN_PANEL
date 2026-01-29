@@ -8,10 +8,15 @@ import {
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
+import api from '../api/api';
+
 const CreateBooking = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
     const [room, setRoom] = useState(null);
+    const [rooms, setRooms] = useState([]); // State for all rooms for dropdown
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         guest: '',
@@ -33,45 +38,42 @@ const CreateBooking = () => {
         balance: 0
     });
 
-    // Mock data - same as Rooms.jsx
-    const initialRooms = [
-        { id: 1, name: 'Classic Room', price: 3500, roomNumber: '201' },
-        { id: 2, name: 'Deluxe Suite', price: 6500, roomNumber: 'A-501' },
-        { id: 3, name: 'Presidential Suite', price: 15000, roomNumber: 'PH-01' },
-        { id: 4, name: 'Family Suite', price: 10500, roomNumber: 'G-301' },
-        { id: 5, name: 'Executive Room', price: 8000, roomNumber: 'E-401' },
-        { id: 6, name: 'Garden Room', price: 4200, roomNumber: 'G-101' },
-    ];
-
     useEffect(() => {
-        if (roomId) {
-            // Find room by ID
-            let foundRoom = initialRooms.find(r => r.id === parseInt(roomId));
+        fetchRooms();
+    }, []);
 
-            if (!foundRoom) {
-                const savedRooms = JSON.parse(localStorage.getItem('rooms') || '[]');
-                foundRoom = savedRooms.find(r => r.id === parseInt(roomId));
-            }
+    const fetchRooms = async () => {
+        try {
+            const { data } = await api.get('/rooms');
+            if (data.success) {
+                const fetchedRooms = data.data.map(r => ({
+                    ...r,
+                    id: r._id,
+                    numericPrice: Number(r.price)
+                }));
+                setRooms(fetchedRooms);
 
-            if (foundRoom) {
-                // Ensure price is numeric
-                const numericPrice = typeof foundRoom.price === 'string'
-                    ? parseInt(foundRoom.price.replace(/,/g, ''))
-                    : foundRoom.price;
-                setRoom({ ...foundRoom, numericPrice });
+                if (roomId) {
+                    const found = fetchedRooms.find(r => r.id === roomId);
+                    if (found) {
+                        setRoom(found);
+                    } else {
+                        toast.error('Selected room not found');
+                    }
+                }
             }
+        } catch (error) {
+            toast.error('Failed to fetch rooms');
+        } finally {
+            setLoading(false);
         }
-    }, [roomId]);
+    };
 
     const handleRoomChange = (e) => {
-        const selectedId = parseInt(e.target.value);
-        const allRooms = [...initialRooms, ...JSON.parse(localStorage.getItem('rooms') || '[]')];
-        const found = allRooms.find(r => r.id === selectedId);
+        const selectedId = e.target.value;
+        const found = rooms.find(r => r.id === selectedId);
         if (found) {
-            const numericPrice = typeof found.price === 'string'
-                ? parseInt(found.price.replace(/,/g, ''))
-                : found.price;
-            setRoom({ ...found, numericPrice });
+            setRoom(found);
         }
     };
 
@@ -98,7 +100,7 @@ const CreateBooking = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!room) {
@@ -111,31 +113,47 @@ const CreateBooking = () => {
             return;
         }
 
-        const newBooking = {
-            id: `BK${Date.now().toString().slice(-4)}`,
-            ...formData,
-            room: room.name,
-            roomNumber: room.roomNumber || 'N/A',
-            amount: calc.totalAmount,
-            balance: calc.balance,
-            nights: calc.nights,
-            bookingDate: new Date().toISOString().split('T')[0],
-            status: 'Confirmed'
-        };
+        setSubmitting(true);
 
-        // Store in localStorage (for demo/persistence)
-        const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-        localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
+        try {
+            const bookingData = {
+                guest: formData.guest,
+                email: formData.email,
+                phone: formData.phone,
+                room: room.name,
+                roomNumber: room.roomNumber || 'N/A',
+                checkIn: formData.checkIn,
+                checkOut: formData.checkOut,
+                adults: Number(formData.adults),
+                children: Number(formData.children),
+                amount: calc.totalAmount,
+                advance: Number(formData.advance),
+                balance: calc.balance,
+                nights: calc.nights,
+                status: 'Confirmed',
+                paymentStatus: Number(formData.advance) >= calc.totalAmount ? 'Paid' : Number(formData.advance) > 0 ? 'Partial' : 'Pending',
+                source: 'Dashboard',
+                specialRequests: formData.specialRequests
+            };
 
-        toast.success('Room booked successfully!');
-        navigate('/bookings');
+            const { data } = await api.post('/bookings', bookingData);
+
+            if (data.success) {
+                toast.success('Room booked successfully!');
+                navigate('/bookings');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to create booking');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    if (roomId && !room) {
+    if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4AF37]"></div>
-                <p className="mt-4 text-gray-600">Preparing booking form...</p>
+                <p className="mt-4 text-gray-600">Loading booking form...</p>
             </div>
         );
     }
@@ -184,8 +202,8 @@ const CreateBooking = () => {
                                     className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-white outline-none transition-all font-bold text-gray-800"
                                 >
                                     <option value="" disabled>Choose a room for booking...</option>
-                                    {[...initialRooms, ...JSON.parse(localStorage.getItem('rooms') || '[]')].map(r => (
-                                        <option key={r.id} value={r.id}>{r.name} - ₹{r.price} (Unit {r.roomNumber})</option>
+                                    {rooms.map(r => (
+                                        <option key={r.id} value={r.id}>{r.name} - ₹{r.price} (Unit {r.roomNumber || 'N/A'})</option>
                                     ))}
                                 </select>
                             </div>
@@ -313,9 +331,10 @@ const CreateBooking = () => {
 
                             <button
                                 type="submit"
-                                className="w-full py-5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-lg shadow-[#D4AF37]/20 hover:scale-[1.01] transition-all cursor-pointer mt-4"
+                                disabled={submitting}
+                                className={`w-full py-5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-lg shadow-[#D4AF37]/20 hover:scale-[1.01] transition-all cursor-pointer mt-4 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
-                                Confirm and Create Booking
+                                {submitting ? 'Processing Booking...' : 'Confirm and Create Booking'}
                             </button>
                         </form>
                     </div>
