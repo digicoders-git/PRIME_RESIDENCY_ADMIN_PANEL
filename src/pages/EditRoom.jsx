@@ -13,10 +13,11 @@ import { toast } from 'react-toastify';
 import api from '../api/api';
 
 const EditRoom = () => {
-    const { id } = useParams();
+    const { id } = useParams(); // Start with URL param (could be ID or RoomNumber)
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [mongoId, setMongoId] = useState(null); // Store actual DB ID
 
     const [formData, setFormData] = useState({
         // ... (same initial state structure)
@@ -80,52 +81,65 @@ const EditRoom = () => {
     const fetchRoomData = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get(`/rooms/${id}`);
+            // Fetch all rooms to find the correct one by roomNumber (since URL param is now roomNumber)
+            const { data } = await api.get('/rooms');
             if (data.success) {
-                const room = data.data;
-                const backendAmenities = room.amenities || [];
+                let room = data.data.find(r => r.roomNumber === id);
 
-                setFormData(prev => ({
-                    ...prev,
-                    roomName: room.name || '',
-                    roomNumber: room.roomNumber || '',
-                    roomType: room.type || '',
-                    pricePerNight: room.price || '',
-                    roomStatus: room.status === 'Maintenance' ? 'Under Maintenance' : room.status || 'Available',
-                    mainImagePreview: room.image || '',
-                    fullDescription: room.description || '',
-                    shortDescription: room.shortDescription || (room.description ? room.description.substring(0, 100) : ''),
+                // Fallback: If not found by roomNumber, maybe 'id' provided IS actually a MongoID?
+                if (!room) {
+                    room = data.data.find(r => r._id === id);
+                }
 
-                    // Extended Fields
-                    maxAdults: room.maxAdults || '',
-                    maxChildren: room.maxChildren || '',
-                    roomSize: room.roomSize || '',
-                    floorNumber: room.floorNumber || '',
-                    bedType: room.bedType || '',
-                    discount: room.discount || '',
-                    offerPrice: room.offerPrice || '',
-                    extraBedPrice: room.extraBedPrice || '',
-                    taxGST: room.taxGST || '',
-                    totalRoomsCount: room.totalRoomsCount || '',
-                    availableRooms: room.availableRooms || '',
-                    video360: room.video360 || '',
-                    imageAltText: room.imageAltText || '',
-                    specialNotes: room.specialNotes || '',
-                    galleryPreviews: room.gallery || [],
+                if (room) {
+                    setMongoId(room._id); // Save the actual ID for updates
+                    const backendAmenities = room.amenities || [];
 
-                    amenities: {
-                        ac: backendAmenities.includes('ac') || backendAmenities.includes('AC'),
-                        wifi: backendAmenities.includes('wifi') || backendAmenities.includes('WiFi'),
-                        tv: backendAmenities.includes('tv') || backendAmenities.includes('TV'),
-                        geyser: backendAmenities.includes('geyser') || backendAmenities.includes('Geyser'),
-                        balcony: backendAmenities.includes('balcony') || backendAmenities.includes('Balcony'),
-                        roomService: backendAmenities.includes('roomService') || backendAmenities.includes('Room Service'),
-                        powerBackup: backendAmenities.includes('powerBackup') || backendAmenities.includes('Power Backup'),
-                        miniFridge: backendAmenities.includes('miniFridge') || backendAmenities.includes('Mini Fridge'),
-                        safeLocker: backendAmenities.includes('safeLocker') || backendAmenities.includes('Safe Locker'),
-                        workDesk: backendAmenities.includes('workDesk') || backendAmenities.includes('Work Desk'),
-                    }
-                }));
+                    setFormData(prev => ({
+                        ...prev,
+                        roomName: room.name || '',
+                        roomNumber: room.roomNumber || '',
+                        roomType: room.type || '',
+                        pricePerNight: room.price || '',
+                        roomStatus: room.status === 'Maintenance' ? 'Under Maintenance' : room.status || 'Available',
+                        mainImagePreview: room.image || '',
+                        fullDescription: room.description || '',
+                        shortDescription: room.shortDescription || (room.description ? room.description.substring(0, 100) : ''),
+
+                        // Extended Fields
+                        maxAdults: room.maxAdults || '',
+                        maxChildren: room.maxChildren || '',
+                        roomSize: room.roomSize || '',
+                        floorNumber: room.floorNumber || '',
+                        bedType: room.bedType || '',
+                        discount: room.discount || '',
+                        offerPrice: room.offerPrice || '',
+                        extraBedPrice: room.extraBedPrice || '',
+                        taxGST: room.taxGST || '',
+                        totalRoomsCount: room.totalRoomsCount || '',
+                        availableRooms: room.availableRooms || '',
+                        video360: room.video360 || '',
+                        imageAltText: room.imageAltText || '',
+                        specialNotes: room.specialNotes || '',
+                        galleryPreviews: room.gallery || [],
+
+                        amenities: {
+                            ac: backendAmenities.includes('ac') || backendAmenities.includes('AC'),
+                            wifi: backendAmenities.includes('wifi') || backendAmenities.includes('WiFi'),
+                            tv: backendAmenities.includes('tv') || backendAmenities.includes('TV'),
+                            geyser: backendAmenities.includes('geyser') || backendAmenities.includes('Geyser'),
+                            balcony: backendAmenities.includes('balcony') || backendAmenities.includes('Balcony'),
+                            roomService: backendAmenities.includes('roomService') || backendAmenities.includes('Room Service'),
+                            powerBackup: backendAmenities.includes('powerBackup') || backendAmenities.includes('Power Backup'),
+                            miniFridge: backendAmenities.includes('miniFridge') || backendAmenities.includes('Mini Fridge'),
+                            safeLocker: backendAmenities.includes('safeLocker') || backendAmenities.includes('Safe Locker'),
+                            workDesk: backendAmenities.includes('workDesk') || backendAmenities.includes('Work Desk'),
+                        }
+                    }));
+                } else {
+                    toast.error('Room not found');
+                    navigate('/rooms');
+                }
             }
         } catch (error) {
             toast.error('Failed to fetch room details');
@@ -214,7 +228,7 @@ const EditRoom = () => {
                 });
             }
 
-            const { data } = await api.put(`/rooms/${id}`, form);
+            const { data } = await api.put(`/rooms/${mongoId}`, form);
 
             if (data.success) {
                 toast.success('Room updated successfully!', { autoClose: 2000 });

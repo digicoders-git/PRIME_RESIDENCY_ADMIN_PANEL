@@ -152,16 +152,16 @@ const AddRoom = () => {
       }
 
       const form = new FormData();
-      
+
       // Only required fields first
       form.append('name', formData.roomName.trim());
       form.append('roomNumber', formData.roomNumber.trim());
       form.append('type', formData.roomType);
       form.append('price', formData.pricePerNight);
-      
+
       // Status (default to Available if empty)
       form.append('status', formData.roomStatus || 'Available');
-      
+
       // Description (use short description if full is empty)
       const description = formData.fullDescription || formData.shortDescription || 'No description provided';
       form.append('description', description);
@@ -171,6 +171,23 @@ const AddRoom = () => {
       selectedAmenities.forEach(amenity => {
         form.append('amenities', amenity);
       });
+
+      // Append Extended Details
+      if (formData.roomSize) form.append('roomSize', formData.roomSize);
+      if (formData.bedType) form.append('bedType', formData.bedType);
+      if (formData.floorNumber) form.append('floorNumber', formData.floorNumber);
+      if (formData.maxAdults) form.append('maxAdults', formData.maxAdults);
+      if (formData.maxChildren) form.append('maxChildren', formData.maxChildren);
+
+      // Append Pricing Extended
+      if (formData.discount) form.append('discount', formData.discount);
+      if (formData.offerPrice) form.append('offerPrice', formData.offerPrice);
+      if (formData.extraBedPrice) form.append('extraBedPrice', formData.extraBedPrice);
+      if (formData.taxGST) form.append('taxGST', formData.taxGST);
+
+      // Append Inventory
+      if (formData.totalRoomsCount) form.append('totalRoomsCount', formData.totalRoomsCount);
+      if (formData.availableRooms) form.append('availableRooms', formData.availableRooms);
 
       // Images
       if (formData.mainImage) {

@@ -7,10 +7,11 @@ import {
   FaEye, FaEdit, FaTrash, FaPlus, FaDownload, FaChevronLeft,
   FaChevronRight, FaBed, FaMapMarkerAlt, FaCreditCard, FaClock,
   FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaSpinner,
-  FaBuilding, FaGlobe, FaLaptop
+  FaBuilding, FaGlobe, FaLaptop, FaIdCard, FaFileInvoiceDollar
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
+import ReceiptModal from '../components/ReceiptModal';
 
 import api from '../api/api';
 
@@ -18,6 +19,12 @@ const Bookings = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    advance: '',
+    paymentMethod: 'Cash'
+  });
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,6 +130,24 @@ const Bookings = () => {
     });
   };
 
+  const handlePaymentUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.put(`/bookings/${selectedBooking.id}/payment`, paymentData);
+      if (data.success) {
+        setSelectedBooking(data.data);
+        setBookings(prev => prev.map(booking =>
+          booking.id === selectedBooking.id ? { ...booking, ...data.data } : booking
+        ));
+        setShowPaymentModal(false);
+        setPaymentData({ advance: '', paymentMethod: 'Cash' });
+        toast.success('Payment updated successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to update payment');
+    }
+  };
+
   const exportBookings = () => {
     toast.success('Bookings exported successfully!');
   };
@@ -215,6 +240,15 @@ const Bookings = () => {
                         <p className="text-sm font-black text-gray-900 tracking-tight truncate max-w-[200px]">{selectedBooking.email}</p>
                       </div>
                     </div>
+                    {selectedBooking.idType && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100"><FaIdCard size={14} /></div>
+                        <div className="text-left">
+                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">ID Details</p>
+                          <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.idType}: {selectedBooking.idNumber}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -315,13 +349,18 @@ const Bookings = () => {
                   </div>
                 </div>
 
-                <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-gray-200 hover:bg-black transition-all">
-                  Process Transaction
+              
+
+                <button
+                  onClick={() => setShowReceiptModal(true)}
+                  className="w-full mt-4 cursor-pointer py-4 bg-white border-2 border-gray-100 text-gray-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-all flex items-center justify-center gap-2"
+                >
+                  <FaFileInvoiceDollar size={14} /> View Receipt
                 </button>
               </div>
 
               {/* Source Card */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 flex items-center justify-between">
+              <div className="bg-white rounded-2xl p-6  mt-8 border border-gray-100 space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100">
                     {selectedBooking.source === 'Website' ? <FaGlobe size={14} /> : <FaLaptop size={14} />}
@@ -331,7 +370,25 @@ const Bookings = () => {
                     <p className="text-sm font-black text-gray-900 leading-none">{selectedBooking.source}</p>
                   </div>
                 </div>
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-50"></div>
+
+                {/* ID Details */}
+                {selectedBooking.idType && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3">ID Details</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">Type:</span>
+                        <span className="text-xs font-semibold">{selectedBooking.idType}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">Number:</span>
+                        <span className="text-xs font-semibold">{selectedBooking.idNumber}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-50 mx-auto"></div>
               </div>
 
               {/* Control Console */}
@@ -339,7 +396,7 @@ const Bookings = () => {
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">System Controls</h3>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-amber-500">
-                    <FaSpinner className="animate-spin text-xs" />
+                  
                   </div>
                   <select
                     className="w-full text-xs font-black appearance-none bg-white border-2 border-gray-100 rounded-2xl px-12 py-4 focus:outline-none focus:border-amber-500 transition-all cursor-pointer shadow-sm uppercase tracking-widest"
@@ -360,8 +417,66 @@ const Bookings = () => {
             </div>
           </div>
         </div>
+
+        {/* Payment Modal */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+              <h3 className="text-xl font-bold mb-4">Update Payment</h3>
+              <form onSubmit={handlePaymentUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Advance Amount</label>
+                  <input
+                    type="number"
+                    value={paymentData.advance}
+                    onChange={(e) => setPaymentData({ ...paymentData, advance: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg"
+                    placeholder={`Max: ₹${selectedBooking.amount}`}
+                    max={selectedBooking.amount}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                  <select
+                    value={paymentData.paymentMethod}
+                    onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg"
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Online">Online</option>
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-[#D4AF37] text-white py-3 rounded-lg hover:bg-[#B8860B] font-medium"
+                  >
+                    Update Payment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        <ReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          booking={selectedBooking}
+        />
       </motion.div>
     );
+
   }
 
   return (

@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell} from 'react-icons/fa';
+import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar } from 'react-icons/fa';
 import Swal from 'sweetalert2';
+import api from '../api/api';
 
 const Sidebar = ({ isOpen, setIsAuthenticated }) => {
   const location = useLocation();
+  const [enquiryCount, setEnquiryCount] = useState(0);
+
+  useEffect(() => {
+    fetchEnquiryCount();
+    const interval = setInterval(fetchEnquiryCount, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchEnquiryCount = async () => {
+    try {
+      const res = await api.get('/enquiries');
+      const count = res.data.data.filter(e => e.status === 'New').length;
+      setEnquiryCount(count);
+    } catch (error) {
+      console.error('Failed to fetch enquiry count', error);
+    }
+  };
 
   const handleLogout = () => {
     Swal.fire({
@@ -29,11 +47,15 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
     { name: 'Dashboard', path: '/', icon: FaHome },
     { name: 'Rooms', path: '/rooms', icon: FaBed },
     { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt },
+    { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck },
     { name: 'Guests', path: '/guests', icon: FaUsers },
     { name: 'Reviews', path: '/reviews', icon: FaStar },
     { name: 'Contacts', path: '/contacts', icon: FaEnvelope },
+    { name: 'Enquiries', path: '/enquiries', icon: FaQuestionCircle, count: enquiryCount },
+    { name: 'Revenue', path: '/revenue', icon: FaRupeeSign },
+    { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar },
     { name: 'Gallery', path: '/gallery', icon: FaImages },
-    { name: 'Services', path: '/services', icon: FaConciergeBell},
+    { name: 'Services', path: '/services', icon: FaConciergeBell },
   ];
 
   return (
@@ -62,14 +84,17 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
             <Link
               key={item.name}
               to={item.path}
-              className={`flex items-center px-3 py-3 text-sm font-medium transition-all cursor-pointer mx-2 rounded-lg group ${isActive
+              className={`flex items-center px-3 py-3 text-sm font-medium transition-all cursor-pointer mx-2 rounded-lg group relative ${isActive
                 ? 'bg-gradient-to-r from-[#D4AF37]/20 to-[#B8860B]/10 text-[#D4AF37] border-l-4 border-[#D4AF37] shadow-lg'
                 : 'text-slate-300 hover:bg-slate-700/50 hover:text-[#D4AF37]'
                 }`}
               title={!isOpen ? item.name : ''}
             >
               <Icon className={`text-lg ${isOpen ? 'mr-3' : 'mx-auto'}`} />
-              {isOpen && <span>{item.name}</span>}
+              {isOpen && <span className="flex-1">{item.name}</span>}
+
+              {/* Badge Count */}
+
             </Link>
           );
         })}

@@ -21,11 +21,16 @@ import Contacts from './pages/Contacts';
 import Gallery from './pages/Gallery';
 import Services from './pages/Services';
 import AddService from './pages/AddService';
+import Enquiries from './pages/Enquiries';
+import Revenue from './pages/Revenue';
 
 import Login from './pages/Login';
 import RoomDetail from './pages/RoomDetail';
 import CreateBooking from './pages/CreateBooking';
 import EditRoom from './pages/EditRoom';
+import ManageCheckIns from './pages/ManageCheckIns';
+import Billing from './pages/Billing';
+import Invoice from './pages/Invoice';
 
 
 
@@ -60,12 +65,17 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/gallery" element={isAuthenticated ? <Gallery /> : <Navigate to="/login" replace />} />
         <Route path="/services" element={isAuthenticated ? <Services /> : <Navigate to="/login" replace />} />
         <Route path="/add-service" element={isAuthenticated ? <AddService /> : <Navigate to="/login" replace />} />
+        <Route path="/enquiries" element={isAuthenticated ? <Enquiries /> : <Navigate to="/login" replace />} />
+        <Route path="/revenue" element={isAuthenticated ? <Revenue /> : <Navigate to="/login" replace />} />
 
         <Route path="/room-detail/:id" element={isAuthenticated ? <RoomDetail /> : <Navigate to="/login" replace />} />
         <Route path="/edit-room/:id" element={isAuthenticated ? <EditRoom /> : <Navigate to="/login" replace />} />
         <Route path="/create-booking" element={isAuthenticated ? <CreateBooking /> : <Navigate to="/login" replace />} />
 
         <Route path="/create-booking/:roomId" element={isAuthenticated ? <CreateBooking /> : <Navigate to="/login" replace />} />
+        <Route path="/manage-checkins" element={isAuthenticated ? <ManageCheckIns /> : <Navigate to="/login" replace />} />
+        <Route path="/billing" element={isAuthenticated ? <Billing /> : <Navigate to="/login" replace />} />
+        <Route path="/invoice/:id" element={isAuthenticated ? <Invoice /> : <Navigate to="/login" replace />} />
 
 
 

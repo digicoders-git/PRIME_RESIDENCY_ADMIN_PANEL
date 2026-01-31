@@ -17,7 +17,8 @@ const Dashboard = () => {
     bookings: [],
     guests: [],
     reviews: [],
-    gallery: []
+    gallery: [],
+    revenue: {}
   });
 
   useEffect(() => {
@@ -27,11 +28,12 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [roomsRes, bookingsRes, guestsRes, galleryRes] = await Promise.all([
+      const [roomsRes, bookingsRes, guestsRes, galleryRes, revenueRes] = await Promise.all([
         api.get('/rooms'),
         api.get('/bookings'),
         api.get('/guests'),
-        api.get('/gallery')
+        api.get('/gallery'),
+        api.get('/revenue/analytics')
       ]);
 
       setData({
@@ -39,7 +41,8 @@ const Dashboard = () => {
         bookings: bookingsRes.data.data || [],
         guests: guestsRes.data.data || [],
         reviews: [], // Reviews endpoint not implemented yet
-        gallery: galleryRes.data.data || []
+        gallery: galleryRes.data.data || [],
+        revenue: revenueRes.data.data || {}
       });
     } catch (error) {
       console.error('Failed to fetch dashboard data', error);
@@ -57,12 +60,12 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Revenue',
-      value: `₹${(totalRevenue / 1000).toFixed(1)}k`,
+      value: `₹${(data.revenue.monthly / 1000 || 0).toFixed(1)}k`,
       change: '+12.5%',
       icon: FaRupeeSign,
       color: 'bg-gradient-to-br from-amber-400 to-amber-600',
-      label: 'Gross Earnings',
-      path: '/bookings'
+      label: 'Monthly Earnings',
+      path: '/revenue'
     },
     {
       title: 'Active Bookings',
