@@ -12,7 +12,7 @@ const Navbar = ({ toggleSidebar, sidebarOpen }) => {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000);
+    const interval = setInterval(fetchNotifications, 30000); // Changed from 10000 to 30000 (30 seconds)
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
 
     return () => {

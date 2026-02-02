@@ -36,6 +36,8 @@ const Dashboard = () => {
         api.get('/revenue/analytics')
       ]);
 
+      console.log('Revenue Analytics Data:', revenueRes.data.data); // Debug log
+
       setData({
         rooms: roomsRes.data.data || [],
         bookings: bookingsRes.data.data || [],
@@ -97,15 +99,17 @@ const Dashboard = () => {
   ];
 
   // Revenue Chart Mock Data
-  const chartData = [
-    { day: 'Mon', value: 45 },
-    { day: 'Tue', value: 52 },
-    { day: 'Wed', value: 38 },
-    { day: 'Thu', value: 65 },
-    { day: 'Fri', value: 78 },
-    { day: 'Sat', value: 92 },
-    { day: 'Sun', value: 85 },
+  const chartData = data.revenue.weeklyTrend || [
+    { _id: '2024-01-01', total: 0, online: 0, offline: 0 },
+    { _id: '2024-01-02', total: 0, online: 0, offline: 0 },
+    { _id: '2024-01-03', total: 0, online: 0, offline: 0 },
+    { _id: '2024-01-04', total: 0, online: 0, offline: 0 },
+    { _id: '2024-01-05', total: 0, online: 0, offline: 0 },
+    { _id: '2024-01-06', total: 0, online: 0, offline: 0 },
+    { _id: '2024-01-07', total: 0, online: 0, offline: 0 }
   ];
+  
+  console.log('Chart Data:', chartData); // Debug log
 
   return (
     <motion.div
@@ -202,35 +206,57 @@ const Dashboard = () => {
                     <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest">Performance trend this week</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Online</span>
-                    <span className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-slate-500"></span> Offline</span>
+                    <span className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest">
+                      <span className="w-2 h-2 rounded-full bg-amber-400"></span> 
+                      Online (Website)
+                    </span>
+                    <span className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <span className="w-2 h-2 rounded-full bg-slate-500"></span> 
+                      Offline (Desk)
+                    </span>
                   </div>
                 </div>
 
                 <div className="flex items-end justify-between h-48 gap-4 px-4">
-                  {chartData.map((d, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
-                      <div className="w-full relative flex flex-col items-center justify-end h-40">
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${d.value}%` }}
-                          transition={{ delay: i * 0.1, duration: 1, ease: "easeOut" }}
-                          className="w-full max-w-[40px] bg-gradient-to-t from-amber-500 to-amber-300 rounded-xl relative group-hover:from-[#D4AF37] group-hover:to-amber-400 transition-all duration-300 shadow-lg shadow-amber-200/20"
-                        >
-                          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                            {d.value}%
-                          </div>
-                        </motion.div>
-                        {/* Offline filler mock */}
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${d.value * 0.4}%` }}
-                          className="w-full max-w-[40px] bg-slate-600 mt-1 rounded-t-sm"
-                        ></motion.div>
+                  {chartData.map((d, i) => {
+                    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const maxAmount = Math.max(...chartData.map(item => item.total || 0));
+                    const onlineHeight = maxAmount > 0 ? ((d.online || 0) / maxAmount) * 100 : 2;
+                    const offlineHeight = maxAmount > 0 ? ((d.offline || 0) / maxAmount) * 100 : 2;
+                    const dayName = dayNames[new Date(d._id).getDay()];
+                    
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
+                        <div className="w-full relative flex flex-col items-center justify-end h-40">
+                          {/* Online Revenue Bar */}
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: `${onlineHeight}%` }}
+                            transition={{ delay: i * 0.1, duration: 1, ease: "easeOut" }}
+                            className="w-full max-w-[40px] bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-xl relative group-hover:from-[#D4AF37] group-hover:to-amber-400 transition-all duration-300 shadow-lg shadow-amber-200/20"
+                            style={{ minHeight: (d.online || 0) > 0 ? '4px' : '1px' }}
+                          >
+                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                              Online: ₹{(d.online || 0).toLocaleString()}
+                            </div>
+                          </motion.div>
+                          {/* Offline Revenue Bar */}
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: `${offlineHeight}%` }}
+                            transition={{ delay: i * 0.1 + 0.05, duration: 1, ease: "easeOut" }}
+                            className="w-full max-w-[40px] bg-gradient-to-t from-slate-600 to-slate-400 rounded-b-xl relative transition-all duration-300 shadow-lg shadow-slate-200/20"
+                            style={{ minHeight: (d.offline || 0) > 0 ? '4px' : '1px' }}
+                          >
+                            <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                              Offline: ₹{(d.offline || 0).toLocaleString()}
+                            </div>
+                          </motion.div>
+                        </div>
+                        <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">{dayName}</span>
                       </div>
-                      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">{d.day}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.div>
 

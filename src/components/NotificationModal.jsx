@@ -61,7 +61,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
                     >
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-gray-50 to-white">
                             <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
                                 New Enquiries
                             </h3>
                             <button

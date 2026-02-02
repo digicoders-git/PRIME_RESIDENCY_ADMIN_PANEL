@@ -106,7 +106,7 @@ const Rooms = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'Available': return 'bg-emerald-100 text-emerald-800';
-      case 'Occupied': return 'bg-red-100 text-red-800';
+      case 'Booked': return 'bg-red-100 text-red-800';
       case 'Maintenance': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -272,10 +272,10 @@ const Rooms = () => {
                         </td>
                         <td className="px-6 py-5">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${room.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            room.status === 'Occupied' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                            room.status === 'Booked' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'
                             }`}>
                             <div className={`w-1.5 h-1.5 rounded-full ${room.status === 'Available' ? 'bg-emerald-500' :
-                              room.status === 'Occupied' ? 'bg-rose-500' : 'bg-amber-500'
+                              room.status === 'Booked' ? 'bg-rose-500' : 'bg-amber-500'
                               } animate-pulse`}></div>
                             {room.status}
                           </span>

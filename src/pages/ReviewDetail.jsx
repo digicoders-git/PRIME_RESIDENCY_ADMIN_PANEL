@@ -128,7 +128,7 @@ const ReviewDetail = () => {
       {/* Review Card */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden">
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8860B] p-8 text-white">
+        <div className="bg-slate-400 p-8 text-white">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/20">
