@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaUpload, FaPlus, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import api from '../api/api';
 
 const AddService = () => {
     const navigate = useNavigate();
@@ -76,12 +77,12 @@ const AddService = () => {
 
     const validateForm = () => {
         const newErrors = {};
-        
+
         if (!formData.title.trim()) newErrors.title = 'Title is required';
         if (!formData.subtitle.trim()) newErrors.subtitle = 'Subtitle is required';
         if (!formData.description.trim()) newErrors.description = 'Description is required';
         if (!imageFile) newErrors.image = 'Image is required';
-        
+
         const validFeatures = formData.features.filter(f => f.trim());
         if (validFeatures.length === 0) newErrors.features = 'At least one feature is required';
 
@@ -93,11 +94,18 @@ const AddService = () => {
         e.preventDefault();
         if (!validateForm()) return;
 
+        const token = localStorage.getItem('token');
+        if (!token) {
+            toast.error("Session expired. Please login again.");
+            navigate('/login');
+            return;
+        }
+
         setLoading(true);
         const formDataToSend = new FormData();
-        
+
         const validFeatures = formData.features.filter(f => f.trim());
-        
+
         Object.keys(formData).forEach(key => {
             if (key === 'features') {
                 formDataToSend.append(key, JSON.stringify(validFeatures));
@@ -110,35 +118,34 @@ const AddService = () => {
             formDataToSend.append('image', imageFile);
         }
 
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                toast.error('Please login first');
-                return;
-            }
 
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-            const response = await fetch(`${baseUrl}/services`, {
-                method: 'POST',
-                body: formDataToSend,
+        console.log("Submitting service with token:", token ? "Token present" : "No token");
+
+        try {
+            // Explicitly set headers. Content-Type must be undefined for FormData to work correctly (browser sets boundary)
+            const { data } = await api.post('/services', formDataToSend, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': undefined
                 }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Request failed');
-            }
-
-            const result = await response.json();
-            if (result.success) {
+            if (data.success) {
                 toast.success('Service created successfully!');
                 navigate('/services');
             }
         } catch (error) {
             console.error('Error saving service:', error);
-            toast.error(error.message || 'Failed to save service');
+            console.log('Error config headers:', error.config?.headers);
+
+            // Handle 401 specifically
+            if (error.response && error.response.status === 401) {
+                toast.error("Session expired. Please login again.");
+                navigate('/login');
+            } else {
+                const message = error.response?.data?.message || error.message || 'Failed to save service';
+                toast.error(message);
+            }
         } finally {
             setLoading(false);
         }
@@ -177,9 +184,8 @@ const AddService = () => {
                                 name="title"
                                 value={formData.title}
                                 onChange={handleInputChange}
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent ${
-                                    errors.title ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 placeholder="Service title"
                                 disabled={loading}
                             />
@@ -212,9 +218,8 @@ const AddService = () => {
                             name="subtitle"
                             value={formData.subtitle}
                             onChange={handleInputChange}
-                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent ${
-                                errors.subtitle ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent ${errors.subtitle ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             placeholder="Service subtitle"
                             disabled={loading}
                         />
@@ -230,9 +235,8 @@ const AddService = () => {
                             value={formData.description}
                             onChange={handleInputChange}
                             rows={4}
-                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent ${
-                                errors.description ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent ${errors.description ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             placeholder="Service description"
                             disabled={loading}
                         />

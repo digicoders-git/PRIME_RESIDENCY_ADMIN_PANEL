@@ -39,12 +39,24 @@ const ManageCheckIns = () => {
     const fetchData = async () => {
         try {
             const { data } = await api.get('/bookings');
+            console.log("API Response:", data);
             if (data.success) {
                 const allBookings = data.data.map(b => ({
                     ...b,
                     id: b._id,
-                    bookingId: b._id.substring(b._id.length - 6).toUpperCase()
+                    bookingId: b._id ? b._id.substring(b._id.length - 6).toUpperCase() : 'N/A'
                 }));
+                console.log("Mapped Bookings:", allBookings);
+
+                // Debug dates for the first few bookings
+                if (allBookings.length > 0) {
+                    allBookings.slice(0, 3).forEach(b => {
+                        const d = new Date(b.checkIn);
+                        const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        console.log(`Booking ${b.guest}: CheckInRaw=${b.checkIn}, ParsedLocal=${checkInDate}`);
+                    });
+                }
+
                 setBookings(allBookings);
                 calculateStats(allBookings);
             }
@@ -56,16 +68,31 @@ const ManageCheckIns = () => {
         }
     };
 
-    const getTodayStr = () => new Date().toISOString().split('T')[0];
+    const getTodayStr = () => {
+        const d = new Date();
+        const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        console.log("System Today:", str);
+        return str;
+    };
 
     const calculateStats = (data) => {
         const today = getTodayStr();
 
-        const arrivalsToday = data.filter(b => b.checkIn && b.checkIn.startsWith(today));
+        const arrivalsToday = data.filter(b => {
+            if (!b.checkIn) return false;
+            const d = new Date(b.checkIn);
+            const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            return checkInDate === today;
+        });
         const checkIns = arrivalsToday.length;
         const pendingArr = arrivalsToday.filter(b => b.status === 'Confirmed' || b.status === 'Pending').length;
 
-        const departuresToday = data.filter(b => b.checkOut && b.checkOut.startsWith(today));
+        const departuresToday = data.filter(b => {
+            if (!b.checkOut) return false;
+            const d = new Date(b.checkOut);
+            const checkOutDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            return checkOutDate === today;
+        });
         const checkOuts = departuresToday.length;
         const pendingDep = departuresToday.filter(b => b.status === 'Checked-in').length;
 
@@ -116,15 +143,19 @@ const ManageCheckIns = () => {
 
         if (activeTab === 'arrivals') {
             data = bookings.filter(b => {
-                const checkInDate = b.checkIn ? b.checkIn.split('T')[0] : '';
-                // Show all arriving today (even if already checked in, so we can see completed ones too, or just pending? 
-                // User usually wants to manage pending, but seeing history is good.
-                // Let's show Today's arrivals (Pending + Confirmed mainly)
+                if (!b.checkIn) return false;
+                const d = new Date(b.checkIn);
+                const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+                // Show Pending Arrivals for Today
                 return checkInDate === today && (b.status === 'Confirmed' || b.status === 'Pending');
             });
         } else if (activeTab === 'departures') {
             data = bookings.filter(b => {
-                const checkOutDate = b.checkOut ? b.checkOut.split('T')[0] : '';
+                if (!b.checkOut) return false;
+                const d = new Date(b.checkOut);
+                const checkOutDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
                 return checkOutDate === today && b.status === 'Checked-in';
             });
         } else if (activeTab === 'in-house') {
@@ -133,9 +164,9 @@ const ManageCheckIns = () => {
 
         if (searchTerm) {
             data = data.filter(b =>
-                b.guest.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                b.roomNumber?.toString().includes(searchTerm) ||
-                b.bookingId.toLowerCase().includes(searchTerm.toLowerCase())
+                (b.guest && b.guest.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (b.roomNumber && b.roomNumber.toString().includes(searchTerm)) ||
+                (b.bookingId && b.bookingId.toLowerCase().includes(searchTerm.toLowerCase()))
             );
         }
 

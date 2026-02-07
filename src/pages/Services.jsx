@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaSearch, FaFilter, FaSort, FaImage, FaStar, FaCog, FaList, FaTh, FaEye } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaFilter, FaSort, FaImage, FaStar, FaCog, FaList, FaTh, FaEye, FaHistory, FaCheckCircle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import ServiceCard from '../components/ServiceCard';
 import ServiceModal from '../components/ServiceModal';
+import ServiceDetailModal from '../components/ServiceDetailModal';
 
 const Services = () => {
     const navigate = useNavigate();
@@ -11,12 +12,15 @@ const Services = () => {
     const [filteredServices, setFilteredServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
     const [editingService, setEditingService] = useState(null);
+    const [viewingService, setViewingService] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('all');
     const [sortBy, setSortBy] = useState('order');
     const [viewMode, setViewMode] = useState('grid');
     const [submitLoading, setSubmitLoading] = useState(false);
+    const [currentTab, setCurrentTab] = useState('active'); // 'active' or 'history'
 
     useEffect(() => {
         fetchServices();
@@ -24,14 +28,18 @@ const Services = () => {
 
     useEffect(() => {
         filterAndSortServices();
-    }, [services, searchTerm, filterCategory, sortBy]);
+    }, [services, searchTerm, filterCategory, sortBy, currentTab]); // Added currentTab dependency
 
     const filterAndSortServices = () => {
         let filtered = services.filter(service => {
             const matchesSearch = service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                service.subtitle.toLowerCase().includes(searchTerm.toLowerCase());
+                service.subtitle.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesCategory = filterCategory === 'all' || service.category === filterCategory;
-            return matchesSearch && matchesCategory;
+
+            // Tab filtering
+            const matchesTab = currentTab === 'active' ? service.isActive : !service.isActive;
+
+            return matchesSearch && matchesCategory && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -68,7 +76,7 @@ const Services = () => {
     const handleSubmit = async (submitData) => {
         setSubmitLoading(true);
         const formDataToSend = new FormData();
-        
+
         Object.keys(submitData).forEach(key => {
             if (key === 'features') {
                 formDataToSend.append(key, JSON.stringify(submitData[key]));
@@ -91,7 +99,7 @@ const Services = () => {
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
             const url = editingService ? `${baseUrl}/services/${editingService._id}` : `${baseUrl}/services`;
             const method = editingService ? 'PUT' : 'POST';
-            
+
             const response = await fetch(url, {
                 method,
                 body: formDataToSend,
@@ -168,6 +176,16 @@ const Services = () => {
         setEditingService(null);
     };
 
+    const handleViewService = (service) => {
+        setViewingService(service);
+        setShowDetailModal(true);
+    };
+
+    const handleCloseDetailModal = () => {
+        setShowDetailModal(false);
+        setViewingService(null);
+    };
+
     const toggleServiceStatus = async (id, currentStatus) => {
         try {
             const token = localStorage.getItem('token');
@@ -185,12 +203,12 @@ const Services = () => {
                 },
                 body: JSON.stringify({ isActive: !currentStatus })
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Request failed');
             }
-            
+
             const result = await response.json();
             if (result.success) {
                 toast.success(`Service ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
@@ -240,7 +258,7 @@ const Services = () => {
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
                         />
                     </div>
-                    
+
                     {/* Category Filter */}
                     <div className="flex items-center gap-2">
                         <FaFilter className="text-gray-400" />
@@ -254,7 +272,7 @@ const Services = () => {
                             <option value="facility">Facilities</option>
                         </select>
                     </div>
-                    
+
                     {/* Sort */}
                     <div className="flex items-center gap-2">
                         <FaSort className="text-gray-400" />
@@ -269,7 +287,7 @@ const Services = () => {
                             <option value="created">Date Created</option>
                         </select>
                     </div>
-                    
+
                     {/* View Mode */}
                     <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                         <button
@@ -326,14 +344,53 @@ const Services = () => {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Active</p>
+                            <p className="text-sm font-medium text-gray-600">Active Services</p>
                             <p className="text-2xl font-bold text-gray-900">{services.filter(s => s.isActive).length}</p>
                         </div>
-                        <div className="p-3 bg-[#C6A87C]/20 rounded-full">
-                            <FaEye className="text-[#C6A87C]" />
+                        <div className="p-3 bg-green-100 rounded-full">
+                            <FaCheckCircle className="text-green-600" />
                         </div>
                     </div>
                 </div>
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Inactive History</p>
+                            <p className="text-2xl font-bold text-gray-900">{services.filter(s => !s.isActive).length}</p>
+                        </div>
+                        <div className="p-3 bg-red-100 rounded-full">
+                            <FaHistory className="text-red-600" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-4 mb-6 border-b border-gray-200">
+                <button
+                    onClick={() => setCurrentTab('active')}
+                    className={`pb-3 px-4 font-medium transition-colors relative ${currentTab === 'active'
+                        ? 'text-[#C6A87C] border-b-2 border-[#C6A87C]'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    Active Services
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                        {services.filter(s => s.isActive).length}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setCurrentTab('history')}
+                    className={`pb-3 px-4 font-medium transition-colors relative ${currentTab === 'history'
+                        ? 'text-[#C6A87C] border-b-2 border-[#C6A87C]'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    Deactivated History
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                        {services.filter(s => !s.isActive).length}
+                    </span>
+                </button>
             </div>
 
             {/* Services Grid/List */}
@@ -353,6 +410,7 @@ const Services = () => {
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                                 onToggleStatus={toggleServiceStatus}
+                                onView={handleViewService}
                                 viewMode={viewMode}
                             />
                         ))}
@@ -368,7 +426,14 @@ const Services = () => {
                 editingService={editingService}
                 loading={submitLoading}
             />
-        </div>
+
+            {/* Service Detail Modal */}
+            <ServiceDetailModal
+                isOpen={showDetailModal}
+                onClose={handleCloseDetailModal}
+                service={viewingService}
+            />
+        </div >
     );
 };
 

@@ -212,6 +212,28 @@ const EditRoom = () => {
 
             form.append('description', formData.fullDescription || formData.shortDescription);
 
+            // Append Extended Details
+            if (formData.roomSize) form.append('roomSize', formData.roomSize);
+            if (formData.bedType) form.append('bedType', formData.bedType);
+            if (formData.floorNumber) form.append('floorNumber', formData.floorNumber);
+            if (formData.maxAdults) form.append('maxAdults', formData.maxAdults);
+            if (formData.maxChildren) form.append('maxChildren', formData.maxChildren);
+
+            // Append Pricing Extended
+            if (formData.discount) form.append('discount', formData.discount);
+            if (formData.offerPrice) form.append('offerPrice', formData.offerPrice);
+            if (formData.extraBedPrice) form.append('extraBedPrice', formData.extraBedPrice);
+            if (formData.taxGST) form.append('taxGST', formData.taxGST);
+
+            // Append Inventory
+            if (formData.totalRoomsCount) form.append('totalRoomsCount', formData.totalRoomsCount);
+            if (formData.availableRooms) form.append('availableRooms', formData.availableRooms);
+
+            // Append Other Details
+            if (formData.video360) form.append('video360', formData.video360);
+            if (formData.imageAltText) form.append('imageAltText', formData.imageAltText);
+            if (formData.specialNotes) form.append('specialNotes', formData.specialNotes);
+
             Object.keys(formData.amenities).filter(key => formData.amenities[key]).forEach(key => {
                 form.append('amenities', key);
             });
@@ -228,7 +250,11 @@ const EditRoom = () => {
                 });
             }
 
-            const { data } = await api.put(`/rooms/${mongoId}`, form);
+            const { data } = await api.put(`/rooms/${mongoId}`, form, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
 
             if (data.success) {
                 toast.success('Room updated successfully!', { autoClose: 2000 });

@@ -247,12 +247,12 @@ const Revenue = () => {
                         <h2 className="text-xl font-bold text-gray-900">Revenue Records</h2>
                         <p className="text-sm text-gray-500">Recent revenue transactions</p>
                     </div>
-                    <button
+                    {/* <button
                         onClick={() => setShowModal(true)}
                         className="px-4 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#B8860B] transition-all flex items-center gap-2"
                     >
                         <FaPlus /> Add Revenue
-                    </button>
+                    </button> */}
                 </div>
                 
                 {loading ? (

@@ -48,7 +48,7 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
     { name: 'Rooms', path: '/rooms', icon: FaBed },
     { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt },
     { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck },
-    { name: 'Guests', path: '/guests', icon: FaUsers },
+    // { name: 'Guests', path: '/guests', icon: FaUsers },
     { name: 'Reviews', path: '/reviews', icon: FaStar },
     { name: 'Contacts', path: '/contacts', icon: FaEnvelope },
     { name: 'Enquiries', path: '/enquiries', icon: FaQuestionCircle, count: enquiryCount },
