@@ -32,8 +32,8 @@ const Rooms = () => {
         const mappedRooms = data.data.map(room => ({
           ...room,
           id: room._id,
-          // Handle mock fields if not present in backend
-          category: room.type || 'Standard',
+          category: room.category || 'Room',
+          type: room.type || 'Standard',
           desc: room.description || 'No description available',
           // Map backend fields to display fields
           size: room.roomSize ? `${room.roomSize} sq ft` : 'N/A',
@@ -54,7 +54,7 @@ const Rooms = () => {
   };
 
 
-  const categories = ['All', 'Standard', 'Executive', 'Family', 'Luxury'];
+  const categories = ['All', 'Room', 'Banquet', 'Lawn'];
 
   const filteredRooms = rooms.filter(room => {
     const matchesCategory = filterCategory === 'All' || room.category === filterCategory;
@@ -114,10 +114,9 @@ const Rooms = () => {
 
   const getCategoryColor = (category) => {
     switch (category) {
-      case 'Standard': return 'bg-blue-100 text-blue-800';
-      case 'Executive': return 'bg-purple-100 text-purple-800';
-      case 'Family': return 'bg-green-100 text-green-800';
-      case 'Luxury': return 'bg-amber-100 text-amber-800';
+      case 'Room': return 'bg-blue-100 text-blue-800';
+      case 'Banquet': return 'bg-purple-100 text-purple-800';
+      case 'Lawn': return 'bg-emerald-100 text-emerald-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -176,7 +175,7 @@ const Rooms = () => {
                     className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] cursor-pointer appearance-none bg-white"
                   >
                     {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat} Rooms</option>
+                      <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
                 </div>
@@ -260,7 +259,7 @@ const Rooms = () => {
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <span className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100/50 bg-blue-50/50 text-blue-600`}>
+                          <span className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getCategoryColor(room.category)}`}>
                             {room.category}
                           </span>
                         </td>

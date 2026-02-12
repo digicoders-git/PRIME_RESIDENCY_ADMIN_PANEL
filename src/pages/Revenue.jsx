@@ -127,52 +127,43 @@ const Revenue = () => {
             className="p-6 max-w-[1600px] mx-auto"
         >
             {/* Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Today</p>
-                            <p className="text-2xl font-bold text-gray-900">₹{analytics.daily?.toLocaleString() || 0}</p>
-                        </div>
-                        <FaRupeeSign className="text-green-500 text-2xl" />
-                    </div>
-                </div>
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">This Week</p>
-                            <p className="text-2xl font-bold text-gray-900">₹{analytics.weekly?.toLocaleString() || 0}</p>
-                            {analytics.weeklyGrowth !== undefined && (
-                                <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${
-                                    analytics.weeklyGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                    {analytics.weeklyGrowth >= 0 ? <FaArrowUp /> : <FaArrowDown />}
-                                    {Math.abs(analytics.weeklyGrowth)}% vs last week
+
+            {/* Booking Payment Stats Section */}
+            {analytics.bookingStats && (
+                <div className="mb-8">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Booking Payment Overview</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {['daily', 'weekly', 'monthly', 'yearly'].map((period) => {
+                            const stats = analytics.bookingStats[period];
+                            if (!stats) return null;
+
+                            const periodLabel = period === 'daily' ? 'Today' :
+                                period === 'weekly' ? 'This Week' :
+                                    period === 'monthly' ? 'This Month' : 'This Year';
+
+                            return (
+                                <div key={period} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-gray-700">{periodLabel}</h3>
+                                        <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-full text-gray-600">
+                                            {stats.totalBookings} Bookings
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">Total Value</p>
+                                            <p className="text-xl font-bold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
+                                        </div>
+
+
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                        <FaChartLine className="text-blue-500 text-2xl" />
+                            );
+                        })}
                     </div>
                 </div>
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">This Month</p>
-                            <p className="text-2xl font-bold text-gray-900">₹{analytics.monthly?.toLocaleString() || 0}</p>
-                        </div>
-                        <FaCalendarAlt className="text-purple-500 text-2xl" />
-                    </div>
-                </div>
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">This Year</p>
-                            <p className="text-2xl font-bold text-gray-900">₹{analytics.yearly?.toLocaleString() || 0}</p>
-                        </div>
-                        <FaRupeeSign className="text-[#D4AF37] text-2xl" />
-                    </div>
-                </div>
-            </div>
+            )}
 
             {/* Performance Trend Section */}
             {analytics.weeklyTrend && analytics.weeklyTrend.length > 0 && (
@@ -192,11 +183,11 @@ const Revenue = () => {
                             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                             const maxAmount = Math.max(...analytics.weeklyTrend.map(d => d.total));
                             const height = maxAmount > 0 ? (day.total / maxAmount) * 100 : 0;
-                            
+
                             return (
                                 <div key={day._id} className="text-center">
                                     <div className="h-32 flex items-end justify-center mb-2">
-                                        <div 
+                                        <div
                                             className="w-8 bg-gradient-to-t from-[#D4AF37] to-[#B8860B] rounded-t-lg transition-all duration-500 hover:opacity-80"
                                             style={{ height: `${height}%`, minHeight: day.total > 0 ? '8px' : '2px' }}
                                             title={`₹${day.total.toLocaleString()}`}
@@ -224,7 +215,7 @@ const Revenue = () => {
                             const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
                             const bgColors = ['bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-orange-50', 'bg-pink-50'];
                             const textColors = ['text-blue-600', 'text-green-600', 'text-purple-600', 'text-orange-600', 'text-pink-600'];
-                            
+
                             return (
                                 <div key={source._id} className={`${bgColors[index % 5]} rounded-xl p-4`}>
                                     <div className="flex items-center justify-between mb-2">
@@ -254,7 +245,7 @@ const Revenue = () => {
                         <FaPlus /> Add Revenue
                     </button> */}
                 </div>
-                
+
                 {loading ? (
                     <div className="p-8 text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4AF37] mx-auto"></div>
@@ -273,11 +264,11 @@ const Revenue = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {revenues.slice(0, 10).map((revenue) => (
+                                {revenues.map((revenue) => (
                                     <tr key={revenue._id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div>
@@ -299,7 +290,7 @@ const Revenue = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex gap-2">
-                                                <button
+                                                {/* <button
                                                     onClick={() => handleEdit(revenue)}
                                                     className="text-blue-600 hover:text-blue-900"
                                                 >
@@ -310,7 +301,7 @@ const Revenue = () => {
                                                     className="text-red-600 hover:text-red-900"
                                                 >
                                                     <FaTrash />
-                                                </button>
+                                                </button> */}
                                             </div>
                                         </td>
                                     </tr>
@@ -334,7 +325,7 @@ const Revenue = () => {
                                 <select
                                     name="source"
                                     value={formData.source}
-                                    onChange={(e) => setFormData({...formData, source: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                 >
                                     <option value="Room Booking">Room Booking</option>
@@ -350,7 +341,7 @@ const Revenue = () => {
                                     type="number"
                                     name="amount"
                                     value={formData.amount}
-                                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                     required
                                 />
@@ -360,7 +351,7 @@ const Revenue = () => {
                                 <textarea
                                     name="description"
                                     value={formData.description}
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                     rows="3"
                                 />
@@ -370,7 +361,7 @@ const Revenue = () => {
                                 <select
                                     name="paymentMethod"
                                     value={formData.paymentMethod}
-                                    onChange={(e) => setFormData({...formData, paymentMethod: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                 >
                                     <option value="Cash">Cash</option>
@@ -385,7 +376,7 @@ const Revenue = () => {
                                     type="date"
                                     name="date"
                                     value={formData.date}
-                                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                     required
                                 />

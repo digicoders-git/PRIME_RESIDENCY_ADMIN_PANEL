@@ -210,7 +210,7 @@ const Bookings = () => {
                 <div className="flex items-center gap-4 text-gray-400 font-bold tracking-wider text-xs font-serif">
                   <span className="flex items-center gap-2"><FaUser className="text-gray-300" size={10} /> {selectedBooking.id}</span>
                   <span className="w-1 h-1 rounded-full bg-gray-200"></span>
-                  <span className="flex items-center gap-2">Room <span className="text-gray-900 font-black">#{selectedBooking.roomNumber}</span></span>
+                  <span className="flex items-center gap-2">#{selectedBooking.roomNumber}</span>
                 </div>
               </div>
             </div>
@@ -259,7 +259,7 @@ const Bookings = () => {
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100"><FaBed size={14} /></div>
                       <div className="text-left">
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Room Selection</p>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Unit Selection</p>
                         <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.room}</p>
                       </div>
                     </div>
@@ -349,7 +349,7 @@ const Bookings = () => {
                   </div>
                 </div>
 
-              
+
 
                 <button
                   onClick={() => setShowReceiptModal(true)}
@@ -396,7 +396,7 @@ const Bookings = () => {
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">System Controls</h3>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-amber-500">
-                  
+
                   </div>
                   <select
                     className="w-full text-xs font-black appearance-none bg-white border-2 border-gray-100 rounded-2xl px-12 py-4 focus:outline-none focus:border-amber-500 transition-all cursor-pointer shadow-sm uppercase tracking-widest"
@@ -417,7 +417,6 @@ const Bookings = () => {
             </div>
           </div>
         </div>
-
         {/* Payment Modal */}
         {showPaymentModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -469,6 +468,7 @@ const Bookings = () => {
             </div>
           </div>
         )}
+
         <ReceiptModal
           isOpen={showReceiptModal}
           onClose={() => setShowReceiptModal(false)}
@@ -476,7 +476,6 @@ const Bookings = () => {
         />
       </motion.div>
     );
-
   }
 
   return (
@@ -609,7 +608,7 @@ const Bookings = () => {
                 <thead>
                   <tr className="bg-gray-50/50 border-b border-gray-100">
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Guest Identity</th>
-                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Room Selection</th>
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Unit Selection</th>
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Stay Duration</th>
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Source</th>
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Current Status</th>

@@ -11,6 +11,14 @@ import { toast } from 'react-toastify';
 import api from '../api/api';
 import { createRazorpayOrder, initiatePayment } from '../utils/payment';
 
+const ID_LIMITS = {
+    'Aadhar Card': 12,
+    'PAN Card': 10,
+    'Driving License': 16,
+    'Voter ID': 10,
+    'Passport': 9
+};
+
 const CreateBooking = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
@@ -20,6 +28,7 @@ const CreateBooking = () => {
     const [submitting, setSubmitting] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [bookingId, setBookingId] = useState(null);
+    const [filterCategory, setFilterCategory] = useState('All');
 
     const [formData, setFormData] = useState({
         guest: '',
@@ -35,11 +44,15 @@ const CreateBooking = () => {
         source: 'Dashboard',
         idType: 'Aadhar Card',
         idNumber: '',
-        paymentType: 'cash'
+        paymentType: 'cash',
+        discount: '0',
+        extraBedPrice: '0',
+        taxGST: '0'
     });
 
     const [calc, setCalc] = useState({
         nights: 0,
+        baseAmount: 0,
         totalAmount: 0,
         balance: 0
     });
@@ -55,7 +68,11 @@ const CreateBooking = () => {
                 const fetchedRooms = data.data.map(r => ({
                     ...r,
                     id: r._id,
-                    numericPrice: Number(r.price)
+                    numericPrice: Number(r.price),
+                    enableExtraCharges: r.enableExtraCharges || false,
+                    discount: r.discount || 0,
+                    extraBedPrice: r.extraBedPrice || 0,
+                    taxGST: r.taxGST || 0
                 }));
                 setRooms(fetchedRooms);
 
@@ -63,6 +80,15 @@ const CreateBooking = () => {
                     const found = fetchedRooms.find(r => r.id === roomId);
                     if (found) {
                         setRoom(found);
+                        // Populate form data with room defaults if enabled
+                        if (found.enableExtraCharges) {
+                            setFormData(prev => ({
+                                ...prev,
+                                discount: found.discount?.toString() || '0',
+                                extraBedPrice: found.extraBedPrice?.toString() || '0',
+                                taxGST: found.taxGST?.toString() || '0'
+                            }));
+                        }
                     } else {
                         toast.error('Selected room not found');
                     }
@@ -80,6 +106,14 @@ const CreateBooking = () => {
         const found = rooms.find(r => r.id === selectedId);
         if (found) {
             setRoom(found);
+            if (found.enableExtraCharges) {
+                setFormData(prev => ({
+                    ...prev,
+                    discount: found.discount?.toString() || '0',
+                    extraBedPrice: found.extraBedPrice?.toString() || '0',
+                    taxGST: found.taxGST?.toString() || '0'
+                }));
+            }
         }
     };
 
@@ -90,19 +124,54 @@ const CreateBooking = () => {
             const diffTime = Math.abs(end - start);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            const total = diffDays * room.numericPrice;
+            const baseTotal = diffDays * room.numericPrice;
+
+            // Calculate with charges if enabled
+            let finalTotal = baseTotal;
+            if (room.enableExtraCharges) {
+                const discount = parseFloat(formData.discount) || 0;
+                const extraBed = parseFloat(formData.extraBedPrice) || 0;
+                const tax = parseFloat(formData.taxGST) || 0;
+
+                const discountAmount = (baseTotal * discount) / 100;
+                const afterDiscount = baseTotal - discountAmount;
+                const taxAmount = (afterDiscount * tax) / 100;
+                finalTotal = Math.round(afterDiscount + (extraBed * diffDays) + taxAmount);
+            }
+
             const advanceVal = parseInt(formData.advance) || 0;
 
             setCalc({
                 nights: diffDays > 0 ? diffDays : 0,
-                totalAmount: total > 0 ? total : 0,
-                balance: (total - advanceVal) > 0 ? (total - advanceVal) : 0
+                baseAmount: baseTotal > 0 ? baseTotal : 0,
+                totalAmount: finalTotal > 0 ? finalTotal : 0,
+                balance: (finalTotal - advanceVal) > 0 ? (finalTotal - advanceVal) : 0
             });
         }
-    }, [formData.checkIn, formData.checkOut, formData.advance, room]);
+    }, [formData.checkIn, formData.checkOut, formData.advance, formData.discount, formData.extraBedPrice, formData.taxGST, room]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+        if (name === 'idType') {
+            const newLimit = ID_LIMITS[value] || 20;
+            // Truncate current number if it exceeds new limit
+            const currentNumber = formData.idNumber;
+            const newNumber = currentNumber.length > newLimit ? currentNumber.slice(0, newLimit) : currentNumber;
+
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                idNumber: newNumber
+            }));
+            return;
+        }
+
+        if (name === 'idNumber') {
+            const limit = ID_LIMITS[formData.idType] || 20;
+            if (value.length > limit) return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -142,8 +211,8 @@ const CreateBooking = () => {
                 balance: formData.paymentType === 'cash' ? Math.max(0, calc.totalAmount - Number(formData.advance)) : calc.totalAmount,
                 nights: calc.nights,
                 status: 'Confirmed',
-                paymentStatus: formData.paymentType === 'cash' && Number(formData.advance) >= calc.totalAmount ? 'Paid' : 
-                              formData.paymentType === 'cash' && Number(formData.advance) > 0 ? 'Partial' : 'Pending',
+                paymentStatus: formData.paymentType === 'cash' && Number(formData.advance) >= calc.totalAmount ? 'Paid' :
+                    formData.paymentType === 'cash' && Number(formData.advance) > 0 ? 'Partial' : 'Pending',
                 source: 'Dashboard',
                 specialRequests: formData.specialRequests,
                 idType: formData.idType,
@@ -154,10 +223,10 @@ const CreateBooking = () => {
                 paymentType: formData.paymentType,
                 advance: formData.advance,
                 totalAmount: calc.totalAmount,
-                calculatedStatus: formData.paymentType === 'cash' && Number(formData.advance) >= calc.totalAmount ? 'Paid' : 
-                                 formData.paymentType === 'cash' && Number(formData.advance) > 0 ? 'Partial' : 'Pending'
+                calculatedStatus: formData.paymentType === 'cash' && Number(formData.advance) >= calc.totalAmount ? 'Paid' :
+                    formData.paymentType === 'cash' && Number(formData.advance) > 0 ? 'Partial' : 'Pending'
             });
-            
+
             const { data } = await api.post('/bookings', bookingData);
 
             if (data.success) {
@@ -270,21 +339,43 @@ const CreateBooking = () => {
                         {/* Room Selection (Standalone for no-param flow) */}
                         {!roomId && (
                             <div className="space-y-6 pb-8 border-b border-gray-50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-                                        <FaBed size={14} />
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                                            <FaBed size={14} />
+                                        </div>
+                                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Select Unit</h3>
                                     </div>
-                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Select Room</h3>
+                                    <div className="flex gap-2">
+                                        {['All', 'Room', 'Banquet', 'Lawn'].map(cat => (
+                                            <button
+                                                key={cat}
+                                                type="button"
+                                                onClick={() => setFilterCategory(cat)}
+                                                className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${filterCategory === cat
+                                                    ? 'bg-[#D4AF37] text-white shadow-md'
+                                                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                                    }`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <select
                                     onChange={handleRoomChange}
                                     defaultValue=""
                                     className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-white outline-none transition-all font-bold text-gray-800"
                                 >
-                                    <option value="" disabled>Choose a room for booking...</option>
-                                    {rooms.map(r => (
-                                        <option key={r.id} value={r.id}>{r.name} - ₹{r.price} (Unit {String(r.roomNumber || 'N/A')})</option>
-                                    ))}
+                                    <option value="" disabled>Choose a unit for booking...</option>
+                                    {rooms
+                                        .filter(r => filterCategory === 'All' || r.category === filterCategory)
+                                        .map(r => (
+                                            <option key={r.id} value={r.id}>
+                                                [{r.category}] {r.name} - ₹{r.price} (Unit {String(r.roomNumber || 'N/A')})
+                                            </option>
+                                        ))
+                                    }
                                 </select>
                             </div>
                         )}
@@ -358,20 +449,24 @@ const CreateBooking = () => {
                                             className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-white outline-none transition-all font-bold text-gray-800"
                                         >
                                             <option value="Aadhar Card">Aadhar Card</option>
+                                            <option value="PAN Card">PAN Card</option>
                                             <option value="Passport">Passport</option>
                                             <option value="Driving License">Driving License</option>
                                             <option value="Voter ID">Voter ID</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">ID Number</label>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">
+                                            ID Number {formData.idType && ID_LIMITS[formData.idType] ? `(Max ${ID_LIMITS[formData.idType]} chars)` : ''}
+                                        </label>
                                         <input
                                             required
                                             type="text"
                                             name="idNumber"
                                             value={formData.idNumber}
                                             onChange={handleInputChange}
-                                            placeholder="Enter ID number"
+                                            maxLength={ID_LIMITS[formData.idType] || 20}
+                                            placeholder={`Enter ${formData.idType} Number`}
                                             className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-white outline-none transition-all font-bold text-gray-800"
                                         />
                                     </div>
@@ -515,27 +610,82 @@ const CreateBooking = () => {
                                 <p className="font-bold text-gray-900 italic">{calc.nights} Nights</p>
                             </div>
 
+                            {room?.enableExtraCharges && (
+                                <div className="space-y-4 pb-4 border-b border-gray-50">
+                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Extra Charges (Editable)</p>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">Discount (%)</label>
+                                            <input
+                                                type="number"
+                                                name="discount"
+                                                value={formData.discount}
+                                                onChange={handleInputChange}
+                                                min="0"
+                                                max="100"
+                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-sm"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">Extra Bed (₹/night)</label>
+                                            <input
+                                                type="number"
+                                                name="extraBedPrice"
+                                                value={formData.extraBedPrice}
+                                                onChange={handleInputChange}
+                                                min="0"
+                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-sm"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">Tax/GST (%)</label>
+                                            <input
+                                                type="number"
+                                                name="taxGST"
+                                                value={formData.taxGST}
+                                                onChange={handleInputChange}
+                                                min="0"
+                                                max="100"
+                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="bg-gray-50/50 p-6 rounded-3xl space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Total Amount</p>
+                                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">{room?.enableExtraCharges ? 'Total (with charges)' : 'Total Amount'}</p>
                                     <p className="text-xl font-black text-gray-900 italic">₹{calc.totalAmount.toLocaleString()}</p>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-emerald-600 uppercase tracking-wider">Advance Payment (₹)</label>
-                                    <input
-                                        type="number"
-                                        name="advance"
-                                        value={formData.advance}
-                                        onChange={handleInputChange}
-                                        min="0"
-                                        max={calc.totalAmount}
-                                        className="w-full px-4 py-2 bg-white border border-gray-100 rounded-xl outline-none font-bold text-sm"
-                                    />
-                                </div>
-                                <div className="flex justify-between items-center text-rose-600 pt-2 border-t border-gray-200/50">
-                                    <p className="text-[11px] font-black uppercase tracking-widest">Balance Due</p>
-                                    <p className="text-xl font-black italic underline ring-offset-2">₹{calc.balance.toLocaleString()}</p>
-                                </div>
+                                {room?.enableExtraCharges && calc.baseAmount !== calc.totalAmount && (
+                                    <div className="text-xs text-gray-500 italic">
+                                        Base: ₹{calc.baseAmount.toLocaleString()}
+                                    </div>
+                                )}
+                                {formData.paymentType === 'cash' && (
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-emerald-600 uppercase tracking-wider">Advance Payment (₹)</label>
+                                        <input
+                                            type="number"
+                                            name="advance"
+                                            value={formData.advance}
+                                            onChange={handleInputChange}
+                                            min="0"
+                                            max={calc.totalAmount}
+                                            className="w-full px-4 py-2 bg-white border border-gray-100 rounded-xl outline-none font-bold text-sm"
+                                        />
+                                    </div>
+                                )}
+                                {formData.paymentType === 'cash' && (
+                                    <div className="flex justify-between items-center text-rose-600 pt-2 border-t border-gray-200/50">
+                                        <p className="text-[11px] font-black uppercase tracking-widest">Balance Due</p>
+                                        <p className="text-xl font-black italic underline ring-offset-2">₹{calc.balance.toLocaleString()}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

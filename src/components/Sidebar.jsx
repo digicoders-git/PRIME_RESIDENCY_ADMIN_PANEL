@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar } from 'react-icons/fa';
+import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import api from '../api/api';
 
@@ -45,15 +45,16 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: FaHome },
-    { name: 'Rooms', path: '/rooms', icon: FaBed },
-    { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt },
     { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck },
-    // { name: 'Guests', path: '/guests', icon: FaUsers },
+    { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt },
+    { name: 'Rooms', path: '/rooms', icon: FaBed },
+    { name: 'Banquets & Lawns', path: '/banquets', icon: FaGlassCheers },
+    { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar },
+    { name: 'Revenue', path: '/revenue', icon: FaRupeeSign },
+    { name: 'Services Mgmt', path: '/services-management', icon: FaCog },
     { name: 'Reviews', path: '/reviews', icon: FaStar },
     { name: 'Contacts', path: '/contacts', icon: FaEnvelope },
     { name: 'Enquiries', path: '/enquiries', icon: FaQuestionCircle, count: enquiryCount },
-    { name: 'Revenue', path: '/revenue', icon: FaRupeeSign },
-    { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar },
     { name: 'Gallery', path: '/gallery', icon: FaImages },
     { name: 'Services', path: '/services', icon: FaConciergeBell },
   ];

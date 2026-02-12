@@ -13,17 +13,15 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
     maxChildren: '',
     roomSize: '',
     floorNumber: '',
-    
+
     // 2. Pricing & Availability
     pricePerNight: '',
     discount: '',
     offerPrice: '',
     extraBedPrice: '',
     taxGST: '',
-    totalRoomsCount: '',
-    availableRooms: '',
     roomStatus: 'Available',
-    
+
     // 3. Images & Media
     mainImage: null,
     mainImagePreview: '',
@@ -31,7 +29,7 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
     galleryPreviews: [],
     video360: '',
     imageAltText: '',
-    
+
     // 4. Amenities
     amenities: {
       ac: false,
@@ -45,12 +43,12 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
       safeLocker: false,
       workDesk: false
     },
-    
+
     // 5. Room Description
     shortDescription: '',
     fullDescription: '',
     specialNotes: '',
-    
+
     // 6. Policies & Rules
     checkInTime: '14:00',
     checkOutTime: '11:00',
@@ -58,19 +56,19 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
     petsAllowed: false,
     cancellationPolicy: '',
     refundPolicy: '',
-    
+
     // 7. Booking Rules
     minNightsStay: '',
     maxNightsStay: '',
     advanceBookingDays: '',
     instantBooking: false,
-    
+
     // 8. Admin Control
     roomVisibility: true,
     featuredRoom: false,
     sortOrder: '',
     createdBy: '',
-    
+
     // 9. Analytics (Read-only)
     totalBookings: 0,
     totalRevenue: 0,
@@ -151,16 +149,16 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
       createdAt: currentTime,
       lastUpdatedAt: currentTime
     };
-    
+
     onAddRoom(roomData);
     toast.success('Room added successfully!', { autoClose: 2000 });
     onClose();
-    
+
     // Reset form
     setFormData({
       roomName: '', roomNumber: '', roomType: '', bedType: '', maxAdults: '', maxChildren: '',
       roomSize: '', floorNumber: '', pricePerNight: '', discount: '', offerPrice: '', extraBedPrice: '',
-      taxGST: '', totalRoomsCount: '', availableRooms: '', roomStatus: 'Available',
+      taxGST: '', roomStatus: 'Available',
       mainImage: null, mainImagePreview: '', galleryImages: [], galleryPreviews: [], video360: '', imageAltText: '',
       amenities: { ac: false, wifi: false, tv: false, geyser: false, balcony: false, roomService: false, powerBackup: false, miniFridge: false, safeLocker: false, workDesk: false },
       shortDescription: '', fullDescription: '', specialNotes: '', checkInTime: '14:00', checkOutTime: '11:00',
@@ -317,7 +315,21 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                       type="number"
                       name="pricePerNight"
                       value={formData.pricePerNight}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => {
+                          const price = parseFloat(val) || 0;
+                          const discount = parseFloat(prev.discount) || 0;
+                          const tax = parseFloat(prev.taxGST) || 0;
+                          const extraBed = parseFloat(prev.extraBedPrice) || 0;
+
+                          const discounted = price - (price * discount / 100);
+                          const withTax = discounted + (discounted * tax / 100);
+                          const final = Math.round(withTax + extraBed);
+
+                          return { ...prev, pricePerNight: val, offerPrice: final > 0 ? final.toString() : '' };
+                        });
+                      }}
                       placeholder="5000"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
@@ -329,20 +341,33 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                       type="number"
                       name="discount"
                       value={formData.discount}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => {
+                          const price = parseFloat(prev.pricePerNight) || 0;
+                          const discount = parseFloat(val) || 0;
+                          const tax = parseFloat(prev.taxGST) || 0;
+                          const extraBed = parseFloat(prev.extraBedPrice) || 0;
+
+                          const discounted = price - (price * discount / 100);
+                          const withTax = discounted + (discounted * tax / 100);
+                          const final = Math.round(withTax + extraBed);
+
+                          return { ...prev, discount: val, offerPrice: final > 0 ? final.toString() : '' };
+                        });
+                      }}
                       placeholder="10"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Offer Price (₹)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Final Price (Calculated)</label>
                     <input
                       type="number"
                       name="offerPrice"
                       value={formData.offerPrice}
-                      onChange={handleInputChange}
-                      placeholder="4500"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      readOnly
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed font-bold text-green-700"
                     />
                   </div>
                   <div>
@@ -351,7 +376,21 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                       type="number"
                       name="extraBedPrice"
                       value={formData.extraBedPrice}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => {
+                          const price = parseFloat(prev.pricePerNight) || 0;
+                          const discount = parseFloat(prev.discount) || 0;
+                          const tax = parseFloat(prev.taxGST) || 0;
+                          const extraBed = parseFloat(val) || 0;
+
+                          const discounted = price - (price * discount / 100);
+                          const withTax = discounted + (discounted * tax / 100);
+                          const final = Math.round(withTax + extraBed);
+
+                          return { ...prev, extraBedPrice: val, offerPrice: final > 0 ? final.toString() : '' };
+                        });
+                      }}
                       placeholder="1000"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
@@ -362,30 +401,22 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                       type="number"
                       name="taxGST"
                       value={formData.taxGST}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => {
+                          const price = parseFloat(prev.pricePerNight) || 0;
+                          const discount = parseFloat(prev.discount) || 0;
+                          const tax = parseFloat(val) || 0;
+                          const extraBed = parseFloat(prev.extraBedPrice) || 0;
+
+                          const discounted = price - (price * discount / 100);
+                          const withTax = discounted + (discounted * tax / 100);
+                          const final = Math.round(withTax + extraBed);
+
+                          return { ...prev, taxGST: val, offerPrice: final > 0 ? final.toString() : '' };
+                        });
+                      }}
                       placeholder="18"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Total Rooms Count</label>
-                    <input
-                      type="number"
-                      name="totalRoomsCount"
-                      value={formData.totalRoomsCount}
-                      onChange={handleInputChange}
-                      placeholder="10"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Available Rooms</label>
-                    <input
-                      type="number"
-                      name="availableRooms"
-                      value={formData.availableRooms}
-                      onChange={handleInputChange}
-                      placeholder="8"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
                   </div>
@@ -416,9 +447,9 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                     <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors relative">
                       {formData.mainImagePreview ? (
                         <div className="relative">
-                          <img 
-                            src={formData.mainImagePreview} 
-                            alt="Main room preview" 
+                          <img
+                            src={formData.mainImagePreview}
+                            alt="Main room preview"
                             className="w-full h-48 object-cover rounded-lg mb-4"
                           />
                           <button
@@ -450,9 +481,9 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                       {formData.galleryPreviews.map((preview, index) => (
                         <div key={index} className="relative">
-                          <img 
-                            src={preview} 
-                            alt={`Gallery ${index + 1}`} 
+                          <img
+                            src={preview}
+                            alt={`Gallery ${index + 1}`}
                             className="w-full h-32 object-cover rounded-lg"
                           />
                           <button

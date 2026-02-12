@@ -54,7 +54,7 @@ const Dashboard = () => {
     }
   };
 
-  const totalRevenue = data.bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+  const totalRevenue = data.bookings.filter(b => b.status !== 'Cancelled').reduce((sum, b) => sum + (b.amount || 0), 0);
   const avgRating = (data.reviews.reduce((sum, r) => sum + r.rating, 0) / data.reviews.length || 0).toFixed(1);
   const occupiedRooms = data.bookings.filter(b => b.status === 'Checked-in').length;
   const occupancyRate = ((occupiedRooms / data.rooms.length) * 100 || 0).toFixed(0);
@@ -108,7 +108,7 @@ const Dashboard = () => {
     { _id: '2024-01-06', total: 0, online: 0, offline: 0 },
     { _id: '2024-01-07', total: 0, online: 0, offline: 0 }
   ];
-  
+
   console.log('Chart Data:', chartData); // Debug log
 
   return (
@@ -207,11 +207,11 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest">
-                      <span className="w-2 h-2 rounded-full bg-amber-400"></span> 
+                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                       Online (Website)
                     </span>
                     <span className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      <span className="w-2 h-2 rounded-full bg-slate-500"></span> 
+                      <span className="w-2 h-2 rounded-full bg-slate-500"></span>
                       Offline (Desk)
                     </span>
                   </div>
@@ -224,7 +224,7 @@ const Dashboard = () => {
                     const onlineHeight = maxAmount > 0 ? ((d.online || 0) / maxAmount) * 100 : 2;
                     const offlineHeight = maxAmount > 0 ? ((d.offline || 0) / maxAmount) * 100 : 2;
                     const dayName = dayNames[new Date(d._id).getDay()];
-                    
+
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
                         <div className="w-full relative flex flex-col items-center justify-end h-40">
@@ -347,7 +347,7 @@ const Dashboard = () => {
                 <h3 className="text-xl font-black text-gray-900 mb-8 tracking-tight">Property Asset Mix</h3>
                 <div className="space-y-6">
                   {[
-                    { label: 'Room Units', count: data.rooms.length, icon: FaBed, color: 'text-blue-500', bg: 'bg-blue-50', path: '/rooms' },
+                    { label: 'Bookable Units', count: data.rooms.length, icon: FaBed, color: 'text-blue-500', bg: 'bg-blue-50', path: '/rooms' },
                     { label: 'Verified Guests', count: data.guests.length, icon: FaUsers, color: 'text-purple-500', bg: 'bg-purple-50', path: '/guests' },
                     { label: 'Media Assets', count: data.gallery.length, icon: FaImages, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/gallery' },
                     { label: 'Guest Feedback', count: data.reviews.length, icon: FaStar, color: 'text-amber-500', bg: 'bg-amber-50', path: '/reviews' }

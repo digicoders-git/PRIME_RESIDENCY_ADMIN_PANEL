@@ -9,6 +9,7 @@ const RoomDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [room, setRoom] = useState(null);
+    const [recentBookings, setRecentBookings] = useState([]);
 
     useEffect(() => {
         fetchRoomDetails();
@@ -20,12 +21,24 @@ const RoomDetail = () => {
             if (data.success) {
                 const r = data.data;
                 console.log('Room data from API:', r); // Debug log
+
+                // Set recent bookings
+                if (r.recentBookings && r.recentBookings.length > 0) {
+                    setRecentBookings(r.recentBookings);
+                }
+
                 // Map backend data to UI structure
                 setRoom({
                     id: r._id,
-                    name: r.name || 'Deluxe Room',
-                    category: r.type || 'Deluxe',
+                    name: r.name || 'Unit Details',
+                    category: r.category || 'Room',
+                    type: r.type || 'Standard',
                     price: r.price ? r.price.toLocaleString() : '5000',
+                    totalPrice: (r.enableExtraCharges && r.totalPrice) ? r.totalPrice.toLocaleString() : null,
+                    enableExtraCharges: r.enableExtraCharges || false,
+                    discount: r.discount || 0,
+                    extraBedPrice: r.extraBedPrice || 0,
+                    taxGST: r.taxGST || 0,
                     status: r.status || 'Available',
                     image: r.image || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=60&w=800',
                     desc: r.description || 'No description available',
@@ -128,7 +141,7 @@ const RoomDetail = () => {
                                             </span>
                                         </div>
                                         <h1 className="text-2xl sm:text-4xl font-bold mb-1 tracking-tight truncate">{room.name}</h1>
-                                        <p className="text-white/80 font-medium text-sm sm:text-base">Room #{room.roomNumber}</p>
+                                        <p className="text-white/80 font-medium text-sm sm:text-base">{room.category} #{room.roomNumber}</p>
                                     </div>
                                 </div>
 
@@ -162,25 +175,38 @@ const RoomDetail = () => {
                                         <FaHistory className="text-[#D4AF37]" />
                                         Recent Activity
                                     </h2>
-                                    <button className="text-xs sm:text-sm font-bold text-[#D4AF37] hover:underline cursor-pointer self-start sm:self-auto">View All</button>
                                 </div>
                                 <div className="space-y-3 sm:space-y-4">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-2xl bg-gray-50 transition-colors hover:bg-gray-100/80 gap-3 sm:gap-0">
-                                            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs flex-shrink-0">
-                                                    JD
+                                    {recentBookings.length > 0 ? (
+                                        recentBookings.map((booking) => (
+                                            <div key={booking._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-2xl bg-gray-50 transition-colors hover:bg-gray-100/80 gap-3 sm:gap-0">
+                                                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs flex-shrink-0">
+                                                        {booking.guest?.name ? booking.guest.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'NA'}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="font-bold text-gray-800 text-xs sm:text-sm truncate">{booking.guest?.name || 'Guest'}</p>
+                                                        <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">
+                                                            {new Date(booking.checkIn).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(booking.checkOut).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <p className="font-bold text-gray-800 text-xs sm:text-sm truncate">John Doe</p>
-                                                    <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">Jan {20 + i}, 2026 - Jan {23 + i}, 2026</p>
-                                                </div>
+                                                <span className={`px-2 py-1 sm:px-3 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest self-start sm:self-auto ${booking.status === 'Confirmed' ? 'bg-blue-100 text-blue-700' :
+                                                    booking.status === 'Checked-in' ? 'bg-green-100 text-green-700' :
+                                                        booking.status === 'Checked-out' ? 'bg-emerald-100 text-emerald-700' :
+                                                            booking.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                                                'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                    {booking.status}
+                                                </span>
                                             </div>
-                                            <span className="px-2 py-1 sm:px-3 bg-emerald-100 text-emerald-700 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest self-start sm:self-auto">
-                                                Completed
-                                            </span>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <FaHistory className="mx-auto text-4xl mb-3 opacity-30" />
+                                            <p className="text-sm">No recent bookings for this room</p>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -196,11 +222,30 @@ const RoomDetail = () => {
                                         <span className="text-2xl sm:text-4xl font-bold italic">₹{room.price}</span>
                                         <span className="text-white/70 font-medium text-sm sm:text-base">/ night</span>
                                     </div>
+
+                                    {room.enableExtraCharges && room.totalPrice && (
+                                        <div className="mt-4 pt-4 border-t border-white/20">
+                                            <p className="text-white/80 font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] mb-2">Total Price (with all charges)</p>
+                                            <div className="flex items-baseline gap-1 flex-wrap">
+                                                <span className="text-xl sm:text-3xl font-bold italic">₹{room.totalPrice}</span>
+                                                <span className="text-white/70 font-medium text-xs sm:text-sm">/ night</span>
+                                            </div>
+                                            {(room.discount > 0 || room.extraBedPrice > 0 || room.taxGST > 0) && (
+                                                <div className="mt-3 space-y-1 text-xs text-white/70">
+                                                    {room.discount > 0 && <p>• Discount: {room.discount}%</p>}
+                                                    {room.extraBedPrice > 0 && <p>• Extra Bed: ₹{room.extraBedPrice}</p>}
+                                                    {room.taxGST > 0 && <p>• Tax/GST: {room.taxGST}%</p>}
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-white/60 mt-2 italic">* This price will be used for bookings</p>
+                                        </div>
+                                    )}
+
                                     <button
                                         onClick={() => navigate(`/create-booking/${room.id}`)}
                                         className="w-full mt-4 sm:mt-6 py-3 sm:py-4 bg-white text-[#B8860B] rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-[11px] shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all cursor-pointer"
                                     >
-                                        Book This Room Now
+                                        Book This {room.category} Now
                                     </button>
                                 </div>
                                 {/* Abstract Shapes */}
@@ -210,7 +255,7 @@ const RoomDetail = () => {
 
                             {/* Quick Stats */}
                             <div className="bg-white mt-4 rounded-[2rem] shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6 sm:space-y-8 w-full">
-                                <h3 className="font-black uppercase tracking-[0.2em] text-[10px] sm:text-[11px] text-gray-400">Room Specification</h3>
+                                <h3 className="font-black uppercase tracking-[0.2em] text-[10px] sm:text-[11px] text-gray-400">{room.category} Specification</h3>
 
                                 <div className="flex items-center gap-4 sm:gap-5 min-w-0">
                                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">

@@ -85,6 +85,7 @@ const ManageCheckIns = () => {
             return checkInDate === today;
         });
         const checkIns = arrivalsToday.length;
+        // Count confirmed or pending as 'Pending Arrival'. Checked-in are done.
         const pendingArr = arrivalsToday.filter(b => b.status === 'Confirmed' || b.status === 'Pending').length;
 
         const departuresToday = data.filter(b => {
@@ -94,6 +95,7 @@ const ManageCheckIns = () => {
             return checkOutDate === today;
         });
         const checkOuts = departuresToday.length;
+        // Count checked-in as 'Due Checkout'. Checked-out are done.
         const pendingDep = departuresToday.filter(b => b.status === 'Checked-in').length;
 
         const occupied = data.filter(b => b.status === 'Checked-in').length;
@@ -147,8 +149,8 @@ const ManageCheckIns = () => {
                 const d = new Date(b.checkIn);
                 const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-                // Show Pending Arrivals for Today
-                return checkInDate === today && (b.status === 'Confirmed' || b.status === 'Pending');
+                // Show All Arrivals for Today (Pending + Completed)
+                return checkInDate === today;
             });
         } else if (activeTab === 'departures') {
             data = bookings.filter(b => {
@@ -156,9 +158,11 @@ const ManageCheckIns = () => {
                 const d = new Date(b.checkOut);
                 const checkOutDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-                return checkOutDate === today && b.status === 'Checked-in';
+                // Show All Departures for Today (Pending + Completed)
+                return checkOutDate === today;
             });
         } else if (activeTab === 'in-house') {
+            // Show all currently checked-in guests
             data = bookings.filter(b => b.status === 'Checked-in');
         }
 
@@ -293,8 +297,8 @@ const ManageCheckIns = () => {
                 {/* Toolbar */}
                 <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/30">
                     <h2 className="text-xl font-bold flex items-center gap-3">
-                        {activeTab === 'arrivals' && <><FaSignInAlt className="text-[#D4AF37]" /> Pending Arrivals</>}
-                        {activeTab === 'departures' && <><FaSignOutAlt className="text-slate-600" /> Pending Departures</>}
+                        {activeTab === 'arrivals' && <><FaSignInAlt className="text-[#D4AF37]" /> Arrivals Today</>}
+                        {activeTab === 'departures' && <><FaSignOutAlt className="text-slate-600" /> Departures Today</>}
                         {activeTab === 'in-house' && <><FaUserCheck className="text-emerald-600" /> Active Guests</>}
                         <span className="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-500 font-bold">{allFilteredData.length} Records</span>
                     </h2>
@@ -381,13 +385,13 @@ const ManageCheckIns = () => {
                                                         </span>
                                                     </div>
 
-                                                    {/* Room Text Details */}
+                                                    {/* Unit Text Details */}
                                                     <div className="flex flex-col justify-center">
-                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Room Type</span>
-                                                        <h4 className="font-extrabold text-gray-900 text-sm tracking-tight leading-tight">{booking.room || 'Standard Room'}</h4>
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Unit Type</span>
+                                                        <h4 className="font-extrabold text-gray-900 text-sm tracking-tight leading-tight">{booking.room || 'Standard Unit'}</h4>
                                                         <span className="text-[10px] font-semibold text-gray-400 mt-1 flex items-center gap-1.5 opacity-80">
                                                             <FaBed size={10} />
-                                                            <span className="tracking-wide">{booking.bedType || 'Premium Unit'}</span>
+                                                            <span className="tracking-wide">{[booking.category || 'Unit'].join(' ')} - {booking.bedType || 'Premium'}</span>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -450,18 +454,24 @@ const ManageCheckIns = () => {
                                                 {booking.status !== 'Cancelled' && (
                                                     <button
                                                         onClick={() => {
-                                                            if (activeTab === 'arrivals' || booking.status !== 'Checked-in') {
+                                                            if (booking.status === 'Confirmed' || booking.status === 'Pending') {
                                                                 handleStatusUpdate(booking.id, 'Checked-in', booking.guest);
-                                                            } else {
+                                                            } else if (booking.status === 'Checked-in') {
                                                                 handleStatusUpdate(booking.id, 'Checked-out', booking.guest);
                                                             }
                                                         }}
-                                                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transform active:scale-95 transition-all w-28 ${(activeTab === 'arrivals' || booking.status !== 'Checked-in')
+                                                        disabled={booking.status === 'Checked-out' || (activeTab === 'arrivals' && booking.status === 'Checked-in')}
+                                                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transform active:scale-95 transition-all w-28 ${(booking.status === 'Confirmed' || booking.status === 'Pending')
                                                             ? 'bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white shadow-yellow-500/20 hover:translate-y-[-2px]'
-                                                            : 'bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-slate-400/20 hover:translate-y-[-2px]'
+                                                            : (booking.status === 'Checked-in' && activeTab !== 'arrivals')
+                                                                ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-slate-400/20 hover:translate-y-[-2px]'
+                                                                : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
                                                             }`}
                                                     >
-                                                        {(activeTab === 'arrivals' || booking.status !== 'Checked-in') ? 'Check In' : 'Check Out'}
+                                                        {booking.status === 'Confirmed' || booking.status === 'Pending' ? 'Check In' :
+                                                            booking.status === 'Checked-in' && activeTab === 'arrivals' ? 'Arrived' :
+                                                                booking.status === 'Checked-in' ? 'Check Out' :
+                                                                    booking.status === 'Checked-out' ? 'Departed' : 'Action'}
                                                     </button>
                                                 )}
                                             </td>

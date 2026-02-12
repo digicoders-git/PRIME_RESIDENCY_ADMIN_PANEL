@@ -6,19 +6,24 @@ import {
   FaUsers, FaClock, FaCog, FaWifi, FaTv, FaSnowflake, FaFire,
   FaBalanceScale, FaUtensils, FaShieldAlt, FaDesktop, FaCube,
   FaBatteryFull, FaSmoking, FaPaw, FaEye, FaStar, FaChartBar, FaUpload, FaArrowLeft,
-  FaRupeeSign
+  FaRupeeSign, FaGlassCheers, FaMusic, FaCamera, FaParking, FaMicrophone, FaChair, FaLeaf
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 import api from '../api/api';
+import { useEffect } from 'react';
 
 const AddRoom = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [roomTypes, setRoomTypes] = useState([]);
+  const [bedTypes, setBedTypes] = useState([]);
+  const [amenitiesList, setAmenitiesList] = useState([]);
   const [formData, setFormData] = useState({
     // 1. Basic Room Information
     roomName: '',
     roomNumber: '',
+    category: 'Room',
     roomType: '',
     bedType: '',
     maxAdults: '',
@@ -29,11 +34,10 @@ const AddRoom = () => {
     // 2. Pricing & Availability
     pricePerNight: '',
     discount: '',
-    offerPrice: '',
     extraBedPrice: '',
     taxGST: '',
-    totalRoomsCount: '',
-    availableRooms: '',
+    totalPrice: '',
+    enableExtraCharges: false,
     roomStatus: 'Available',
 
     // 3. Images & Media
@@ -41,8 +45,6 @@ const AddRoom = () => {
     mainImagePreview: '',
     galleryImages: [],
     galleryPreviews: [],
-    video360: '',
-    imageAltText: '',
 
     // 4. Amenities
     amenities: {
@@ -89,9 +91,34 @@ const AddRoom = () => {
     occupancyRate: 0
   });
 
-  const roomTypes = ['Classic', 'Deluxe', 'Executive', 'Presidential', 'Family', 'Garden'];
-  const bedTypes = ['Single', 'Double', 'King', 'Twin', 'Queen Size', 'Sofa Bed'];
   const roomStatuses = ['Available', 'Booked', 'Under Maintenance', 'Disabled'];
+
+  useEffect(() => {
+    fetchConfigs();
+  }, []);
+
+  const fetchConfigs = async () => {
+    try {
+      const { data } = await api.get('/room-config');
+      const configs = data.data;
+
+      setRoomTypes(configs.filter(c => c.type === 'roomType').map(c => c.name));
+      setBedTypes(configs.filter(c => c.type === 'bedType').map(c => c.name));
+
+      const amenities = configs.filter(c => c.type === 'amenity');
+      setAmenitiesList(amenities);
+
+      // Initialize amenities state
+      const amenitiesObj = {};
+      amenities.forEach(a => {
+        const key = a.name.toLowerCase().replace(/\s+/g, '');
+        amenitiesObj[key] = false;
+      });
+      setFormData(prev => ({ ...prev, amenities: amenitiesObj }));
+    } catch (error) {
+      console.error('Failed to fetch configs');
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -111,6 +138,11 @@ const AddRoom = () => {
   const handleImageUpload = (e, type) => {
     const file = e.target.files[0];
     if (file) {
+      if (type === 'gallery' && formData.galleryImages.length >= 3) {
+        toast.error('Maximum 3 gallery images allowed');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (event) => {
         if (type === 'main') {
@@ -156,6 +188,7 @@ const AddRoom = () => {
       // Only required fields first
       form.append('name', formData.roomName.trim());
       form.append('roomNumber', formData.roomNumber.trim());
+      form.append('category', formData.category);
       form.append('type', formData.roomType);
       form.append('price', formData.pricePerNight);
 
@@ -181,13 +214,15 @@ const AddRoom = () => {
 
       // Append Pricing Extended
       if (formData.discount) form.append('discount', formData.discount);
-      if (formData.offerPrice) form.append('offerPrice', formData.offerPrice);
       if (formData.extraBedPrice) form.append('extraBedPrice', formData.extraBedPrice);
       if (formData.taxGST) form.append('taxGST', formData.taxGST);
+      if (formData.totalPrice) {
+        form.append('totalPrice', formData.totalPrice);
+        form.append('enableExtraCharges', true);
+      }
+      form.append('enableExtraCharges', formData.enableExtraCharges);
 
-      // Append Inventory
-      if (formData.totalRoomsCount) form.append('totalRoomsCount', formData.totalRoomsCount);
-      if (formData.availableRooms) form.append('availableRooms', formData.availableRooms);
+
 
       // Images
       if (formData.mainImage) {
@@ -235,8 +270,8 @@ const AddRoom = () => {
               <FaArrowLeft className="text-white" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold">Add New Room</h1>
-              <p className="text-yellow-100 text-sm mt-1">Create a new room listing for your hotel</p>
+              <h1 className="text-3xl font-bold">Add New {formData.category}</h1>
+              <p className="text-yellow-100 text-sm mt-1">Create a new {formData.category.toLowerCase()} listing for your property</p>
             </div>
           </div>
         </div>
@@ -252,31 +287,45 @@ const AddRoom = () => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Room Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{formData.category === 'Room' ? 'Room' : 'Venue'} Name *</label>
               <input
                 type="text"
                 name="roomName"
                 value={formData.roomName}
                 onChange={handleInputChange}
-                placeholder="Deluxe Ocean View Suite"
+                placeholder={formData.category === 'Room' ? "Deluxe Ocean View Suite" : "Grand Imperial Ballroom"}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Room Number *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{formData.category === 'Room' ? 'Room' : 'Venue'} Number/ID *</label>
               <input
                 type="text"
                 name="roomNumber"
                 value={formData.roomNumber}
                 onChange={handleInputChange}
-                placeholder="101, A1, B2"
+                placeholder={formData.category === 'Room' ? "101, A1" : "V1, LN-01"}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Room Type *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                required
+              >
+                <option value="Room">Room</option>
+                <option value="Banquet">Banquet</option>
+                <option value="Lawn">Lawn</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{formData.category === 'Room' ? 'Room' : 'Venue'} Type *</label>
               <select
                 name="roomType"
                 value={formData.roomType}
@@ -285,51 +334,64 @@ const AddRoom = () => {
                 required
               >
                 <option value="">Select Type</option>
-                {roomTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                {formData.category === 'Room' ? (
+                  roomTypes.map(type => <option key={type} value={type}>{type}</option>)
+                ) : (
+                  <>
+                    <option value="Indoor">Indoor</option>
+                    <option value="Outdoor">Outdoor</option>
+                    <option value="Rooftop">Rooftop</option>
+                    <option value="Poolside">Poolside</option>
+                  </>
+                )}
               </select>
             </div>
+            {formData.category === 'Room' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bed Type</label>
+                <select
+                  name="bedType"
+                  value={formData.bedType}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="">Select Bed</option>
+                  {bedTypes.map(bed => <option key={bed} value={bed}>{bed}</option>)}
+                </select>
+              </div>
+            )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bed Type</label>
-              <select
-                name="bedType"
-                value={formData.bedType}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="">Select Bed</option>
-                {bedTypes.map(bed => <option key={bed} value={bed}>{bed}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Max Adults</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{formData.category === 'Room' ? 'Max Adults' : 'Guest Capacity'}</label>
               <input
                 type="number"
                 name="maxAdults"
                 value={formData.maxAdults}
                 onChange={handleInputChange}
-                placeholder="2"
+                placeholder={formData.category === 'Room' ? "2" : "500"}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+            {formData.category === 'Room' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max Children</label>
+                <input
+                  type="number"
+                  name="maxChildren"
+                  value={formData.maxChildren}
+                  onChange={handleInputChange}
+                  placeholder="1"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Max Children</label>
-              <input
-                type="number"
-                name="maxChildren"
-                value={formData.maxChildren}
-                onChange={handleInputChange}
-                placeholder="1"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Room Size (sq ft)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{formData.category === 'Room' ? 'Room' : 'Area'} Size (sq ft)</label>
               <input
                 type="text"
                 name="roomSize"
                 value={formData.roomSize}
                 onChange={handleInputChange}
-                placeholder="450"
+                placeholder={formData.category === 'Room' ? "450" : "5000"}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -354,14 +416,79 @@ const AddRoom = () => {
             <span className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm mr-3">2</span>
             Pricing & Availability
           </h3>
+
+          {/* Enable Extra Charges Toggle */}
+          <div className="mb-6 p-4 bg-white rounded-lg border border-green-300">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.enableExtraCharges}
+                onChange={(e) => {
+                  const enabled = e.target.checked;
+                  setFormData(prev => {
+                    const priceVal = parseFloat(prev.pricePerNight) || 0;
+                    const discountVal = parseFloat(prev.discount) || 0;
+                    const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+                    const taxVal = parseFloat(prev.taxGST) || 0;
+
+                    let newTotalPrice = priceVal;
+                    if (enabled && priceVal > 0) {
+                      const discountAmount = (priceVal * discountVal) / 100;
+                      const priceAfterDiscount = priceVal - discountAmount;
+                      const taxAmount = (priceAfterDiscount * taxVal) / 100;
+                      newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+                    }
+
+                    return {
+                      ...prev,
+                      enableExtraCharges: enabled,
+                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                    };
+                  });
+                }}
+                className="rounded border-gray-300 text-green-500 focus:ring-green-500 mr-3 w-5 h-5"
+              />
+              <div>
+                <span className="text-sm font-bold text-gray-700">Enable Extra Charges (Discount, Taxes, etc.)</span>
+                <p className="text-xs text-gray-500 mt-1">When enabled, total price will include discount, {formData.category === 'Room' ? 'extra bed charges' : 'additional gear'}, and taxes</p>
+              </div>
+            </label>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Price Per Night (₹) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {formData.category === 'Room' ? 'Price Per Night (₹) *' : 'Base Booking Price (₹) *'}
+              </label>
               <input
                 type="number"
                 name="pricePerNight"
                 value={formData.pricePerNight}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  const newPrice = e.target.value;
+                  const priceVal = parseFloat(newPrice) || 0;
+
+                  setFormData(prev => {
+                    if (!prev.enableExtraCharges) {
+                      return { ...prev, pricePerNight: newPrice, totalPrice: newPrice };
+                    }
+
+                    const discountVal = parseFloat(prev.discount) || 0;
+                    const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+                    const taxVal = parseFloat(prev.taxGST) || 0;
+
+                    const discountAmount = (priceVal * discountVal) / 100;
+                    const priceAfterDiscount = priceVal - discountAmount;
+                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
+                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+
+                    return {
+                      ...prev,
+                      pricePerNight: newPrice,
+                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                    };
+                  });
+                }}
                 placeholder="5000"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
@@ -373,19 +500,32 @@ const AddRoom = () => {
                 type="number"
                 name="discount"
                 value={formData.discount}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  const newDiscount = e.target.value;
+
+                  setFormData(prev => {
+                    if (!prev.enableExtraCharges) {
+                      return { ...prev, discount: newDiscount };
+                    }
+
+                    const discountVal = parseFloat(newDiscount) || 0;
+                    const priceVal = parseFloat(prev.pricePerNight) || 0;
+                    const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+                    const taxVal = parseFloat(prev.taxGST) || 0;
+
+                    const discountAmount = (priceVal * discountVal) / 100;
+                    const priceAfterDiscount = priceVal - discountAmount;
+                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
+                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+
+                    return {
+                      ...prev,
+                      discount: newDiscount,
+                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                    };
+                  });
+                }}
                 placeholder="10"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Offer Price (₹)</label>
-              <input
-                type="number"
-                name="offerPrice"
-                value={formData.offerPrice}
-                onChange={handleInputChange}
-                placeholder="4500"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -395,7 +535,31 @@ const AddRoom = () => {
                 type="number"
                 name="extraBedPrice"
                 value={formData.extraBedPrice}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  const newExtraBed = e.target.value;
+
+                  setFormData(prev => {
+                    if (!prev.enableExtraCharges) {
+                      return { ...prev, extraBedPrice: newExtraBed };
+                    }
+
+                    const extraBedVal = parseFloat(newExtraBed) || 0;
+                    const priceVal = parseFloat(prev.pricePerNight) || 0;
+                    const discountVal = parseFloat(prev.discount) || 0;
+                    const taxVal = parseFloat(prev.taxGST) || 0;
+
+                    const discountAmount = (priceVal * discountVal) / 100;
+                    const priceAfterDiscount = priceVal - discountAmount;
+                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
+                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+
+                    return {
+                      ...prev,
+                      extraBedPrice: newExtraBed,
+                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                    };
+                  });
+                }}
                 placeholder="1000"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
@@ -406,32 +570,49 @@ const AddRoom = () => {
                 type="number"
                 name="taxGST"
                 value={formData.taxGST}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  const newTax = e.target.value;
+
+                  setFormData(prev => {
+                    if (!prev.enableExtraCharges) {
+                      return { ...prev, taxGST: newTax };
+                    }
+
+                    const taxVal = parseFloat(newTax) || 0;
+                    const priceVal = parseFloat(prev.pricePerNight) || 0;
+                    const discountVal = parseFloat(prev.discount) || 0;
+                    const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+
+                    const discountAmount = (priceVal * discountVal) / 100;
+                    const priceAfterDiscount = priceVal - discountAmount;
+                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
+                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+
+                    return {
+                      ...prev,
+                      taxGST: newTax,
+                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                    };
+                  });
+                }}
                 placeholder="18"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Total Rooms Count</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {formData.enableExtraCharges ? 'Total Price (with charges) (₹)' : 'Total Price (₹)'}
+              </label>
               <input
                 type="number"
-                name="totalRoomsCount"
-                value={formData.totalRoomsCount}
-                onChange={handleInputChange}
-                placeholder="10"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                name="totalPrice"
+                value={formData.totalPrice}
+                readOnly
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-green-100 cursor-not-allowed font-semibold text-green-700"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Available Rooms</label>
-              <input
-                type="number"
-                name="availableRooms"
-                value={formData.availableRooms}
-                onChange={handleInputChange}
-                placeholder="8"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
+              {formData.enableExtraCharges && formData.totalPrice && (
+                <p className="text-xs text-gray-500 mt-1">This price will be used for bookings</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Room Status</label>
@@ -490,7 +671,7 @@ const AddRoom = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Gallery Images</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Gallery Images (Max 3)</label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                 {formData.galleryPreviews.map((preview, index) => (
                   <div key={index} className="relative">
@@ -508,41 +689,19 @@ const AddRoom = () => {
                     </button>
                   </div>
                 ))}
-                <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 flex flex-col items-center justify-center hover:border-purple-400 transition-colors cursor-pointer relative">
-                  <FaPlus className="text-2xl text-purple-400 mb-2" />
-                  <span className="text-sm text-gray-600">Add Image</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, 'gallery')}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                </div>
+                {formData.galleryImages.length < 3 && (
+                  <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 flex flex-col items-center justify-center hover:border-purple-400 transition-colors cursor-pointer relative">
+                    <FaPlus className="text-2xl text-purple-400 mb-2" />
+                    <span className="text-sm text-gray-600">Add Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'gallery')}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">360° Video URL (Optional)</label>
-              <input
-                type="url"
-                name="video360"
-                value={formData.video360}
-                onChange={handleInputChange}
-                placeholder="https://example.com/360-video"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Image Alt Text (SEO)</label>
-              <input
-                type="text"
-                name="imageAltText"
-                value={formData.imageAltText}
-                onChange={handleInputChange}
-                placeholder="Deluxe room with ocean view and modern amenities"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
             </div>
           </div>
         </div>
@@ -554,31 +713,38 @@ const AddRoom = () => {
             <span className="w-8 h-8 bg-yellow-600 text-white rounded-full flex items-center justify-center text-sm mr-3">4</span>
             Amenities
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {[
-              { key: 'ac', label: 'AC', icon: FaSnowflake },
-              { key: 'wifi', label: 'Wi-Fi', icon: FaWifi },
-              { key: 'tv', label: 'TV', icon: FaTv },
-              { key: 'geyser', label: 'Geyser', icon: FaFire },
-              { key: 'balcony', label: 'Balcony', icon: FaBalanceScale },
-              { key: 'roomService', label: 'Room Service', icon: FaUtensils },
-              { key: 'powerBackup', label: 'Power Backup', icon: FaBatteryFull },
-              { key: 'miniFridge', label: 'Mini Fridge', icon: FaCube },
-              { key: 'safeLocker', label: 'Safe Locker', icon: FaShieldAlt },
-              { key: 'workDesk', label: 'Work Desk', icon: FaDesktop }
-            ].map(({ key, label, icon: Icon }) => (
-              <label key={key} className="flex items-center cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-yellow-100">
-                <input
-                  type="checkbox"
-                  checked={formData.amenities[key]}
-                  onChange={() => handleAmenityChange(key)}
-                  className="rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 mr-3"
-                />
-                <Icon className="text-yellow-600 mr-2" />
-                <span className="text-sm font-medium text-gray-700">{label}</span>
-              </label>
-            ))}
-          </div>
+          {amenitiesList.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No amenities available. Please add amenities from Services Management.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {amenitiesList.map((amenity) => {
+                const key = amenity.name.toLowerCase().replace(/\s+/g, '');
+                const iconMap = {
+                  'FaWifi': FaWifi, 'FaSnowflake': FaSnowflake, 'FaTv': FaTv, 'FaFire': FaFire,
+                  'FaBalanceScale': FaBalanceScale, 'FaUtensils': FaUtensils, 'FaBatteryFull': FaBatteryFull,
+                  'FaCube': FaCube, 'FaShieldAlt': FaShieldAlt, 'FaDesktop': FaDesktop,
+                  'FaGlassCheers': FaGlassCheers, 'FaMusic': FaMusic, 'FaCamera': FaCamera,
+                  'FaParking': FaParking, 'FaMicrophone': FaMicrophone, 'FaChair': FaChair, 'FaLeaf': FaLeaf
+                };
+                const Icon = amenity.icon ? iconMap[amenity.icon] || FaBed : FaBed;
+
+                return (
+                  <label key={amenity._id} className="flex items-center cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-yellow-100">
+                    <input
+                      type="checkbox"
+                      checked={formData.amenities[key] || false}
+                      onChange={() => handleAmenityChange(key)}
+                      className="rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 mr-3"
+                    />
+                    <Icon className="text-yellow-600 mr-2" />
+                    <span className="text-sm font-medium text-gray-700">{amenity.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* 5. Room Description */}
@@ -586,7 +752,7 @@ const AddRoom = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <FaUsers className="text-indigo-600 mr-3" />
             <span className="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm mr-3">5</span>
-            Room Description
+            {formData.category} Description
           </h3>
           <div className="space-y-4">
             <div>

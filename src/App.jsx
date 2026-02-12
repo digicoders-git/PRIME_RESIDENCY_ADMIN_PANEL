@@ -20,6 +20,7 @@ import ReviewDetail from './pages/ReviewDetail';
 import Contacts from './pages/Contacts';
 import Gallery from './pages/Gallery';
 import Services from './pages/Services';
+import ServicesManagement from './pages/ServicesManagement';
 import AddService from './pages/AddService';
 import Enquiries from './pages/Enquiries';
 import Revenue from './pages/Revenue';
@@ -31,6 +32,7 @@ import EditRoom from './pages/EditRoom';
 import ManageCheckIns from './pages/ManageCheckIns';
 import Billing from './pages/Billing';
 import Invoice from './pages/Invoice';
+import Banquets from './pages/Banquets';
 
 
 
@@ -56,6 +58,7 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/login" element={!isAuthenticated ? <Login setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/" replace />} />
         <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} />
         <Route path="/rooms" element={isAuthenticated ? <Rooms /> : <Navigate to="/login" replace />} />
+        <Route path="/banquets" element={isAuthenticated ? <Banquets /> : <Navigate to="/login" replace />} />
         <Route path="/add-room" element={isAuthenticated ? <AddRoom /> : <Navigate to="/login" replace />} />
         <Route path="/bookings" element={isAuthenticated ? <Bookings /> : <Navigate to="/login" replace />} />
         <Route path="/guests" element={isAuthenticated ? <Guests /> : <Navigate to="/login" replace />} />
@@ -64,6 +67,7 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/contacts" element={isAuthenticated ? <Contacts /> : <Navigate to="/login" replace />} />
         <Route path="/gallery" element={isAuthenticated ? <Gallery /> : <Navigate to="/login" replace />} />
         <Route path="/services" element={isAuthenticated ? <Services /> : <Navigate to="/login" replace />} />
+        <Route path="/services-management" element={isAuthenticated ? <ServicesManagement /> : <Navigate to="/login" replace />} />
         <Route path="/add-service" element={isAuthenticated ? <AddService /> : <Navigate to="/login" replace />} />
         <Route path="/enquiries" element={isAuthenticated ? <Enquiries /> : <Navigate to="/login" replace />} />
         <Route path="/revenue" element={isAuthenticated ? <Revenue /> : <Navigate to="/login" replace />} />
