@@ -139,7 +139,7 @@ const Banquets = () => {
                             <p className="text-gray-600 mt-1">Manage your event spaces and outdoor venues</p>
                         </div>
                         <button
-                            onClick={() => navigate('/add-room')}
+                            onClick={() => navigate('/add-room?category=Banquet')}
                             className="flex items-center px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-lg hover:from-[#B8860B] hover:to-[#D4AF37] transition-all cursor-pointer shadow-lg hover:shadow-xl"
                         >
                             <FaPlus className="mr-2" />

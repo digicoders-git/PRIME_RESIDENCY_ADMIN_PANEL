@@ -373,18 +373,66 @@ const Bookings = () => {
 
                 {/* ID Details */}
                 {selectedBooking.idType && (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h4 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3">ID Details</h4>
-                    <div className="space-y-2">
+                  <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                    <h4 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">ID Verification</h4>
+                    <div className="space-y-2 border-b border-gray-200 pb-4 mb-4">
                       <div className="flex justify-between">
                         <span className="text-xs text-gray-600">Type:</span>
-                        <span className="text-xs font-semibold">{selectedBooking.idType}</span>
+                        <span className="text-xs font-bold">{selectedBooking.idType}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-xs text-gray-600">Number:</span>
-                        <span className="text-xs font-semibold">{selectedBooking.idNumber}</span>
+                        <span className="text-xs font-bold">{selectedBooking.idNumber}</span>
                       </div>
                     </div>
+
+                    {(selectedBooking.idFrontImage || selectedBooking.idBackImage) && (
+                      <div className="space-y-4">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Document Photos</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          {selectedBooking.idFrontImage && (
+                            <div className="space-y-1">
+                              <p className="text-[8px] font-bold text-gray-400 uppercase text-center">Front</p>
+                              <a
+                                href={selectedBooking.idFrontImage}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block relative group overflow-hidden rounded-lg border border-gray-200 aspect-[4/3] bg-white"
+                              >
+                                <img
+                                  src={selectedBooking.idFrontImage}
+                                  alt="ID Front"
+                                  className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <FaEye className="text-white" />
+                                </div>
+                              </a>
+                            </div>
+                          )}
+                          {selectedBooking.idBackImage && (
+                            <div className="space-y-1">
+                              <p className="text-[8px] font-bold text-gray-400 uppercase text-center">Back</p>
+                              <a
+                                href={selectedBooking.idBackImage}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block relative group overflow-hidden rounded-lg border border-gray-200 aspect-[4/3] bg-white"
+                              >
+                                <img
+                                  src={selectedBooking.idBackImage}
+                                  alt="ID Back"
+                                  className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <FaEye className="text-white" />
+                                </div>
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -28,8 +28,8 @@ const Rooms = () => {
     try {
       const { data } = await api.get('/rooms');
       if (data.success) {
-        // Map _id to id for compatibility with existing code
-        const mappedRooms = data.data.map(room => ({
+        const filteredData = data.data.filter(room => room.category === 'Room' || !room.category);
+        const mappedRooms = filteredData.map(room => ({
           ...room,
           id: room._id,
           category: room.category || 'Room',

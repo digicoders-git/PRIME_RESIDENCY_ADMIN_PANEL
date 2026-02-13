@@ -102,11 +102,11 @@ const RoomDetail = () => {
                 {/* Top Navigation */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
                     <button
-                        onClick={() => navigate('/rooms')}
+                        onClick={() => navigate(room.category === 'Room' ? '/rooms' : '/banquets')}
                         className="flex items-center text-gray-600 hover:text-[#D4AF37] transition-colors font-medium cursor-pointer group text-sm sm:text-base"
                     >
                         <FaArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform" />
-                        <span className="truncate">Back to Rooms List</span>
+                        <span className="truncate">Back to {room.category === 'Room' ? 'Rooms' : 'Venues'} List</span>
                     </button>
                     <button className="flex items-center px-3 py-2 sm:px-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all text-gray-700 font-medium cursor-pointer text-sm sm:text-base">
                         <FaEdit className="mr-2 text-amber-500" />
@@ -152,7 +152,7 @@ const RoomDetail = () => {
                                     </p>
 
                                     <div className="mt-8 sm:mt-10">
-                                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 font-primary">Premium Amenities</h2>
+                                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 font-primary">{room.category === 'Room' ? 'Premium Amenities' : 'Venue Facilities'}</h2>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 w-full">
 
                                             {amenities.map((item, idx) => (
@@ -173,7 +173,7 @@ const RoomDetail = () => {
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
                                     <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
                                         <FaHistory className="text-[#D4AF37]" />
-                                        Recent Activity
+                                        Recent {room.category === 'Room' ? 'Stays' : 'Events'}
                                     </h2>
                                 </div>
                                 <div className="space-y-3 sm:space-y-4">
@@ -220,7 +220,7 @@ const RoomDetail = () => {
                                     <p className="text-white/80 font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] mb-2">Price Per Night</p>
                                     <div className="flex items-baseline gap-1 flex-wrap">
                                         <span className="text-2xl sm:text-4xl font-bold italic">₹{room.price}</span>
-                                        <span className="text-white/70 font-medium text-sm sm:text-base">/ night</span>
+                                        <span className="text-white/70 font-medium text-sm sm:text-base">/ {room.category === 'Room' ? 'night' : 'slot'}</span>
                                     </div>
 
                                     {room.enableExtraCharges && room.totalPrice && (
@@ -228,7 +228,7 @@ const RoomDetail = () => {
                                             <p className="text-white/80 font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] mb-2">Total Price (with all charges)</p>
                                             <div className="flex items-baseline gap-1 flex-wrap">
                                                 <span className="text-xl sm:text-3xl font-bold italic">₹{room.totalPrice}</span>
-                                                <span className="text-white/70 font-medium text-xs sm:text-sm">/ night</span>
+                                                <span className="text-white/70 font-medium text-xs sm:text-sm">/ {room.category === 'Room' ? 'night' : 'slot'}</span>
                                             </div>
                                             {(room.discount > 0 || room.extraBedPrice > 0 || room.taxGST > 0) && (
                                                 <div className="mt-3 space-y-1 text-xs text-white/70">
@@ -277,15 +277,27 @@ const RoomDetail = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-4 sm:gap-5 min-w-0">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
-                                        <FaBed size={16} className="sm:w-5 sm:h-5" />
+                                {room.category === 'Room' ? (
+                                    <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
+                                            <FaBed size={16} className="sm:w-5 sm:h-5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Bed Configuration</p>
+                                            <p className="font-bold text-gray-900 tracking-tight text-sm sm:text-base truncate">{room.bed}</p>
+                                        </div>
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Bed Configuration</p>
-                                        <p className="font-bold text-gray-900 tracking-tight text-sm sm:text-base truncate">{room.bed}</p>
+                                ) : (
+                                    <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
+                                            <FaGlassCheers size={16} className="sm:w-5 sm:h-5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Venue Type</p>
+                                            <p className="font-bold text-gray-900 tracking-tight text-sm sm:text-base truncate">{room.type}</p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 <div className="flex items-center gap-4 sm:gap-5 min-w-0">
                                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
     FaArrowLeft, FaCalendarAlt, FaUser, FaEnvelope, FaPhone,
     FaUsers, FaBed, FaCreditCard, FaCheckCircle, FaRupeeSign,
-    FaClock, FaInfoCircle, FaIdCard
+    FaClock, FaInfoCircle, FaIdCard, FaImage
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
@@ -196,51 +196,44 @@ const CreateBooking = () => {
         setSubmitting(true);
 
         try {
-            const bookingData = {
-                guest: formData.guest,
-                email: formData.email,
-                phone: formData.phone,
-                room: room.name,
-                roomNumber: room?.roomNumber?.toString() || 'N/A',
-                checkIn: formData.checkIn,
-                checkOut: formData.checkOut,
-                adults: Number(formData.adults),
-                children: Number(formData.children),
-                amount: calc.totalAmount,
-                advance: formData.paymentType === 'cash' ? Number(formData.advance) : 0,
-                balance: formData.paymentType === 'cash' ? Math.max(0, calc.totalAmount - Number(formData.advance)) : calc.totalAmount,
-                nights: calc.nights,
-                status: 'Confirmed',
-                paymentStatus: formData.paymentType === 'cash' && Number(formData.advance) >= calc.totalAmount ? 'Paid' :
-                    formData.paymentType === 'cash' && Number(formData.advance) > 0 ? 'Partial' : 'Pending',
-                source: 'Dashboard',
-                specialRequests: formData.specialRequests,
-                idType: formData.idType,
-                idNumber: formData.idNumber
-            };
+            if (formData.paymentType === 'cash') {
+                const dataToSend = new FormData();
+                dataToSend.append('guest', formData.guest);
+                dataToSend.append('email', formData.email);
+                dataToSend.append('phone', formData.phone);
+                dataToSend.append('room', room.name);
+                dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
+                dataToSend.append('checkIn', formData.checkIn);
+                dataToSend.append('checkOut', formData.checkOut);
+                dataToSend.append('adults', formData.adults);
+                dataToSend.append('children', formData.children);
+                dataToSend.append('amount', calc.totalAmount);
+                dataToSend.append('advance', formData.advance);
+                dataToSend.append('balance', Math.max(0, calc.totalAmount - Number(formData.advance)));
+                dataToSend.append('nights', calc.nights);
+                dataToSend.append('status', 'Confirmed');
+                dataToSend.append('paymentStatus', Number(formData.advance) >= calc.totalAmount ? 'Paid' :
+                    Number(formData.advance) > 0 ? 'Partial' : 'Pending');
+                dataToSend.append('source', 'Dashboard');
+                dataToSend.append('specialRequests', formData.specialRequests);
+                dataToSend.append('idType', formData.idType);
+                dataToSend.append('idNumber', formData.idNumber);
 
-            console.log('Creating booking with payment data:', {
-                paymentType: formData.paymentType,
-                advance: formData.advance,
-                totalAmount: calc.totalAmount,
-                calculatedStatus: formData.paymentType === 'cash' && Number(formData.advance) >= calc.totalAmount ? 'Paid' :
-                    formData.paymentType === 'cash' && Number(formData.advance) > 0 ? 'Partial' : 'Pending'
-            });
+                if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
+                if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
 
-            const { data } = await api.post('/bookings', bookingData);
+                console.log('Creating Cash booking...');
+                const { data } = await api.post('/bookings', dataToSend, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
 
-            if (data.success) {
-                setBookingId(data.data._id);
-                if (formData.paymentType === 'online') {
-                    setShowPaymentModal(true);
-                } else {
-                    // Cash payment - create revenue record
-                    if (Number(formData.advance) > 0) {
-                        // Revenue will be created automatically by backend
-                    }
+                if (data.success) {
                     toast.success('Booking created successfully!');
                     navigate('/bookings');
                 }
+            } else {
+                // For Online payments, show modal first
+                setShowPaymentModal(true);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create booking');
@@ -253,12 +246,11 @@ const CreateBooking = () => {
         try {
             const orderData = await createRazorpayOrder(
                 calc.totalAmount,
-                `booking_${bookingId}`
+                `desk_temp_${Date.now()}`
             );
 
             if (orderData.success) {
                 const bookingData = {
-                    bookingId,
                     guest: formData.guest,
                     email: formData.email,
                     phone: formData.phone
@@ -268,19 +260,47 @@ const CreateBooking = () => {
                     orderData.data,
                     bookingData,
                     async (result) => {
+                        console.log('Payment successful. Creating booking now...');
                         try {
-                            // Update payment status in backend
-                            await api.put(`/bookings/${bookingId}/payment`, {
-                                advance: calc.totalAmount,
-                                paymentMethod: 'Online'
+                            const dataToSend = new FormData();
+                            dataToSend.append('guest', formData.guest);
+                            dataToSend.append('email', formData.email);
+                            dataToSend.append('phone', formData.phone);
+                            dataToSend.append('room', room.name);
+                            dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
+                            dataToSend.append('checkIn', formData.checkIn);
+                            dataToSend.append('checkOut', formData.checkOut);
+                            dataToSend.append('adults', formData.adults);
+                            dataToSend.append('children', formData.children);
+                            dataToSend.append('amount', calc.totalAmount);
+                            dataToSend.append('advance', calc.totalAmount);
+                            dataToSend.append('balance', 0);
+                            dataToSend.append('nights', calc.nights);
+                            dataToSend.append('status', 'Confirmed');
+                            dataToSend.append('paymentStatus', 'Paid');
+                            dataToSend.append('source', 'Dashboard');
+                            dataToSend.append('specialRequests', formData.specialRequests);
+                            dataToSend.append('idType', formData.idType);
+                            dataToSend.append('idNumber', formData.idNumber);
+                            dataToSend.append('razorpayOrderId', result.razorpay_order_id);
+                            dataToSend.append('razorpayPaymentId', result.razorpay_payment_id);
+
+                            if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
+                            if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
+
+                            const { data } = await api.post('/bookings', dataToSend, {
+                                headers: { 'Content-Type': 'multipart/form-data' }
                             });
-                            toast.success('Payment successful! Booking confirmed.');
-                        } catch (error) {
-                            console.error('Failed to update payment status', error);
-                            toast.warning('Payment received but database update failed.');
+
+                            if (data.success) {
+                                toast.success('Payment successful! Booking confirmed.');
+                                setShowPaymentModal(false);
+                                navigate('/bookings');
+                            }
+                        } catch (createError) {
+                            console.error('Booking creation error after payment:', createError);
+                            toast.error('Payment success but booking failed. Please contact support with Payment ID: ' + result.razorpay_payment_id);
                         }
-                        setShowPaymentModal(false);
-                        navigate('/bookings');
                     },
                     (error) => {
                         toast.error(error);
@@ -292,10 +312,47 @@ const CreateBooking = () => {
         }
     };
 
-    const handleBookingOnly = () => {
-        toast.success('Room booked successfully!');
-        setShowPaymentModal(false);
-        navigate('/bookings');
+    const handleBookingOnly = async () => {
+        setSubmitting(true);
+        try {
+            const dataToSend = new FormData();
+            dataToSend.append('guest', formData.guest);
+            dataToSend.append('email', formData.email);
+            dataToSend.append('phone', formData.phone);
+            dataToSend.append('room', room.name);
+            dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
+            dataToSend.append('checkIn', formData.checkIn);
+            dataToSend.append('checkOut', formData.checkOut);
+            dataToSend.append('adults', formData.adults);
+            dataToSend.append('children', formData.children);
+            dataToSend.append('amount', calc.totalAmount);
+            dataToSend.append('advance', 0);
+            dataToSend.append('balance', calc.totalAmount);
+            dataToSend.append('nights', calc.nights);
+            dataToSend.append('status', 'Confirmed');
+            dataToSend.append('paymentStatus', 'Pending');
+            dataToSend.append('source', 'Dashboard');
+            dataToSend.append('specialRequests', formData.specialRequests);
+            dataToSend.append('idType', formData.idType);
+            dataToSend.append('idNumber', formData.idNumber);
+
+            if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
+            if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
+
+            const { data } = await api.post('/bookings', dataToSend, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (data.success) {
+                toast.success('Room booked successfully (Payment Pending)!');
+                setShowPaymentModal(false);
+                navigate('/bookings');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to create booking');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (loading) {
@@ -469,6 +526,51 @@ const CreateBooking = () => {
                                             placeholder={`Enter ${formData.idType} Number`}
                                             className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-white outline-none transition-all font-bold text-gray-800"
                                         />
+                                    </div>
+
+                                    {/* Image Uploads */}
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">ID Card (Front)</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => setFormData(prev => ({ ...prev, idFrontImage: e.target.files[0] }))}
+                                                className="hidden"
+                                                id="idFront"
+                                            />
+                                            <label
+                                                htmlFor="idFront"
+                                                className="flex items-center justify-between w-full px-5 py-4 bg-gray-50 border border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-[#D4AF37] hover:bg-amber-50/30 transition-all font-bold text-gray-800"
+                                            >
+                                                <span className="text-xs truncate max-w-[150px]">
+                                                    {formData.idFrontImage ? formData.idFrontImage.name : 'Choose Front Photo'}
+                                                </span>
+                                                <FaImage className="text-gray-400 group-hover:text-[#D4AF37]" />
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">ID Card (Back)</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => setFormData(prev => ({ ...prev, idBackImage: e.target.files[0] }))}
+                                                className="hidden"
+                                                id="idBack"
+                                            />
+                                            <label
+                                                htmlFor="idBack"
+                                                className="flex items-center justify-between w-full px-5 py-4 bg-gray-50 border border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-[#D4AF37] hover:bg-amber-50/30 transition-all font-bold text-gray-800"
+                                            >
+                                                <span className="text-xs truncate max-w-[150px]">
+                                                    {formData.idBackImage ? formData.idBackImage.name : 'Choose Back Photo'}
+                                                </span>
+                                                <FaImage className="text-gray-400 group-hover:text-[#D4AF37]" />
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

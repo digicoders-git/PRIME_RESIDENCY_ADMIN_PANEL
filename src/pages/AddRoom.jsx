@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FaTimes, FaPlus, FaTrash, FaHotel, FaDollarSign, FaImage, FaBed,
   FaUsers, FaClock, FaCog, FaWifi, FaTv, FaSnowflake, FaFire,
@@ -15,6 +15,10 @@ import { useEffect } from 'react';
 
 const AddRoom = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialCategory = queryParams.get('category') || 'Room';
+
   const [loading, setLoading] = useState(false);
   const [roomTypes, setRoomTypes] = useState([]);
   const [bedTypes, setBedTypes] = useState([]);
@@ -23,7 +27,7 @@ const AddRoom = () => {
     // 1. Basic Room Information
     roomName: '',
     roomNumber: '',
-    category: 'Room',
+    category: initialCategory,
     roomType: '',
     bedType: '',
     maxAdults: '',
@@ -260,18 +264,24 @@ const AddRoom = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white p-6 rounded-xl">
+      <div className={`p-6 rounded-xl text-white shadow-lg transition-all duration-500 ${formData.category === 'Room' ? 'bg-gradient-to-r from-blue-600 to-indigo-700' :
+        formData.category === 'Banquet' ? 'bg-gradient-to-r from-purple-600 to-fuchsia-700' :
+          'bg-gradient-to-r from-emerald-600 to-teal-700'
+        }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <button
-              onClick={() => navigate('/rooms')}
+              onClick={() => navigate(formData.category === 'Room' ? '/rooms' : '/banquets')}
               className="p-2 hover:bg-white/20 rounded-lg cursor-pointer transition-colors mr-4"
             >
               <FaArrowLeft className="text-white" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold">Add New {formData.category}</h1>
-              <p className="text-yellow-100 text-sm mt-1">Create a new {formData.category.toLowerCase()} listing for your property</p>
+              <h1 className="text-3xl font-bold flex items-center gap-3">
+                {formData.category === 'Room' ? <FaHotel /> : formData.category === 'Banquet' ? <FaGlassCheers /> : <FaLeaf />}
+                Add New {formData.category}
+              </h1>
+              <p className="text-white/80 text-sm mt-1">Create a premium {formData.category.toLowerCase()} listing for your luxurious property</p>
             </div>
           </div>
         </div>
@@ -281,9 +291,9 @@ const AddRoom = () => {
         {/* 1. Basic Room Information */}
         <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <FaHotel className="text-blue-600 mr-3" />
-            <span className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm mr-3">1</span>
-            Basic Room Information
+            {formData.category === 'Room' ? <FaHotel className="text-blue-600 mr-3" /> : formData.category === 'Banquet' ? <FaGlassCheers className="text-purple-600 mr-3" /> : <FaLeaf className="text-emerald-600 mr-3" />}
+            <span className={`w-8 h-8 ${formData.category === 'Room' ? 'bg-blue-600' : formData.category === 'Banquet' ? 'bg-purple-600' : 'bg-emerald-600'} text-white rounded-full flex items-center justify-center text-sm mr-3`}>1</span>
+            Basic {formData.category === 'Room' ? 'Room' : 'Venue'} Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -412,9 +422,9 @@ const AddRoom = () => {
         {/* 2. Pricing & Availability */}
         <div className="bg-green-50 p-6 rounded-xl border border-green-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <FaRupeeSign className="text-green-600 mr-3" />
-            <span className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm mr-3">2</span>
-            Pricing & Availability
+            <FaRupeeSign className={formData.category === 'Room' ? 'text-blue-600 mr-3' : formData.category === 'Banquet' ? 'text-purple-600 mr-3' : 'text-emerald-600 mr-3'} />
+            <span className={`w-8 h-8 ${formData.category === 'Room' ? 'bg-blue-600' : formData.category === 'Banquet' ? 'bg-purple-600' : 'bg-emerald-600'} text-white rounded-full flex items-center justify-center text-sm mr-3`}>2</span>
+            Pricing & Booking Details
           </h3>
 
           {/* Enable Extra Charges Toggle */}
@@ -709,9 +719,9 @@ const AddRoom = () => {
         {/* 4. Amenities */}
         <div className="bg-yellow-50 p-6 rounded-xl border border-yellow-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <FaBed className="text-yellow-600 mr-3" />
-            <span className="w-8 h-8 bg-yellow-600 text-white rounded-full flex items-center justify-center text-sm mr-3">4</span>
-            Amenities
+            {formData.category === 'Room' ? <FaBed className="text-blue-600 mr-3" /> : formData.category === 'Banquet' ? <FaMusic className="text-purple-600 mr-3" /> : <FaParking className="text-emerald-600 mr-3" />}
+            <span className={`w-8 h-8 ${formData.category === 'Room' ? 'bg-blue-600' : formData.category === 'Banquet' ? 'bg-purple-600' : 'bg-emerald-600'} text-white rounded-full flex items-center justify-center text-sm mr-3`}>4</span>
+            {formData.category === 'Room' ? 'Room Amenities' : 'Venue Facilities'}
           </h3>
           {amenitiesList.length === 0 ? (
             <div className="text-center py-8 text-gray-500">

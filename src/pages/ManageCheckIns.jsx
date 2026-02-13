@@ -197,15 +197,15 @@ const ManageCheckIns = () => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-8 max-w-[1600px] mx-auto pb-12"
+            className="space-y-6 max-w-[1500px] mx-auto pb-10"
         >
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-gray-200 pb-6">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-5 border-b border-gray-200 pb-5">
                 <div>
-                    <h1 className="text-4xl font-serif font-bold text-gray-900">Front Desk Operations</h1>
-                    <p className="text-gray-500 mt-2 font-medium flex items-center gap-2">
+                    <h1 className="text-3xl font-serif font-bold text-gray-900">Front Desk Operations</h1>
+                    <p className="text-gray-500 mt-1.5 font-medium flex items-center gap-2 text-sm">
                         <FaConciergeBell className="text-[#D4AF37]" />
-                        Welcome to the daily check-in/out management console.
+                        Reception Management Console
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -228,21 +228,18 @@ const ManageCheckIns = () => {
                 <motion.div
                     onClick={() => setActiveTab('arrivals')}
                     whileHover={{ y: -5 }}
-                    className={`cursor-pointer p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${activeTab === 'arrivals'
-                        ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] text-white shadow-xl shadow-yellow-500/20 border-yellow-400'
+                    className={`cursor-pointer p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${activeTab === 'arrivals'
+                        ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] text-white shadow-lg shadow-yellow-500/10 border-yellow-400'
                         : 'bg-white text-gray-800 border-gray-100 shadow-sm hover:shadow-md'
                         }`}
                 >
                     <div className="relative z-10 flex justify-between items-start">
                         <div>
-                            <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${activeTab === 'arrivals' ? 'text-yellow-50' : 'text-gray-400'}`}>Arrivals Today</p>
-                            <h3 className="text-4xl font-extrabold tracking-tight">{stats.pendingArrivals} <span className="text-lg opacity-60 font-medium">/ {stats.checkInsToday}</span></h3>
-                            <p className={`text-xs mt-2 font-medium ${activeTab === 'arrivals' ? 'text-yellow-50' : 'text-[#D4AF37]'}`}>
-                                {stats.pendingArrivals > 0 ? `${stats.pendingArrivals} Pending Check-in` : 'All Arrived'}
-                            </p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${activeTab === 'arrivals' ? 'text-yellow-50' : 'text-gray-400'}`}>Arrivals Today</p>
+                            <h3 className="text-3xl font-extrabold tracking-tight">{stats.pendingArrivals} <span className="text-base opacity-60 font-medium">/ {stats.checkInsToday}</span></h3>
                         </div>
-                        <div className={`p-3 rounded-xl ${activeTab === 'arrivals' ? 'bg-white/20' : 'bg-yellow-50 text-[#D4AF37]'}`}>
-                            <FaSignInAlt size={24} />
+                        <div className={`p-2.5 rounded-xl ${activeTab === 'arrivals' ? 'bg-white/20' : 'bg-yellow-50 text-[#D4AF37]'}`}>
+                            <FaSignInAlt size={20} />
                         </div>
                     </div>
                 </motion.div>
@@ -250,21 +247,18 @@ const ManageCheckIns = () => {
                 <motion.div
                     onClick={() => setActiveTab('departures')}
                     whileHover={{ y: -5 }}
-                    className={`cursor-pointer p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${activeTab === 'departures'
-                        ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-white shadow-xl shadow-slate-400/20 border-slate-600'
+                    className={`cursor-pointer p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${activeTab === 'departures'
+                        ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-white shadow-lg shadow-slate-400/10 border-slate-600'
                         : 'bg-white text-gray-800 border-gray-100 shadow-sm hover:shadow-md'
                         }`}
                 >
                     <div className="relative z-10 flex justify-between items-start">
                         <div>
-                            <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${activeTab === 'departures' ? 'text-slate-200' : 'text-gray-400'}`}>Departures Today</p>
-                            <h3 className="text-4xl font-extrabold tracking-tight">{stats.pendingDepartures} <span className="text-lg opacity-60 font-medium">/ {stats.checkOutsToday}</span></h3>
-                            <p className={`text-xs mt-2 font-medium ${activeTab === 'departures' ? 'text-slate-300' : 'text-slate-500'}`}>
-                                {stats.pendingDepartures > 0 ? `${stats.pendingDepartures} Due Checkout` : 'All Departed'}
-                            </p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${activeTab === 'departures' ? 'text-slate-200' : 'text-gray-400'}`}>Departures Today</p>
+                            <h3 className="text-3xl font-extrabold tracking-tight">{stats.pendingDepartures} <span className="text-base opacity-60 font-medium">/ {stats.checkOutsToday}</span></h3>
                         </div>
-                        <div className={`p-3 rounded-xl ${activeTab === 'departures' ? 'bg-white/20' : 'bg-slate-50 text-slate-500'}`}>
-                            <FaSignOutAlt size={24} />
+                        <div className={`p-2.5 rounded-xl ${activeTab === 'departures' ? 'bg-white/20' : 'bg-slate-50 text-slate-500'}`}>
+                            <FaSignOutAlt size={20} />
                         </div>
                     </div>
                 </motion.div>
@@ -272,21 +266,18 @@ const ManageCheckIns = () => {
                 <motion.div
                     onClick={() => setActiveTab('in-house')}
                     whileHover={{ y: -5 }}
-                    className={`cursor-pointer p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${activeTab === 'in-house'
-                        ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-xl shadow-emerald-500/20 border-emerald-500'
+                    className={`cursor-pointer p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${activeTab === 'in-house'
+                        ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/10 border-emerald-500'
                         : 'bg-white text-gray-800 border-gray-100 shadow-sm hover:shadow-md'
                         }`}
                 >
                     <div className="relative z-10 flex justify-between items-start">
                         <div>
-                            <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${activeTab === 'in-house' ? 'text-emerald-50' : 'text-gray-400'}`}>In-House Guests</p>
-                            <h3 className="text-4xl font-extrabold tracking-tight">{stats.currentlyOccupied}</h3>
-                            <p className={`text-xs mt-2 font-medium ${activeTab === 'in-house' ? 'text-emerald-50' : 'text-emerald-600'}`}>
-                                Currently Occupied
-                            </p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${activeTab === 'in-house' ? 'text-emerald-50' : 'text-gray-400'}`}>In-House Guests</p>
+                            <h3 className="text-3xl font-extrabold tracking-tight">{stats.currentlyOccupied}</h3>
                         </div>
-                        <div className={`p-3 rounded-xl ${activeTab === 'in-house' ? 'bg-white/20' : 'bg-emerald-50 text-emerald-600'}`}>
-                            <FaUserCheck size={24} />
+                        <div className={`p-2.5 rounded-xl ${activeTab === 'in-house' ? 'bg-white/20' : 'bg-emerald-50 text-emerald-600'}`}>
+                            <FaUserCheck size={20} />
                         </div>
                     </div>
                 </motion.div>
@@ -336,12 +327,12 @@ const ManageCheckIns = () => {
                     <table className="w-full">
                         <thead>
                             <tr className="bg-gray-50/50 text-left">
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Room Detail</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Guest Info</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Timeline</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Financials</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Status</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Action</th>
+                                <th className="px-5 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Room Detail</th>
+                                <th className="px-4 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Guest Info</th>
+                                <th className="px-4 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Timeline</th>
+                                <th className="px-4 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Financials</th>
+                                <th className="px-4 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Status</th>
+                                <th className="px-5 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -366,71 +357,58 @@ const ManageCheckIns = () => {
                                             whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.5)' }}
                                             className="group transition-colors"
                                         >
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center gap-5">
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-4">
                                                     {/* Room Number Box */}
-                                                    <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center border-2 transition-transform group-hover:scale-105 ${activeTab === 'arrivals' ? 'bg-yellow-50 border-yellow-100' :
+                                                    <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center border-2 transition-transform group-hover:scale-105 flex-shrink-0 ${activeTab === 'arrivals' ? 'bg-yellow-50 border-yellow-100' :
                                                         activeTab === 'departures' ? 'bg-slate-50 border-slate-200' :
                                                             'bg-emerald-50 border-emerald-100'
                                                         }`}>
-                                                        <span className={`text-[9px] uppercase font-black tracking-widest mb-0.5 ${activeTab === 'arrivals' ? 'text-yellow-400' :
+                                                        <span className={`text-[8px] uppercase font-black tracking-widest mb-0.5 ${activeTab === 'arrivals' ? 'text-yellow-400' :
                                                             activeTab === 'departures' ? 'text-slate-400' :
                                                                 'text-emerald-400'
                                                             }`}>NO.</span>
-                                                        <span className={`text-lg font-black leading-none ${activeTab === 'arrivals' ? 'text-[#D4AF37]' :
+                                                        <span className={`text-base font-black leading-none ${activeTab === 'arrivals' ? 'text-[#D4AF37]' :
                                                             activeTab === 'departures' ? 'text-slate-700' :
                                                                 'text-emerald-700'
                                                             }`}>
-                                                            {booking.roomNumber || <span className="text-xs opacity-50">N/A</span>}
+                                                            {booking.roomNumber || <span className="text-[10px] opacity-50">N/A</span>}
                                                         </span>
                                                     </div>
 
                                                     {/* Unit Text Details */}
-                                                    <div className="flex flex-col justify-center">
-                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Unit Type</span>
-                                                        <h4 className="font-extrabold text-gray-900 text-sm tracking-tight leading-tight">{booking.room || 'Standard Unit'}</h4>
-                                                        <span className="text-[10px] font-semibold text-gray-400 mt-1 flex items-center gap-1.5 opacity-80">
-                                                            <FaBed size={10} />
-                                                            <span className="tracking-wide">{[booking.category || 'Unit'].join(' ')} - {booking.bedType || 'Premium'}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Unit Type</span>
+                                                        <h4 className="font-extrabold text-gray-900 text-sm tracking-tight leading-none whitespace-nowrap">{booking.room || 'Standard Unit'}</h4>
+                                                        <span className="text-[10px] font-semibold text-gray-400 mt-1 flex items-center gap-1 opacity-70 whitespace-nowrap">
+                                                            <FaBed size={9} /> {booking.category || 'Unit'}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5">
-                                                <div>
-                                                    <p className="font-bold text-gray-900 text-sm">{booking.guest}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-bold text-gray-500 flex items-center gap-1">
-                                                            <FaPhone size={8} /> {booking.phone}
-                                                        </span>
+                                            <td className="px-4 py-4">
+                                                <div className="flex flex-col">
+                                                    <p className="font-bold text-gray-900 text-sm whitespace-nowrap leading-none mb-1.5">{booking.guest}</p>
+                                                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-400">
+                                                        <FaPhone size={8} /> {booking.phone}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="flex flex-col">
+                                                    <div className={`flex items-center gap-1.5 font-bold text-xs whitespace-nowrap ${activeTab === 'arrivals' ? 'text-amber-500' :
+                                                        activeTab === 'departures' ? 'text-slate-600' : 'text-emerald-600'
+                                                        }`}>
+                                                        {activeTab === 'arrivals' ? 'Arrive: Today' : activeTab === 'departures' ? 'Depart: Today' : 'In House'}
                                                     </div>
+                                                    <p className="text-[10px] text-gray-400 font-bold leading-none mt-1 whitespace-nowrap">{booking.nights} Nights</p>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5">
-                                                <div className="space-y-1">
-                                                    {activeTab === 'arrivals' && (
-                                                        <div className="flex items-center gap-2 text-[#D4AF37] font-bold text-xs">
-                                                            <FaSignInAlt /> Arrive: Today
-                                                        </div>
-                                                    )}
-                                                    {activeTab === 'departures' && (
-                                                        <div className="flex items-center gap-2 text-slate-600 font-bold text-xs">
-                                                            <FaSignOutAlt /> Depart: Today
-                                                        </div>
-                                                    )}
-                                                    {activeTab === 'in-house' && (
-                                                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
-                                                            <FaUserCheck /> In House
-                                                        </div>
-                                                    )}
-                                                    <p className="text-[10px] text-gray-400 font-medium pl-5">{booking.nights} Nights</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Balance</p>
-                                                    <p className={`font-black text-sm tracking-tight ${booking.balance > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                                        {booking.balance > 0 ? `Due: ₹${booking.balance}` : 'Paid'}
+                                            <td className="px-4 py-4">
+                                                <div className="flex flex-col">
+                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Balance</p>
+                                                    <p className={`font-black text-sm tracking-tight leading-none ${booking.balance > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                        {booking.balance > 0 ? `₹${booking.balance}` : 'Paid'}
                                                     </p>
                                                 </div>
                                             </td>

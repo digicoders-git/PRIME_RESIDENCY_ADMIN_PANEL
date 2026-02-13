@@ -216,7 +216,7 @@ const Billing = () => {
                                         </td>
                                         <td className="p-4">
                                             <div className="flex justify-center gap-2">
-                                                <button
+                                                {/* <button
                                                     onClick={() => {
                                                         setSelectedBooking(booking);
                                                         setPaymentData({
@@ -229,13 +229,13 @@ const Billing = () => {
                                                     title="Update Payment"
                                                 >
                                                     <FaMoneyBillWave size={18} />
-                                                </button>
+                                                </button> */}
                                                 <Link
                                                     to={`/invoice/${booking._id}`}
                                                     className="p-2 text-slate-500 hover:text-[#D4AF37] hover:bg-slate-100 rounded-lg transition-all"
                                                     title="Generate Invoice"
                                                 >
-                                                    <FaFileInvoiceDollar size={18} />
+                                                    <FaPrint size={18} />
                                                 </Link>
                                             </div>
                                         </td>
