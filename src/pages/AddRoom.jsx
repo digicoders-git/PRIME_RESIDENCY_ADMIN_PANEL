@@ -320,20 +320,7 @@ const AddRoom = () => {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                required
-              >
-                <option value="Room">Room</option>
-                <option value="Banquet">Banquet</option>
-                <option value="Lawn">Lawn</option>
-              </select>
-            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{formData.category === 'Room' ? 'Room' : 'Venue'} Type *</label>
               <select
@@ -443,10 +430,10 @@ const AddRoom = () => {
 
                     let newTotalPrice = priceVal;
                     if (enabled && priceVal > 0) {
-                      const discountAmount = (priceVal * discountVal) / 100;
-                      const priceAfterDiscount = priceVal - discountAmount;
-                      const taxAmount = (priceAfterDiscount * taxVal) / 100;
-                      newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+                      const subtotal = priceVal + extraBedVal;
+                      const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                      const gstAmount = afterDiscount * taxVal / 100;
+                      newTotalPrice = Math.round(afterDiscount + gstAmount);
                     }
 
                     return {
@@ -476,21 +463,21 @@ const AddRoom = () => {
                 value={formData.pricePerNight}
                 onChange={(e) => {
                   const newPrice = e.target.value;
-                  const priceVal = parseFloat(newPrice) || 0;
 
                   setFormData(prev => {
                     if (!prev.enableExtraCharges) {
                       return { ...prev, pricePerNight: newPrice, totalPrice: newPrice };
                     }
 
+                    const priceVal = parseFloat(newPrice) || 0;
                     const discountVal = parseFloat(prev.discount) || 0;
                     const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
                     const taxVal = parseFloat(prev.taxGST) || 0;
 
-                    const discountAmount = (priceVal * discountVal) / 100;
-                    const priceAfterDiscount = priceVal - discountAmount;
-                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
-                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+                    const subtotal = priceVal + extraBedVal;
+                    const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                    const gstAmount = afterDiscount * taxVal / 100;
+                    const newTotalPrice = Math.round(afterDiscount + gstAmount);
 
                     return {
                       ...prev,
@@ -504,6 +491,8 @@ const AddRoom = () => {
                 required
               />
             </div>
+            {formData.enableExtraCharges && (
+              <>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
               <input
@@ -523,10 +512,10 @@ const AddRoom = () => {
                     const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
                     const taxVal = parseFloat(prev.taxGST) || 0;
 
-                    const discountAmount = (priceVal * discountVal) / 100;
-                    const priceAfterDiscount = priceVal - discountAmount;
-                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
-                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+                    const subtotal = priceVal + extraBedVal;
+                    const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                    const gstAmount = afterDiscount * taxVal / 100;
+                    const newTotalPrice = Math.round(afterDiscount + gstAmount);
 
                     return {
                       ...prev,
@@ -540,7 +529,24 @@ const AddRoom = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Extra Bed Price (₹)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {formData.enableExtraCharges ? 'Total Price (with charges) (₹)' : 'Total Price (₹)'}
+              </label>
+              <input
+                type="number"
+                name="totalPrice"
+                value={formData.totalPrice}
+                readOnly
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-green-100 cursor-not-allowed font-semibold text-green-700"
+              />
+              {formData.enableExtraCharges && formData.totalPrice && (
+                <p className="text-xs text-gray-500 mt-1">This price will be used for bookings</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {formData.category === 'Room' ? 'Extra Bed Price (₹)' : 'Additional Gear/Services (₹)'}
+              </label>
               <input
                 type="number"
                 name="extraBedPrice"
@@ -558,10 +564,10 @@ const AddRoom = () => {
                     const discountVal = parseFloat(prev.discount) || 0;
                     const taxVal = parseFloat(prev.taxGST) || 0;
 
-                    const discountAmount = (priceVal * discountVal) / 100;
-                    const priceAfterDiscount = priceVal - discountAmount;
-                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
-                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+                    const subtotal = priceVal + extraBedVal;
+                    const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                    const gstAmount = afterDiscount * taxVal / 100;
+                    const newTotalPrice = Math.round(afterDiscount + gstAmount);
 
                     return {
                       ...prev,
@@ -593,10 +599,10 @@ const AddRoom = () => {
                     const discountVal = parseFloat(prev.discount) || 0;
                     const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
 
-                    const discountAmount = (priceVal * discountVal) / 100;
-                    const priceAfterDiscount = priceVal - discountAmount;
-                    const taxAmount = (priceAfterDiscount * taxVal) / 100;
-                    const newTotalPrice = Math.round(priceAfterDiscount + extraBedVal + taxAmount);
+                    const subtotal = priceVal + extraBedVal;
+                    const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                    const gstAmount = afterDiscount * taxVal / 100;
+                    const newTotalPrice = Math.round(afterDiscount + gstAmount);
 
                     return {
                       ...prev,
@@ -609,21 +615,8 @@ const AddRoom = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {formData.enableExtraCharges ? 'Total Price (with charges) (₹)' : 'Total Price (₹)'}
-              </label>
-              <input
-                type="number"
-                name="totalPrice"
-                value={formData.totalPrice}
-                readOnly
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-green-100 cursor-not-allowed font-semibold text-green-700"
-              />
-              {formData.enableExtraCharges && formData.totalPrice && (
-                <p className="text-xs text-gray-500 mt-1">This price will be used for bookings</p>
-              )}
-            </div>
+              </>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Room Status</label>
               <select

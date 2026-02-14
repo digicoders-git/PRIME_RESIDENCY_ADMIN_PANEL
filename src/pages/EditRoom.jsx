@@ -83,6 +83,13 @@ const EditRoom = () => {
         loadData();
     }, [id]);
 
+    // Re-apply amenities when amenitiesList changes or room is loaded
+    useEffect(() => {
+        if (amenitiesList.length > 0 && mongoId) {
+            fetchRoomData();
+        }
+    }, [amenitiesList, mongoId]);
+
     const fetchConfigs = async () => {
         try {
             const { data } = await api.get('/room-config');
@@ -117,12 +124,33 @@ const EditRoom = () => {
 
                     // Initialize amenities state from configs
                     const amenitiesObj = {};
-                    amenitiesList.forEach(a => {
-                        const key = a.name.toLowerCase().replace(/\s+/g, '');
-                        amenitiesObj[key] = backendAmenities.some(ba =>
-                            ba.toLowerCase().replace(/\s+/g, '') === key
-                        );
-                    });
+                    if (amenitiesList.length > 0) {
+                        amenitiesList.forEach(a => {
+                            const key = a.name.toLowerCase().replace(/\s+/g, '');
+                            amenitiesObj[key] = backendAmenities.some(ba =>
+                                ba.toLowerCase().replace(/\s+/g, '') === key ||
+                                ba.toLowerCase() === a.name.toLowerCase() ||
+                                ba === key
+                            );
+                        });
+                    }
+
+                    const shouldEnableCharges = room.enableExtraCharges || !!(room.discount || room.extraBedPrice || room.taxGST);
+                    
+                    let calculatedOfferPrice = room.offerPrice || '';
+                    if (shouldEnableCharges && !calculatedOfferPrice) {
+                        const price = parseFloat(room.price) || 0;
+                        const discount = parseFloat(room.discount) || 0;
+                        const tax = parseFloat(room.taxGST) || 0;
+                        const extraBed = parseFloat(room.extraBedPrice) || 0;
+                        
+                        if (price > 0) {
+                            const subtotal = price + extraBed;
+                            const afterDiscount = subtotal - (subtotal * discount / 100);
+                            const taxAmount = afterDiscount * tax / 100;
+                            calculatedOfferPrice = Math.round(afterDiscount + taxAmount).toString();
+                        }
+                    }
 
                     setFormData(prev => ({
                         ...prev,
@@ -143,10 +171,10 @@ const EditRoom = () => {
                         floorNumber: room.floorNumber || '',
                         bedType: room.bedType || '',
                         discount: room.discount || '',
-                        offerPrice: room.offerPrice || '',
+                        offerPrice: calculatedOfferPrice,
                         extraBedPrice: room.extraBedPrice || '',
                         taxGST: room.taxGST || '',
-                        enableExtraCharges: room.enableExtraCharges || false,
+                        enableExtraCharges: shouldEnableCharges,
                         video360: room.video360 || '',
                         imageAltText: room.imageAltText || '',
                         specialNotes: room.specialNotes || '',
@@ -229,7 +257,9 @@ const EditRoom = () => {
                 formData.roomStatus === 'Disabled' ? 'Maintenance' : formData.roomStatus;
             form.append('status', status);
 
-            form.append('description', formData.fullDescription || formData.shortDescription);
+            form.append('description', formData.fullDescription || '');
+            form.append('shortDescription', formData.shortDescription || '');
+            form.append('specialNotes', formData.specialNotes || '');
 
             // Append Extended Details
             if (formData.roomSize) form.append('roomSize', formData.roomSize);
@@ -246,12 +276,9 @@ const EditRoom = () => {
             if (formData.offerPrice) form.append('totalPrice', formData.offerPrice);
             form.append('enableExtraCharges', formData.enableExtraCharges);
 
-
-
             // Append Other Details
             if (formData.video360) form.append('video360', formData.video360);
             if (formData.imageAltText) form.append('imageAltText', formData.imageAltText);
-            if (formData.specialNotes) form.append('specialNotes', formData.specialNotes);
 
             Object.keys(formData.amenities).filter(key => formData.amenities[key]).forEach(key => {
                 form.append('amenities', key);
@@ -354,20 +381,7 @@ const EditRoom = () => {
                                 required
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                                required
-                            >
-                                <option value="Room">Room</option>
-                                <option value="Banquet">Banquet</option>
-                                <option value="Lawn">Lawn</option>
-                            </select>
-                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">{formData.category === 'Room' ? 'Room' : 'Venue'} Type *</label>
                             <select
@@ -477,9 +491,10 @@ const EditRoom = () => {
 
                                         let final = price;
                                         if (enabled && price > 0) {
-                                            const discounted = price - (price * discount / 100);
-                                            const withTax = discounted + (discounted * tax / 100);
-                                            final = Math.round(withTax + extraBed);
+                                            const subtotal = price + extraBed;
+                                            const afterDiscount = subtotal - (subtotal * discount / 100);
+                                            const taxAmount = afterDiscount * tax / 100;
+                                            final = Math.round(afterDiscount + taxAmount);
                                         }
 
                                         return {
@@ -519,9 +534,10 @@ const EditRoom = () => {
                                         const tax = parseFloat(prev.taxGST) || 0;
                                         const extraBed = parseFloat(prev.extraBedPrice) || 0;
 
-                                        const discounted = price - (price * discount / 100);
-                                        const withTax = discounted + (discounted * tax / 100);
-                                        const final = Math.round(withTax + extraBed);
+                                        const subtotal = price + extraBed;
+                                        const afterDiscount = subtotal - (subtotal * discount / 100);
+                                        const taxAmount = afterDiscount * tax / 100;
+                                        const final = Math.round(afterDiscount + taxAmount);
 
                                         return { ...prev, pricePerNight: val, offerPrice: final > 0 ? final.toString() : '' };
                                     });
@@ -531,6 +547,8 @@ const EditRoom = () => {
                                 required
                             />
                         </div>
+                        {formData.enableExtraCharges && (
+                            <>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
                             <input
@@ -549,9 +567,10 @@ const EditRoom = () => {
                                         const tax = parseFloat(prev.taxGST) || 0;
                                         const extraBed = parseFloat(prev.extraBedPrice) || 0;
 
-                                        const discounted = price - (price * discount / 100);
-                                        const withTax = discounted + (discounted * tax / 100);
-                                        const final = Math.round(withTax + extraBed);
+                                        const subtotal = price + extraBed;
+                                        const afterDiscount = subtotal - (subtotal * discount / 100);
+                                        const taxAmount = afterDiscount * tax / 100;
+                                        const final = Math.round(afterDiscount + taxAmount);
 
                                         return { ...prev, discount: val, offerPrice: final > 0 ? final.toString() : '' };
                                     });
@@ -586,14 +605,19 @@ const EditRoom = () => {
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     setFormData(prev => {
+                                        if (!prev.enableExtraCharges) {
+                                            return { ...prev, extraBedPrice: val };
+                                        }
+
                                         const price = parseFloat(prev.pricePerNight) || 0;
                                         const discount = parseFloat(prev.discount) || 0;
                                         const tax = parseFloat(prev.taxGST) || 0;
                                         const extraBed = parseFloat(val) || 0;
 
-                                        const discounted = price - (price * discount / 100);
-                                        const withTax = discounted + (discounted * tax / 100);
-                                        const final = Math.round(withTax + extraBed);
+                                        const subtotal = price + extraBed;
+                                        const afterDiscount = subtotal - (subtotal * discount / 100);
+                                        const taxAmount = afterDiscount * tax / 100;
+                                        const final = Math.round(afterDiscount + taxAmount);
 
                                         return { ...prev, extraBedPrice: val, offerPrice: final > 0 ? final.toString() : '' };
                                     });
@@ -611,14 +635,19 @@ const EditRoom = () => {
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     setFormData(prev => {
+                                        if (!prev.enableExtraCharges) {
+                                            return { ...prev, taxGST: val };
+                                        }
+
                                         const price = parseFloat(prev.pricePerNight) || 0;
                                         const discount = parseFloat(prev.discount) || 0;
                                         const tax = parseFloat(val) || 0;
                                         const extraBed = parseFloat(prev.extraBedPrice) || 0;
 
-                                        const discounted = price - (price * discount / 100);
-                                        const withTax = discounted + (discounted * tax / 100);
-                                        const final = Math.round(withTax + extraBed);
+                                        const subtotal = price + extraBed;
+                                        const afterDiscount = subtotal - (subtotal * discount / 100);
+                                        const taxAmount = afterDiscount * tax / 100;
+                                        const final = Math.round(afterDiscount + taxAmount);
 
                                         return { ...prev, taxGST: val, offerPrice: final > 0 ? final.toString() : '' };
                                     });
@@ -627,6 +656,8 @@ const EditRoom = () => {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
                         </div>
+                            </>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Room Status</label>
                             <select
@@ -714,7 +745,7 @@ const EditRoom = () => {
                                 </div>
                             </div>
                         </div>
-
+                        {/* 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">360° Video URL (Optional)</label>
                             <input
@@ -737,7 +768,7 @@ const EditRoom = () => {
                                 placeholder="Deluxe room with ocean view and modern amenities"
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 

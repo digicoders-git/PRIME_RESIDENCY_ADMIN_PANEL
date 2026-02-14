@@ -188,8 +188,12 @@ const Bookings = () => {
             <div className="flex items-end gap-8 flex-wrap lg:flex-nowrap">
               <div className="relative">
                 <div className="w-32 h-32 rounded-3xl bg-white p-1.5 shadow-lg border border-gray-100 ring-4 ring-white">
-                  <div className="w-full h-full rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center text-amber-600 text-4xl font-extrabold shadow-inner">
-                    {selectedBooking.guest.charAt(0)}
+                  <div className="w-full h-full rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center text-amber-600 text-4xl font-extrabold shadow-inner uppercase">
+                    {selectedBooking.guest ? (
+                      selectedBooking.guest.split(' ').length > 1
+                        ? `${selectedBooking.guest.split(' ')[0][0]}${selectedBooking.guest.split(' ').slice(-1)[0][0]}`
+                        : selectedBooking.guest[0]
+                    ) : 'G'}
                   </div>
                 </div>
                 <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-emerald-500 shadow-sm">
@@ -270,6 +274,15 @@ const Bookings = () => {
                         <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.adults} Adults, {selectedBooking.children} Kids</p>
                       </div>
                     </div>
+                    {selectedBooking.extraBed && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100"><FaBed size={14} /></div>
+                        <div className="text-left">
+                          <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">Extra Bed</p>
+                          <p className="text-sm font-black text-amber-900 tracking-tight">Requested & Included</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

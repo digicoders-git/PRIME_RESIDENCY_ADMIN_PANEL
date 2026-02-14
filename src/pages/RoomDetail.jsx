@@ -28,14 +28,30 @@ const RoomDetail = () => {
                 }
 
                 // Map backend data to UI structure
+                const shouldEnableCharges = r.enableExtraCharges || !!(r.discount || r.extraBedPrice || r.taxGST);
+                
+                // Calculate total price using same formula as AddRoom/EditRoom
+                let finalTotalPrice = null;
+                if (shouldEnableCharges && r.price) {
+                    const price = parseFloat(r.price) || 0;
+                    const discount = parseFloat(r.discount) || 0;
+                    const tax = parseFloat(r.taxGST) || 0;
+                    const extraBed = parseFloat(r.extraBedPrice) || 0;
+                    
+                    const subtotal = price + extraBed;
+                    const afterDiscount = subtotal - (subtotal * discount / 100);
+                    const taxAmount = afterDiscount * tax / 100;
+                    finalTotalPrice = Math.round(afterDiscount + taxAmount);
+                }
+
                 setRoom({
                     id: r._id,
                     name: r.name || 'Unit Details',
                     category: r.category || 'Room',
                     type: r.type || 'Standard',
                     price: r.price ? r.price.toLocaleString() : '5000',
-                    totalPrice: (r.enableExtraCharges && r.totalPrice) ? r.totalPrice.toLocaleString() : null,
-                    enableExtraCharges: r.enableExtraCharges || false,
+                    totalPrice: finalTotalPrice ? finalTotalPrice.toLocaleString() : null,
+                    enableExtraCharges: shouldEnableCharges,
                     discount: r.discount || 0,
                     extraBedPrice: r.extraBedPrice || 0,
                     taxGST: r.taxGST || 0,
@@ -83,14 +99,7 @@ const RoomDetail = () => {
         }
     };
 
-    const amenities = [
-        { icon: <FaWifi />, label: 'Free Wi-Fi' },
-        { icon: <FaTv />, label: 'Smart TV' },
-        { icon: <FaSnowflake />, label: 'Air Conditioning' },
-        { icon: <FaMugHot />, label: 'Coffee Maker' },
-        { icon: <FaBath />, label: 'Premium Bath' },
-        { icon: <FaParking />, label: 'Free Parking' },
-    ];
+
 
     return (
         <motion.div
@@ -108,7 +117,9 @@ const RoomDetail = () => {
                         <FaArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform" />
                         <span className="truncate">Back to {room.category === 'Room' ? 'Rooms' : 'Venues'} List</span>
                     </button>
-                    <button className="flex items-center px-3 py-2 sm:px-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all text-gray-700 font-medium cursor-pointer text-sm sm:text-base">
+                    <button
+                    onClick={()=>navigate(`/edit-room/${id}`)}
+                     className="flex items-center px-3 py-2 sm:px-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all text-gray-700 font-medium cursor-pointer text-sm sm:text-base">
                         <FaEdit className="mr-2 text-amber-500" />
                         <span className="truncate">Edit Details</span>
                     </button>
@@ -155,14 +166,32 @@ const RoomDetail = () => {
                                         <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 font-primary">{room.category === 'Room' ? 'Premium Amenities' : 'Venue Facilities'}</h2>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 w-full">
 
-                                            {amenities.map((item, idx) => (
-                                                <div key={idx} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-gray-50/50 border border-gray-100 hover:border-[#D4AF37]/30 transition-all group min-w-0">
-                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-[#D4AF37] group-hover:scale-110 transition-transform flex-shrink-0">
-                                                        {item.icon}
-                                                    </div>
-                                                    <span className="text-xs sm:text-sm font-bold text-gray-700 tracking-tight truncate">{item.label}</span>
-                                                </div>
-                                            ))}
+                                            {room.amenities && room.amenities.length > 0 ? (
+                                                room.amenities.map((amenityName, idx) => {
+                                                    // Map amenity name to its icon
+                                                    const iconMap = {
+                                                        'FaWifi': <FaWifi />, 'FaSnowflake': <FaSnowflake />, 'FaTv': <FaTv />,
+                                                        'FaFire': <FaMugHot />, 'FaBalanceScale': <FaBath />, 'FaUtensils': <FaMugHot />,
+                                                        'FaBatteryFull': <FaSnowflake />, 'FaCube': <FaMugHot />, 'FaShieldAlt': <FaCheckCircle />,
+                                                        'FaDesktop': <FaTv />, 'FaParking': <FaParking />, 'FaBed': <FaBed />, 'FaHome': <FaBuilding />
+                                                    };
+
+                                                    // This is a bit tricky since we don't have the full config list here
+                                                    // We'll use a default icon if map fails
+                                                    const icon = <FaCheckCircle />;
+
+                                                    return (
+                                                        <div key={idx} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-gray-50/50 border border-gray-100 hover:border-[#D4AF37]/30 transition-all group min-w-0">
+                                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-[#D4AF37] group-hover:scale-110 transition-transform flex-shrink-0">
+                                                                {icon}
+                                                            </div>
+                                                            <span className="text-xs sm:text-sm font-bold text-gray-700 tracking-tight truncate capitalize">{amenityName.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <p className="text-gray-400 italic text-sm">No specific amenities listed.</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -181,11 +210,15 @@ const RoomDetail = () => {
                                         recentBookings.map((booking) => (
                                             <div key={booking._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-2xl bg-gray-50 transition-colors hover:bg-gray-100/80 gap-3 sm:gap-0">
                                                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs flex-shrink-0">
-                                                        {booking.guest?.name ? booking.guest.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'NA'}
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs flex-shrink-0 uppercase">
+                                                        {booking.guest ? (
+                                                            booking.guest.split(' ').length > 1
+                                                                ? `${booking.guest.split(' ')[0][0]}${booking.guest.split(' ').slice(-1)[0][0]}`
+                                                                : booking.guest[0]
+                                                        ) : 'G'}
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="font-bold text-gray-800 text-xs sm:text-sm truncate">{booking.guest?.name || 'Guest'}</p>
+                                                        <p className="font-bold text-gray-800 text-xs sm:text-sm truncate capitalize">{booking.guest || 'Guest'}</p>
                                                         <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">
                                                             {new Date(booking.checkIn).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(booking.checkOut).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                                                         </p>
@@ -223,7 +256,7 @@ const RoomDetail = () => {
                                         <span className="text-white/70 font-medium text-sm sm:text-base">/ {room.category === 'Room' ? 'night' : 'slot'}</span>
                                     </div>
 
-                                    {room.enableExtraCharges && room.totalPrice && (
+                                    {room.enableExtraCharges && room.totalPrice && room.totalPrice !== room.price ? (
                                         <div className="mt-4 pt-4 border-t border-white/20">
                                             <p className="text-white/80 font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] mb-2">Total Price (with all charges)</p>
                                             <div className="flex items-baseline gap-1 flex-wrap">
@@ -231,15 +264,29 @@ const RoomDetail = () => {
                                                 <span className="text-white/70 font-medium text-xs sm:text-sm">/ {room.category === 'Room' ? 'night' : 'slot'}</span>
                                             </div>
                                             {(room.discount > 0 || room.extraBedPrice > 0 || room.taxGST > 0) && (
-                                                <div className="mt-3 space-y-1 text-xs text-white/70">
-                                                    {room.discount > 0 && <p>• Discount: {room.discount}%</p>}
-                                                    {room.extraBedPrice > 0 && <p>• Extra Bed: ₹{room.extraBedPrice}</p>}
-                                                    {room.taxGST > 0 && <p>• Tax/GST: {room.taxGST}%</p>}
+                                                <div className="mt-3 space-y-1 text-xs text-white/70 bg-black/10 p-2 rounded-lg">
+                                                    {room.extraBedPrice > 0 && <p>• Extra Bed: +₹{room.extraBedPrice.toLocaleString()}</p>}
+                                                    {room.discount > 0 && (() => {
+                                                        const basePrice = parseFloat(room.price.replace(/,/g, ''));
+                                                        const extraBed = room.extraBedPrice || 0;
+                                                        const subtotal = basePrice + extraBed;
+                                                        const discountAmount = (subtotal * room.discount) / 100;
+                                                        return <p>• Discount: {room.discount}% (-₹{Math.round(discountAmount).toLocaleString()})</p>;
+                                                    })()}
+                                                    {room.taxGST > 0 && (() => {
+                                                        const basePrice = parseFloat(room.price.replace(/,/g, ''));
+                                                        const extraBed = room.extraBedPrice || 0;
+                                                        const subtotal = basePrice + extraBed;
+                                                        const discountVal = room.discount || 0;
+                                                        const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                                                        const taxAmount = (afterDiscount * room.taxGST) / 100;
+                                                        return <p>• Tax/GST: {room.taxGST}% (+₹{Math.round(taxAmount).toLocaleString()})</p>;
+                                                    })()}
                                                 </div>
                                             )}
-                                            <p className="text-xs text-white/60 mt-2 italic">* This price will be used for bookings</p>
+                                            <p className="text-[10px] text-white/60 mt-2 italic">* This is the final amount for bookings</p>
                                         </div>
-                                    )}
+                                    ) : null}
 
                                     <button
                                         onClick={() => navigate(`/create-booking/${room.id}`)}

@@ -65,30 +65,33 @@ const CreateBooking = () => {
         try {
             const { data } = await api.get('/rooms');
             if (data.success) {
-                const fetchedRooms = data.data.map(r => ({
-                    ...r,
-                    id: r._id,
-                    numericPrice: Number(r.price),
-                    enableExtraCharges: r.enableExtraCharges || false,
-                    discount: r.discount || 0,
-                    extraBedPrice: r.extraBedPrice || 0,
-                    taxGST: r.taxGST || 0
-                }));
+                const fetchedRooms = data.data.map(r => {
+                    // Auto-enable charges if discount, tax, or extraBed exists
+                    const shouldEnableCharges = r.enableExtraCharges || !!(r.discount || r.extraBedPrice || r.taxGST);
+
+                    return {
+                        ...r,
+                        id: r._id,
+                        numericPrice: Number(r.price),
+                        enableExtraCharges: shouldEnableCharges,
+                        discount: r.discount || 0,
+                        extraBedPrice: r.extraBedPrice || 0,
+                        taxGST: r.taxGST || 0
+                    };
+                });
                 setRooms(fetchedRooms);
 
                 if (roomId) {
                     const found = fetchedRooms.find(r => r.id === roomId);
                     if (found) {
                         setRoom(found);
-                        // Populate form data with room defaults if enabled
-                        if (found.enableExtraCharges) {
-                            setFormData(prev => ({
-                                ...prev,
-                                discount: found.discount?.toString() || '0',
-                                extraBedPrice: found.extraBedPrice?.toString() || '0',
-                                taxGST: found.taxGST?.toString() || '0'
-                            }));
-                        }
+                        // Populate form data with room defaults
+                        setFormData(prev => ({
+                            ...prev,
+                            discount: found.discount?.toString() || '0',
+                            extraBedPrice: found.extraBedPrice?.toString() || '0',
+                            taxGST: found.taxGST?.toString() || '0'
+                        }));
                     } else {
                         toast.error('Selected room not found');
                     }
@@ -133,10 +136,14 @@ const CreateBooking = () => {
                 const extraBed = parseFloat(formData.extraBedPrice) || 0;
                 const tax = parseFloat(formData.taxGST) || 0;
 
-                const discountAmount = (baseTotal * discount) / 100;
-                const afterDiscount = baseTotal - discountAmount;
-                const taxAmount = (afterDiscount * tax) / 100;
-                finalTotal = Math.round(afterDiscount + (extraBed * diffDays) + taxAmount);
+                // Per night calculation: (price + extraBed) - discount + tax
+                const pricePerNight = room.numericPrice;
+                const subtotal = pricePerNight + extraBed;
+                const afterDiscount = subtotal - (subtotal * discount / 100);
+                const taxAmount = afterDiscount * tax / 100;
+                const finalPricePerNight = Math.round(afterDiscount + taxAmount);
+
+                finalTotal = finalPricePerNight * diffDays;
             }
 
             const advanceVal = parseInt(formData.advance) || 0;
@@ -218,6 +225,7 @@ const CreateBooking = () => {
                 dataToSend.append('specialRequests', formData.specialRequests);
                 dataToSend.append('idType', formData.idType);
                 dataToSend.append('idNumber', formData.idNumber);
+                dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
 
                 if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
                 if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
@@ -282,6 +290,7 @@ const CreateBooking = () => {
                             dataToSend.append('specialRequests', formData.specialRequests);
                             dataToSend.append('idType', formData.idType);
                             dataToSend.append('idNumber', formData.idNumber);
+                            dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
                             dataToSend.append('razorpayOrderId', result.razorpay_order_id);
                             dataToSend.append('razorpayPaymentId', result.razorpay_payment_id);
 
@@ -335,6 +344,7 @@ const CreateBooking = () => {
             dataToSend.append('specialRequests', formData.specialRequests);
             dataToSend.append('idType', formData.idType);
             dataToSend.append('idNumber', formData.idNumber);
+            dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
 
             if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
             if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);

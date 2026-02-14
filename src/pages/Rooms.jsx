@@ -266,7 +266,7 @@ const Rooms = () => {
                         <td className="px-6 py-5">
                           <div className="text-left">
                             <p className="font-black text-[#D4AF37] text-lg tabular-nums tracking-tighter italic">₹{room.price}</p>
-                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Gross Rate</p>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Per Night</p>
                           </div>
                         </td>
                         <td className="px-6 py-5">
@@ -341,9 +341,19 @@ const Rooms = () => {
                     </div>
 
                     {/* Price Tag Overlay */}
-                    <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur px-4 py-2 rounded-xl shadow-lg border border-white/20">
-                      <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Per Night</p>
-                      <p className="text-xl font-black text-[#D4AF37]">₹{room.price}</p>
+                    <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur px-4 py-2 rounded-xl shadow-lg border border-white/20 text-right">
+                      {room.enableExtraCharges && room.totalPrice && room.totalPrice !== room.price ? (
+                        <>
+                          <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider line-through">₹{room.price}</p>
+                          <p className="text-xl font-black text-[#D4AF37]">₹{room.totalPrice}</p>
+                          <p className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-tight">Inc. Charges</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Per Night</p>
+                          <p className="text-xl font-black text-[#D4AF37]">₹{room.price}</p>
+                        </>
+                      )}
                     </div>
                   </div>
 
