@@ -41,25 +41,20 @@ const ManageCheckIns = () => {
 
     const fetchData = async () => {
         try {
-            // Manager ke liye NO params, backend middleware handle karega
-            const { data } = await api.get('/bookings');
-            console.log("API Response:", data);
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const params = {};
+            if (userData.role === 'Admin') {
+                // Admin can see all or filter by property if needed
+            } else if (userData.role === 'Manager' && userData.property) {
+                params.property = userData.property;
+            }
+            const { data } = await api.get('/bookings', { params });
             if (data.success) {
                 const allBookings = data.data.map(b => ({
                     ...b,
                     id: b._id,
                     bookingId: b._id ? b._id.substring(b._id.length - 6).toUpperCase() : 'N/A'
                 }));
-                console.log("Mapped Bookings:", allBookings);
-
-                // Debug dates for the first few bookings
-                if (allBookings.length > 0) {
-                    allBookings.slice(0, 3).forEach(b => {
-                        const d = new Date(b.checkIn);
-                        const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        console.log(`Booking ${b.guest}: CheckInRaw=${b.checkIn}, ParsedLocal=${checkInDate}`);
-                    });
-                }
 
                 setBookings(allBookings);
                 calculateStats(allBookings);

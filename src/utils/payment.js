@@ -33,7 +33,7 @@ export const verifyPayment = async (paymentData) => {
 
 export const initiatePayment = async (orderData, bookingData, onSuccess, onFailure) => {
     const isLoaded = await loadRazorpayScript();
-    
+
     if (!isLoaded) {
         onFailure('Failed to load payment gateway');
         return;
@@ -55,9 +55,9 @@ export const initiatePayment = async (orderData, bookingData, onSuccess, onFailu
                     bookingId: bookingData.bookingId,
                     amount: orderData.amount / 100 // Convert paise back to rupees
                 };
-                
+
                 console.log('Sending payment verification data:', verificationData);
-                
+
                 const result = await verifyPayment(verificationData);
                 onSuccess(result);
             } catch (error) {

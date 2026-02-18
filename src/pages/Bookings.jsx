@@ -21,15 +21,19 @@ const Bookings = () => {
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showFinalPayModal, setShowFinalPayModal] = useState(false);
   const [paymentData, setPaymentData] = useState({
     advance: '',
+    paymentMethod: 'Cash'
+  });
+  const [finalPaymentData, setFinalPaymentData] = useState({
     paymentMethod: 'Cash'
   });
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [propertyFilter, setPropertyFilter] = useState('All');
+  const [propertyFilter, setPropertyFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -47,30 +51,47 @@ const Bookings = () => {
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
     setUser(userData);
-    if (userData.property) {
+    if (userData.role === 'Manager' && userData.property) {
       setPropertyFilter(userData.property);
+    } else {
+      setPropertyFilter('All');
     }
   }, []);
 
   // Load from API when filter changes
   useEffect(() => {
-    fetchBookings();
+    if (propertyFilter) {
+      fetchBookings();
+    }
   }, [propertyFilter]);
 
   const fetchBookings = async () => {
+    if (!propertyFilter) return;
     setLoading(true);
-    // Manager ke liye NO params bhejenge, backend middleware handle karega
-    const params = (user.role === 'Admin' && propertyFilter !== 'All') ? { property: propertyFilter } : {};
     try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const params = {};
+      
+      // Manager ke liye always unki property filter karo
+      if (userData.role === 'Manager' && userData.property) {
+        params.property = userData.property;
+      } else if (userData.role === 'Admin' && propertyFilter !== 'All') {
+        params.property = propertyFilter;
+      }
+      
+      console.log('Fetching bookings with params:', params, 'User:', userData.role, 'Filter:', propertyFilter);
+
       const { data } = await api.get('/bookings', { params });
       if (data.success) {
+        console.log('Received bookings:', data.data.length);
         setBookings(data.data.map(b => ({
           ...b,
-          id: b._id, // Map MongoDB _id to id for frontend
-          bookingId: b._id.substring(b._id.length - 6).toUpperCase() // Short display ID
+          id: b._id,
+          bookingId: b._id.substring(b._id.length - 6).toUpperCase()
         })));
       }
     } catch (error) {
+      console.error('Fetch error:', error);
       toast.error('Failed to fetch bookings');
     } finally {
       setLoading(false);
@@ -168,6 +189,28 @@ const Bookings = () => {
     }
   };
 
+  const handleFinalPayment = async (e) => {
+    e.preventDefault();
+    try {
+      const paymentAmount = selectedBooking.balance;
+      const { data } = await api.put(`/bookings/${selectedBooking.id}/payment`, {
+        advance: paymentAmount,
+        paymentMethod: finalPaymentData.paymentMethod
+      });
+      if (data.success) {
+        setSelectedBooking(data.data);
+        setBookings(prev => prev.map(booking =>
+          booking.id === selectedBooking.id ? { ...booking, ...data.data } : booking
+        ));
+        setShowFinalPayModal(false);
+        setFinalPaymentData({ paymentMethod: 'Cash' });
+        toast.success('Final payment completed successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to process final payment');
+    }
+  };
+
   const handleAddFoodOrder = async (e) => {
     e.preventDefault();
     try {
@@ -246,36 +289,6 @@ const Bookings = () => {
           >
             <FaChevronLeft /> Back to Bookings
           </button>
-          <div className="flex  items-center gap-3">
-            <button
-              onClick={openEditBill}
-              className="flex mb-3 items-center px-4 py-2 bg-white border border-gray-200 text-amber-600 rounded-xl hover:bg-gray-50 transition-all font-bold shadow-sm cursor-pointer"
-            >
-              <FaEdit className="mr-2" /> Edit Bill
-            </button>
-            {selectedBooking.status === 'Checked-in' && (
-              <>
-                <button
-                  onClick={() => setShowFoodModal(true)}
-                  className="flex mb-3 items-center px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all font-bold cursor-pointer"
-                >
-                  <FaUtensils className="mr-2" /> Add Food
-                </button>
-                <button
-                  onClick={() => setShowExtraChargeModal(true)}
-                  className="flex mb-3 items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all font-bold cursor-pointer"
-                >
-                  <FaPlusCircle className="mr-2" /> Extra Charge
-                </button>
-              </>
-            )}
-            <button
-              onClick={() => handleDelete(selectedBooking.id, selectedBooking.guest)}
-              className="flex items-center px-4 mb-3 py-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all font-bold cursor-pointer"
-            >
-              <FaTrash className="mr-2" /> Cancel Booking
-            </button>
-          </div>
         </div>
 
         {/* Main Content Card (Clean Minimalist) */}
@@ -418,7 +431,7 @@ const Bookings = () => {
                       {new Date(selectedBooking.checkOut).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
                     <p className="text-xs font-bold text-rose-600 mt-1 uppercase tracking-widest">11:00 AM Check-out</p>
-                  </div>
+                  </div >
                 </div>
               </div>
 
@@ -466,7 +479,18 @@ const Bookings = () => {
                   </div>
                 </div>
 
-
+                {selectedBooking.balance > 0 ? (
+                  <button
+                    onClick={() => setShowFinalPayModal(true)}
+                    className="w-full cursor-pointer py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                  >
+                    <FaCreditCard size={14} /> Final Pay ₹{selectedBooking.balance.toLocaleString()}
+                  </button>
+                ) : (
+                  <div className="w-full py-3 bg-emerald-50 text-emerald-600 rounded-2xl font-bold text-xs uppercase tracking-widest text-center border-2 border-emerald-100">
+                    ✓ Fully Paid
+                  </div>
+                )}
 
                 <button
                   onClick={() => setShowReceiptModal(true)}
@@ -741,6 +765,72 @@ const Bookings = () => {
                   <button
                     type="button"
                     onClick={() => setShowExtraChargeModal(false)}
+                    className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Final Payment Modal */}
+        {showFinalPayModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
+              <h3 className="text-2xl font-black mb-6 text-gray-900 flex items-center gap-3">
+                <FaCreditCard className="text-emerald-500" /> Final Payment
+              </h3>
+              <form onSubmit={handleFinalPayment} className="space-y-5">
+                <div className="bg-gray-50 rounded-2xl p-6 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-gray-600">Total Amount:</span>
+                    <span className="text-lg font-black text-gray-900">₹{selectedBooking.amount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-gray-600">Already Paid:</span>
+                    <span className="text-lg font-black text-emerald-600">₹{selectedBooking.advance.toLocaleString()}</span>
+                  </div>
+                  <div className="border-t-2 border-gray-200 pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-base font-black text-gray-900">Balance Due:</span>
+                      <span className="text-2xl font-black text-rose-600">₹{selectedBooking.balance.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Payment Method</label>
+                  <select
+                    value={finalPaymentData.paymentMethod}
+                    onChange={(e) => setFinalPaymentData({ paymentMethod: e.target.value })}
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+                  >
+                    <option value="Cash">Cash Payment</option>
+                    <option value="Online">Online Payment Gateway</option>
+                    <option value="Card">Card Payment</option>
+                    <option value="UPI">UPI Payment</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                  </select>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                  <p className="text-xs text-amber-800 font-medium">
+                    ⚠️ This will mark the booking as fully paid. Please confirm the payment has been received.
+                  </p>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-emerald-500 text-white py-4 rounded-2xl hover:bg-emerald-600 font-bold transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+                  >
+                    Complete Payment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowFinalPayModal(false)}
                     className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer"
                   >
                     Cancel

@@ -29,7 +29,7 @@ const RoomDetail = () => {
 
                 // Map backend data to UI structure
                 const shouldEnableCharges = r.enableExtraCharges || !!(r.discount || r.extraBedPrice || r.taxGST);
-                
+
                 // Calculate total price using same formula as AddRoom/EditRoom
                 let finalTotalPrice = null;
                 if (shouldEnableCharges && r.price) {
@@ -37,7 +37,7 @@ const RoomDetail = () => {
                     const discount = parseFloat(r.discount) || 0;
                     const tax = parseFloat(r.taxGST) || 0;
                     const extraBed = parseFloat(r.extraBedPrice) || 0;
-                    
+
                     const subtotal = price + extraBed;
                     const afterDiscount = subtotal - (subtotal * discount / 100);
                     const taxAmount = afterDiscount * tax / 100;
@@ -119,8 +119,8 @@ const RoomDetail = () => {
                         <span className="truncate">Back to {room.category === 'Room' ? 'Rooms' : 'Venues'} List</span>
                     </button>
                     <button
-                    onClick={()=>navigate(`/edit-room/${id}`)}
-                     className="flex items-center px-3 py-2 sm:px-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all text-gray-700 font-medium cursor-pointer text-sm sm:text-base">
+                        onClick={() => navigate(`/edit-room/${id}`)}
+                        className="flex items-center px-3 py-2 sm:px-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all text-gray-700 font-medium cursor-pointer text-sm sm:text-base">
                         <FaEdit className="mr-2 text-amber-500" />
                         <span className="truncate">Edit Details</span>
                     </button>

@@ -1,23 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers, FaUserTie } from 'react-icons/fa';
+import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers, FaUserTie, FaUtensils, FaHistory, FaPlusCircle } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import api from '../api/api';
 
 const Sidebar = ({ isOpen, setIsAuthenticated }) => {
   const location = useLocation();
   const [enquiryCount, setEnquiryCount] = useState(0);
-  const [userRole, setUserRole] = useState('admin');
-  const [userProperty, setUserProperty] = useState('');
-  const [permissions, setPermissions] = useState({});
+
+  // Initialize state from localStorage immediately
+  const getUserData = () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return {
+      role: user.role || 'admin',
+      property: user.property || '',
+      permissions: user.permissions || {}
+    };
+  };
+
+  const [userRole, setUserRole] = useState(() => getUserData().role);
+  const [userProperty, setUserProperty] = useState(() => getUserData().property);
+  const [permissions, setPermissions] = useState(() => getUserData().permissions);
 
   useEffect(() => {
-    // Get user role and permissions from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setUserRole(user.role || 'admin');
-    setUserProperty(user.property || '');
-    setPermissions(user.permissions || {});
+    const userData = getUserData();
+    setUserRole(userData.role);
+    setUserProperty(userData.property);
+    setPermissions(userData.permissions);
+  }, []);
 
+  useEffect(() => {
     fetchEnquiryCount();
     const interval = setInterval(fetchEnquiryCount, 10000);
     return () => clearInterval(interval);
@@ -60,6 +72,9 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
     { name: 'Banquets & Lawns', path: '/banquets', icon: FaGlassCheers, permission: 'viewRooms' },
     { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar, permission: 'billing' },
     { name: 'Revenue', path: '/revenue', icon: FaRupeeSign, permission: 'viewHistory' },
+    { name: 'Food Stock', path: '/food-stock', icon: FaUtensils, permission: null },
+    { name: 'Create Order', path: '/create-order', icon: FaPlusCircle, permission: 'manager' },
+    { name: 'Order History', path: '/order-history', icon: FaHistory, permission: null },
     { name: 'Managers', path: '/managers', icon: FaUserTie, permission: 'admin' },
     { name: 'Services Mgmt', path: '/services-management', icon: FaCog, permission: 'admin' },
     { name: 'Reviews', path: '/reviews', icon: FaStar, permission: 'admin' },
@@ -71,9 +86,13 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
 
   // Filter menu items based on user role and permissions
   const filteredMenuItems = menuItems.filter(item => {
-    if (userRole === 'admin') return true; // Admin sees everything
+    if (userRole.toLowerCase() === 'admin') {
+      // Admin can't see manager-only items
+      return item.permission !== 'manager';
+    }
     if (item.permission === 'admin') return false; // Managers can't see admin-only items
-    if (item.permission === null) return true; // Items without permission (like Dashboard)
+    if (item.permission === 'manager') return true; // Manager-only items
+    if (item.permission === null) return true; // Items without permission
     return permissions[item.permission] === true; // Check if manager has permission
   });
 

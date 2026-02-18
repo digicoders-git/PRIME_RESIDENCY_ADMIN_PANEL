@@ -11,6 +11,7 @@ const Billing = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [user, setUser] = useState({ role: 'Admin', property: '' });
 
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -20,8 +21,16 @@ const Billing = () => {
     });
 
     useEffect(() => {
-        fetchBookings();
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        setUser(userData);
+        if (userData.property) {
+            setFilter(userData.property);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchBookings();
+    }, [filter]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -30,8 +39,20 @@ const Billing = () => {
     const fetchBookings = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/bookings');
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const params = {};
+            
+            // Manager ke liye always unki property filter karo
+            if (userData.role === 'Manager' && userData.property) {
+                params.property = userData.property;
+            } else if (userData.role === 'Admin' && filter !== 'All') {
+                params.property = filter;
+            }
+            
+            console.log('Billing - Fetching with params:', params, 'User:', userData.role, 'Filter:', filter);
+            const res = await api.get('/bookings', { params });
             if (res.data.success) {
+                console.log('Billing - Received bookings:', res.data.data.length);
                 setBookings(res.data.data);
             }
         } catch (error) {
@@ -60,11 +81,10 @@ const Billing = () => {
     };
 
     const filteredBookings = bookings.filter(booking => {
-        const matchesFilter = filter === 'All' || booking.paymentStatus === filter;
         const matchesSearch =
             booking.guest.toLowerCase().includes(searchTerm.toLowerCase()) ||
             booking._id.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesFilter && matchesSearch;
+        return matchesSearch;
     });
 
     // Pagination logic
@@ -130,19 +150,38 @@ const Billing = () => {
                     />
                 </div>
 
-                <div className="flex gap-2">
-                    {['All', 'Paid', 'Partial', 'Pending'].map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === f
-                                ? 'bg-[#D4AF37] text-white shadow-md'
-                                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                                }`}
-                        >
-                            {f}
-                        </button>
-                    ))}
+                <div className="flex gap-2 flex-wrap">
+                    {user.role === 'Admin' && (
+                        <>
+                            <button
+                                onClick={() => setFilter('All')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'All'
+                                    ? 'bg-[#D4AF37] text-white shadow-md'
+                                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                                    }`}
+                            >
+                                All Properties
+                            </button>
+                            <button
+                                onClick={() => setFilter('Prime Residency')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'Prime Residency'
+                                    ? 'bg-[#D4AF37] text-white shadow-md'
+                                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                                    }`}
+                            >
+                                Prime Residency
+                            </button>
+                            <button
+                                onClick={() => setFilter('Prem Kunj')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'Prem Kunj'
+                                    ? 'bg-[#D4AF37] text-white shadow-md'
+                                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                                    }`}
+                            >
+                                Prem Kunj
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 

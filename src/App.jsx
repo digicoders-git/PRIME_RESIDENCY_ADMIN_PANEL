@@ -25,6 +25,9 @@ import AddService from './pages/AddService';
 import Enquiries from './pages/Enquiries';
 import Revenue from './pages/Revenue';
 import Managers from './pages/Managers';
+import FoodStock from './pages/FoodStock';
+import OrderHistory from './pages/OrderHistory';
+import CreateOrder from './pages/CreateOrder';
 
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -75,6 +78,9 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/enquiries" element={isAuthenticated ? <Enquiries /> : <Navigate to="/login" replace />} />
         <Route path="/revenue" element={isAuthenticated ? <Revenue /> : <Navigate to="/login" replace />} />
         <Route path="/managers" element={isAuthenticated ? <Managers /> : <Navigate to="/login" replace />} />
+        <Route path="/food-stock" element={isAuthenticated ? <FoodStock /> : <Navigate to="/login" replace />} />
+        <Route path="/order-history" element={isAuthenticated ? <OrderHistory /> : <Navigate to="/login" replace />} />
+        <Route path="/create-order" element={isAuthenticated ? <CreateOrder /> : <Navigate to="/login" replace />} />
 
         <Route path="/room-detail/:id" element={isAuthenticated ? <RoomDetail /> : <Navigate to="/login" replace />} />
         <Route path="/edit-room/:id" element={isAuthenticated ? <EditRoom /> : <Navigate to="/login" replace />} />
