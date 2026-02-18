@@ -28,6 +28,7 @@ const AddRoom = () => {
     roomName: '',
     roomNumber: '',
     category: initialCategory,
+    property: 'Prime Residency',
     roomType: '',
     bedType: '',
     maxAdults: '',
@@ -99,7 +100,22 @@ const AddRoom = () => {
 
   useEffect(() => {
     fetchConfigs();
+    initializeProperty();
   }, []);
+
+  const initializeProperty = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.role === 'Manager' && user.property) {
+          setFormData(prev => ({ ...prev, property: user.property }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize property');
+    }
+  };
 
   const fetchConfigs = async () => {
     try {
@@ -193,6 +209,7 @@ const AddRoom = () => {
       form.append('name', formData.roomName.trim());
       form.append('roomNumber', formData.roomNumber.trim());
       form.append('category', formData.category);
+      form.append('property', formData.property);
       form.append('type', formData.roomType);
       form.append('price', formData.pricePerNight);
 
@@ -319,6 +336,24 @@ const AddRoom = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Property *</label>
+              <select
+                name="property"
+                value={formData.property}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer ${JSON.parse(localStorage.getItem('user'))?.role === 'Manager' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                required
+                disabled={JSON.parse(localStorage.getItem('user'))?.role === 'Manager'}
+              >
+                <option value="Prime Residency">Prime Residency</option>
+                <option value="Prem Kunj">Prem Kunj</option>
+              </select>
+              {JSON.parse(localStorage.getItem('user'))?.role === 'Manager' && (
+                <p className="text-[10px] text-gray-500 mt-1 italic">Locked to your assigned property</p>
+              )}
             </div>
 
             <div>
@@ -493,128 +528,128 @@ const AddRoom = () => {
             </div>
             {formData.enableExtraCharges && (
               <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
-              <input
-                type="number"
-                name="discount"
-                value={formData.discount}
-                onChange={(e) => {
-                  const newDiscount = e.target.value;
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
+                  <input
+                    type="number"
+                    name="discount"
+                    value={formData.discount}
+                    onChange={(e) => {
+                      const newDiscount = e.target.value;
 
-                  setFormData(prev => {
-                    if (!prev.enableExtraCharges) {
-                      return { ...prev, discount: newDiscount };
-                    }
+                      setFormData(prev => {
+                        if (!prev.enableExtraCharges) {
+                          return { ...prev, discount: newDiscount };
+                        }
 
-                    const discountVal = parseFloat(newDiscount) || 0;
-                    const priceVal = parseFloat(prev.pricePerNight) || 0;
-                    const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
-                    const taxVal = parseFloat(prev.taxGST) || 0;
+                        const discountVal = parseFloat(newDiscount) || 0;
+                        const priceVal = parseFloat(prev.pricePerNight) || 0;
+                        const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+                        const taxVal = parseFloat(prev.taxGST) || 0;
 
-                    const subtotal = priceVal + extraBedVal;
-                    const afterDiscount = subtotal - (subtotal * discountVal / 100);
-                    const gstAmount = afterDiscount * taxVal / 100;
-                    const newTotalPrice = Math.round(afterDiscount + gstAmount);
+                        const subtotal = priceVal + extraBedVal;
+                        const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                        const gstAmount = afterDiscount * taxVal / 100;
+                        const newTotalPrice = Math.round(afterDiscount + gstAmount);
 
-                    return {
-                      ...prev,
-                      discount: newDiscount,
-                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
-                    };
-                  });
-                }}
-                placeholder="10"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {formData.enableExtraCharges ? 'Total Price (with charges) (₹)' : 'Total Price (₹)'}
-              </label>
-              <input
-                type="number"
-                name="totalPrice"
-                value={formData.totalPrice}
-                readOnly
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-green-100 cursor-not-allowed font-semibold text-green-700"
-              />
-              {formData.enableExtraCharges && formData.totalPrice && (
-                <p className="text-xs text-gray-500 mt-1">This price will be used for bookings</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {formData.category === 'Room' ? 'Extra Bed Price (₹)' : 'Additional Gear/Services (₹)'}
-              </label>
-              <input
-                type="number"
-                name="extraBedPrice"
-                value={formData.extraBedPrice}
-                onChange={(e) => {
-                  const newExtraBed = e.target.value;
+                        return {
+                          ...prev,
+                          discount: newDiscount,
+                          totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                        };
+                      });
+                    }}
+                    placeholder="10"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {formData.enableExtraCharges ? 'Total Price (with charges) (₹)' : 'Total Price (₹)'}
+                  </label>
+                  <input
+                    type="number"
+                    name="totalPrice"
+                    value={formData.totalPrice}
+                    readOnly
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-green-100 cursor-not-allowed font-semibold text-green-700"
+                  />
+                  {formData.enableExtraCharges && formData.totalPrice && (
+                    <p className="text-xs text-gray-500 mt-1">This price will be used for bookings</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {formData.category === 'Room' ? 'Extra Bed Price (₹)' : 'Additional Gear/Services (₹)'}
+                  </label>
+                  <input
+                    type="number"
+                    name="extraBedPrice"
+                    value={formData.extraBedPrice}
+                    onChange={(e) => {
+                      const newExtraBed = e.target.value;
 
-                  setFormData(prev => {
-                    if (!prev.enableExtraCharges) {
-                      return { ...prev, extraBedPrice: newExtraBed };
-                    }
+                      setFormData(prev => {
+                        if (!prev.enableExtraCharges) {
+                          return { ...prev, extraBedPrice: newExtraBed };
+                        }
 
-                    const extraBedVal = parseFloat(newExtraBed) || 0;
-                    const priceVal = parseFloat(prev.pricePerNight) || 0;
-                    const discountVal = parseFloat(prev.discount) || 0;
-                    const taxVal = parseFloat(prev.taxGST) || 0;
+                        const extraBedVal = parseFloat(newExtraBed) || 0;
+                        const priceVal = parseFloat(prev.pricePerNight) || 0;
+                        const discountVal = parseFloat(prev.discount) || 0;
+                        const taxVal = parseFloat(prev.taxGST) || 0;
 
-                    const subtotal = priceVal + extraBedVal;
-                    const afterDiscount = subtotal - (subtotal * discountVal / 100);
-                    const gstAmount = afterDiscount * taxVal / 100;
-                    const newTotalPrice = Math.round(afterDiscount + gstAmount);
+                        const subtotal = priceVal + extraBedVal;
+                        const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                        const gstAmount = afterDiscount * taxVal / 100;
+                        const newTotalPrice = Math.round(afterDiscount + gstAmount);
 
-                    return {
-                      ...prev,
-                      extraBedPrice: newExtraBed,
-                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
-                    };
-                  });
-                }}
-                placeholder="1000"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tax/GST (%)</label>
-              <input
-                type="number"
-                name="taxGST"
-                value={formData.taxGST}
-                onChange={(e) => {
-                  const newTax = e.target.value;
+                        return {
+                          ...prev,
+                          extraBedPrice: newExtraBed,
+                          totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                        };
+                      });
+                    }}
+                    placeholder="1000"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax/GST (%)</label>
+                  <input
+                    type="number"
+                    name="taxGST"
+                    value={formData.taxGST}
+                    onChange={(e) => {
+                      const newTax = e.target.value;
 
-                  setFormData(prev => {
-                    if (!prev.enableExtraCharges) {
-                      return { ...prev, taxGST: newTax };
-                    }
+                      setFormData(prev => {
+                        if (!prev.enableExtraCharges) {
+                          return { ...prev, taxGST: newTax };
+                        }
 
-                    const taxVal = parseFloat(newTax) || 0;
-                    const priceVal = parseFloat(prev.pricePerNight) || 0;
-                    const discountVal = parseFloat(prev.discount) || 0;
-                    const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+                        const taxVal = parseFloat(newTax) || 0;
+                        const priceVal = parseFloat(prev.pricePerNight) || 0;
+                        const discountVal = parseFloat(prev.discount) || 0;
+                        const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
 
-                    const subtotal = priceVal + extraBedVal;
-                    const afterDiscount = subtotal - (subtotal * discountVal / 100);
-                    const gstAmount = afterDiscount * taxVal / 100;
-                    const newTotalPrice = Math.round(afterDiscount + gstAmount);
+                        const subtotal = priceVal + extraBedVal;
+                        const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                        const gstAmount = afterDiscount * taxVal / 100;
+                        const newTotalPrice = Math.round(afterDiscount + gstAmount);
 
-                    return {
-                      ...prev,
-                      taxGST: newTax,
-                      totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
-                    };
-                  });
-                }}
-                placeholder="18"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
+                        return {
+                          ...prev,
+                          taxGST: newTax,
+                          totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                        };
+                      });
+                    }}
+                    placeholder="18"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
               </>
             )}
             <div>

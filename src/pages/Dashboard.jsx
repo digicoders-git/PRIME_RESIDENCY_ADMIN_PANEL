@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   FaBed, FaUsers, FaCalendarAlt, FaRupeeSign, FaArrowUp,
   FaStar, FaImages, FaClock, FaCheckCircle, FaUserPlus,
-  FaChartBar, FaPercent, FaMoneyBillWave, FaExternalLinkAlt
+  FaChartBar, FaPercent, FaMoneyBillWave, FaExternalLinkAlt,
+  FaBuilding, FaChevronRight
 } from 'react-icons/fa';
 
 import api from '../api/api';
@@ -21,19 +22,34 @@ const Dashboard = () => {
     revenue: {}
   });
 
+  const [selectedProperty, setSelectedProperty] = useState('All');
+
+  const [user, setUser] = useState({ name: 'Admin', role: 'Admin', property: '', permissions: {} });
+
   useEffect(() => {
-    fetchDashboardData();
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    setUser({
+      name: userData.name || 'Admin',
+      role: userData.role || 'Admin',
+      property: userData.property || '',
+      permissions: userData.permissions || {}
+    });
+    fetchDashboardData(userData.property || 'All');
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (propertyOverride) => {
     setLoading(true);
+    const propToUse = propertyOverride !== undefined ? propertyOverride : selectedProperty;
+    // Manager ke liye NO params, Admin ke liye property filter
+    const params = (user.role === 'Admin' && propToUse !== 'All') ? { property: propToUse } : {};
+
     try {
       const [roomsRes, bookingsRes, guestsRes, galleryRes, revenueRes] = await Promise.all([
-        api.get('/rooms'),
-        api.get('/bookings'),
-        api.get('/guests'),
-        api.get('/gallery'),
-        api.get('/revenue/analytics')
+        api.get('/rooms', { params }),
+        api.get('/bookings', { params }),
+        api.get('/guests', { params }),
+        api.get('/gallery', { params }),
+        api.get('/revenue/analytics', { params })
       ]);
 
       console.log('Revenue Analytics Data:', revenueRes.data.data); // Debug log
@@ -132,23 +148,47 @@ const Dashboard = () => {
             </div>
             <div className="text-left relative z-10">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">Administrator Dashboard</span>
+                <span className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">
+                  {user.property ? `${user.property} Dashboard` : 'Administrator Dashboard'}
+                </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
               </div>
-              <h1 className="text-4xl font-black text-gray-900 tracking-tight">Welcome to <span className="text-[#D4AF37]">Prime Residency</span></h1>
+              <h1 className="text-4xl font-black text-gray-900 tracking-tight">Welcome back, <span className="text-[#D4AF37]">{user.name}</span></h1>
               <p className="text-gray-500 font-medium mt-1">Manage your hotel operations and property performance from one place.</p>
             </div>
-            <div className="flex items-center gap-4 mt-3 relative z-10">
-              <button
-                onClick={() => navigate('/create-booking')}
-                className="px-6 py-3 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-black transition-all cursor-pointer"
-              >
-                Quick Booking
-              </button>
-              <div className="flex items-center gap-3 bg-emerald-50 py-3 px-5 rounded-xl border border-emerald-100">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">System live</span>
+            <div className="flex flex-col items-end gap-4 mt-3 relative z-10">
+              {user.role === 'Admin' && (
+                <div className="relative w-full min-w-[200px]">
+                  <FaBuilding className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-500 text-sm" />
+                  <select
+                    value={selectedProperty}
+                    onChange={(e) => {
+                      setSelectedProperty(e.target.value);
+                      fetchDashboardData(e.target.value);
+                    }}
+                    className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 appearance-none cursor-pointer font-black text-[10px] uppercase tracking-widest text-gray-700 shadow-sm"
+                  >
+                    <option value="All">All Properties</option>
+                    <option value="Prime Residency">Prime Residency</option>
+                    <option value="Prem Kunj">Prem Kunj</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <FaChevronRight className="rotate-90" size={10} />
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-4 w-full justify-end">
+                <button
+                  onClick={() => navigate('/create-booking')}
+                  className="px-6 py-3 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-black transition-all cursor-pointer"
+                >
+                  Quick Booking
+                </button>
+                <div className="flex items-center gap-3 bg-emerald-50 py-3 px-5 rounded-xl border border-emerald-100">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">System live</span>
+                </div>
               </div>
             </div>
           </div>
@@ -311,7 +351,10 @@ const Dashboard = () => {
                           </td>
                           <td className="py-5 bg-slate-50/50 group-hover:bg-slate-100 border-y border-transparent group-hover:border-slate-200">
                             <p className="text-xs font-bold text-gray-700">{booking.room}</p>
-                            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Premium Unit</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <FaBuilding className="text-[8px] text-amber-500" />
+                              <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">{booking.property}</p>
+                            </div>
                           </td>
                           <td className="py-5 bg-slate-50/50 group-hover:bg-slate-100 border-y border-transparent group-hover:border-slate-200">
                             <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border transition-all ${booking.status === 'Confirmed' || booking.status === 'Checked-in'
@@ -372,40 +415,44 @@ const Dashboard = () => {
                 </div>
               </motion.div>
 
-              {/* Quick Connect & Ops */}
-              <div className="bg-slate-900 p-8 rounded-[2rem] mt-3 shadow-2xl text-left relative overflow-hidden group">
+              {/* Quick Connect & Ops - Admin Only */}
+              {user.role === 'admin' && (
+                <div className="bg-slate-900 p-8 rounded-[2rem] mt-3 shadow-2xl text-left relative overflow-hidden group">
 
-                <div className="absolute top-0 right-0 p-10 opacity-10 text-white group-hover:scale-110 transition-transform duration-700">
-                  <FaUserPlus size={100} />
-                </div>
-                <div className="relative z-10">
-                  <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-2xl flex items-center justify-center mb-6 border border-[#D4AF37]/30">
-                    <FaChartBar className="text-[#D4AF37]" />
+                  <div className="absolute top-0 right-0 p-10 opacity-10 text-white group-hover:scale-110 transition-transform duration-700">
+                    <FaUserPlus size={100} />
                   </div>
-                  <h3 className="text-white text-2xl font-black tracking-tight mb-2 italic">Operation Center</h3>
-                  <p className="text-slate-400 text-xs font-medium mb-10 pr-10 leading-relaxed">Execute primary workflows for front-desk and room management instantly.</p>
-                  <div className="grid grid-cols-1 gap-4">
-                    <button
-                      onClick={() => navigate('/create-booking')}
-                      className="w-full py-5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-slate-900 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg hover:translate-y-[-2px] active:translate-y-0 transition-all cursor-pointer"
-                    >
-                      Create New Booking
-                    </button>
-                    <button
-                      onClick={() => navigate('/add-room')}
-                      className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all cursor-pointer border border-white/10"
-                    >
-                      Register New Room
-                    </button>
-                    <button
-                      onClick={() => navigate('/guests')}
-                      className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all cursor-pointer border border-white/10"
-                    >
-                      Manage Profiles
-                    </button>
+                  <div className="relative z-10">
+                    <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-2xl flex items-center justify-center mb-6 border border-[#D4AF37]/30">
+                      <FaChartBar className="text-[#D4AF37]" />
+                    </div>
+                    <h3 className="text-white text-2xl font-black tracking-tight mb-2 italic">Operation Center</h3>
+                    <p className="text-slate-400 text-xs font-medium mb-10 pr-10 leading-relaxed">Execute primary workflows for front-desk and room management instantly.</p>
+                    <div className="grid grid-cols-1 gap-4">
+                      <button
+                        onClick={() => navigate('/create-booking')}
+                        className="w-full py-5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-slate-900 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg hover:translate-y-[-2px] active:translate-y-0 transition-all cursor-pointer"
+                      >
+                        Create New Booking
+                      </button>
+                      {(user.role === 'Admin' || user.permissions?.viewRooms) && (
+                        <button
+                          onClick={() => navigate('/add-room')}
+                          className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all cursor-pointer border border-white/10"
+                        >
+                          Register New Room
+                        </button>
+                      )}
+                      <button
+                        onClick={() => navigate('/guests')}
+                        className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all cursor-pointer border border-white/10"
+                      >
+                        Manage Profiles
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </>

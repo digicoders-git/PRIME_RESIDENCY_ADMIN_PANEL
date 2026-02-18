@@ -15,20 +15,40 @@ const Rooms = () => {
   const [filterCategory, setFilterCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    const userData = localStorage.getItem('user');
+    return userData ? JSON.parse(userData) : { role: 'Admin', property: '' };
+  });
+  const [userRole, setUserRole] = useState(() => {
+    const userData = localStorage.getItem('user');
+    return userData ? JSON.parse(userData).role : 'Admin';
+  });
+  const [propertyFilter, setPropertyFilter] = useState(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      return parsed.property || 'All';
+    }
+    return 'All';
+  });
 
   const [rooms, setRooms] = useState([]);
 
-  // Load rooms from API on component mount
+  // Fetch rooms when property filter changes
   useEffect(() => {
     fetchRooms();
-  }, []);
+  }, [propertyFilter]);
 
   const fetchRooms = async () => {
     setLoading(true);
+    // Manager ke liye NO params bhejenge, backend middleware handle karega
+    const params = (user.role === 'Admin' && propertyFilter !== 'All') ? { property: propertyFilter } : {};
     try {
-      const { data } = await api.get('/rooms');
+      const { data } = await api.get('/rooms', { params });
       if (data.success) {
+        // Backend already filters by property for managers
         const filteredData = data.data.filter(room => room.category === 'Room' || !room.category);
+
         const mappedRooms = filteredData.map(room => ({
           ...room,
           id: room._id,
@@ -126,7 +146,6 @@ const Rooms = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="max-w-[1600px] mx-auto space-y-12 pb-12"
-
     >
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
@@ -141,13 +160,15 @@ const Rooms = () => {
               <h1 className="text-3xl font-bold text-gray-900">Rooms Management</h1>
               <p className="text-gray-600 mt-1">Manage your hotel rooms and suites</p>
             </div>
-            <button
-              onClick={() => navigate('/add-room')}
-              className="flex items-center px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-lg hover:from-[#B8860B] hover:to-[#D4AF37] transition-all cursor-pointer shadow-lg hover:shadow-xl"
-            >
-              <FaPlus className="mr-2" />
-              Add New Room
-            </button>
+            {user?.role !== 'Manager' && userRole !== 'Manager' && (
+              <button
+                onClick={() => navigate('/add-room')}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-lg hover:from-[#B8860B] hover:to-[#D4AF37] transition-all cursor-pointer shadow-lg hover:shadow-xl"
+              >
+                <FaPlus className="mr-2" />
+                Add New Room
+              </button>
+            )}
           </div>
 
           {/* Filters & Controls */}
@@ -172,11 +193,26 @@ const Rooms = () => {
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] cursor-pointer appearance-none bg-white"
+                    className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] cursor-pointer appearance-none bg-white min-w-[140px]"
                   >
                     {categories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Property Filter */}
+                <div className="relative">
+                  <FaBuilding className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <select
+                    value={propertyFilter}
+                    onChange={(e) => setPropertyFilter(e.target.value)}
+                    disabled={user.role === 'Manager'}
+                    className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37] cursor-pointer appearance-none bg-white min-w-[180px] disabled:opacity-50"
+                  >
+                    {user.role === 'Admin' && <option value="All">All Properties</option>}
+                    <option value="Prime Residency">Prime Residency</option>
+                    <option value="Prem Kunj">Prem Kunj</option>
                   </select>
                 </div>
               </div>
@@ -203,7 +239,6 @@ const Rooms = () => {
                   <FaTh className="mr-2" />
                   Cards
                 </button>
-
               </div>
             </div>
           </div>
@@ -225,88 +260,96 @@ const Rooms = () => {
               </select>
             </div>
           </div>
-          {/* Enhanced Table View */}
+
+          {/* Table View */}
           {viewMode === 'table' && (
             <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
-              <div>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/50 border-b border-gray-100">
-                      <th className="px-8 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Room Identity</th>
-                      <th className="px-6 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
-                      <th className="px-6 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Price / Night</th>
-                      <th className="px-6 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Live Status</th>
-                      <th className="px-8 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {currentRooms.map((room, index) => (
-                      <motion.tr
-                        key={room.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="group hover:bg-gray-50/50 transition-colors duration-300"
-                      >
-                        <td className="px-8 py-5">
-                          <div className="flex items-center gap-4 text-left">
-                            <div className="w-14 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm group-hover:scale-110 transition-transform duration-500">
-                              <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-gray-900 truncate text-sm tracking-tight">{room.name}</div>
-                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">Room:-{room.roomNumber}</p>
-                            </div>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="px-8 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Room Identity</th>
+                    <th className="px-6 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
+                    <th className="px-6 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Price / Night</th>
+                    <th className="px-6 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Live Status</th>
+                    <th className="px-8 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {currentRooms.map((room) => (
+                    <motion.tr
+                      key={room.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="group hover:bg-gray-50/50 transition-colors duration-300"
+                    >
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-4 text-left">
+                          <div className="w-14 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm group-hover:scale-110 transition-transform duration-500">
+                            <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
                           </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getCategoryColor(room.category)}`}>
-                            {room.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="text-left">
-                            <p className="font-black text-[#D4AF37] text-lg tabular-nums tracking-tighter italic">₹{room.price}</p>
-                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Per Night</p>
+                          <div className="min-w-0">
+                            <div className="font-bold text-gray-900 truncate text-sm tracking-tight">{room.name}</div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">Room:-{room.roomNumber}</p>
                           </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${room.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            room.status === 'Booked' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-                            }`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${room.status === 'Available' ? 'bg-emerald-500' :
-                              room.status === 'Booked' ? 'bg-rose-500' : 'bg-amber-500'
-                              } animate-pulse`}></div>
-                            {room.status}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getCategoryColor(room.category)}`}>
+                          {room.category}
+                        </span>
+                        {room.property && (
+                          <span className="inline-flex ml-2 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400">
+                            {room.property}
                           </span>
-                        </td>
-                        <td className="px-8 py-5">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => navigate(`/room-detail/${room.roomNumber || room.id}`)}
-                              className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-blue-600 hover:border-blue-100 hover:shadow-lg transition-all cursor-pointer"
-                            >
-                              <FaEye size={12} />
-                            </button>
+                        )}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="text-left">
+                          <p className="font-black text-[#D4AF37] text-lg tabular-nums tracking-tighter italic">₹{room.price}</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Per Night</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${room.status === 'Available' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                          room.status === 'Booked' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                          }`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${room.status === 'Available' ? 'bg-emerald-500' :
+                            room.status === 'Booked' ? 'bg-rose-500' : 'bg-amber-500'
+                            } animate-pulse`}></div>
+                          {room.status}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => navigate(`/room-detail/${room.roomNumber || room.id}`)}
+                            className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-blue-600 hover:border-blue-100 hover:shadow-lg transition-all cursor-pointer"
+                          >
+                            <FaEye size={12} />
+                          </button>
 
-                            <button
-                              onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)}
-                              className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-amber-500 hover:border-amber-100 hover:shadow-lg transition-all cursor-pointer"
-                            >
-                              <FaEdit size={12} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(room.id, room.name)}
-                              className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-rose-500 hover:border-rose-100 hover:shadow-lg transition-all cursor-pointer"
-                            >
-                              <FaTrash size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          {user.role === 'Admin' && (
+                            <>
+                              <button
+                                onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)}
+                                className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-amber-500 hover:border-amber-100 hover:shadow-lg transition-all cursor-pointer"
+                              >
+                                <FaEdit size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(room.id, room.name)}
+                                className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-rose-500 hover:border-rose-100 hover:shadow-lg transition-all cursor-pointer"
+                              >
+                                <FaTrash size={12} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -321,7 +364,6 @@ const Rooms = () => {
                   transition={{ delay: index * 0.1 }}
                   className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300 group flex flex-col h-full"
                 >
-                  {/* Image Section */}
                   <div className="relative h-64 overflow-hidden">
                     <img
                       src={room.image}
@@ -329,8 +371,6 @@ const Rooms = () => {
                       className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
-
-                    {/* Floating Badges */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
                       <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md ${getStatusColor(room.status)}`}>
                         {room.status}
@@ -338,9 +378,12 @@ const Rooms = () => {
                       <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md ${getCategoryColor(room.category)}`}>
                         {room.category}
                       </span>
+                      {room.property && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                          {room.property}
+                        </span>
+                      )}
                     </div>
-
-                    {/* Price Tag Overlay */}
                     <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur px-4 py-2 rounded-xl shadow-lg border border-white/20 text-right">
                       {room.enableExtraCharges && room.totalPrice && room.totalPrice !== room.price ? (
                         <>
@@ -357,13 +400,10 @@ const Rooms = () => {
                     </div>
                   </div>
 
-                  {/* Content Section */}
                   <div className="p-6 flex flex-col flex-grow">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#D4AF37] transition-colors line-clamp-1" title={room.name}>
-                          {room.name}
-                        </h3>
+                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#D4AF37] transition-colors line-clamp-1" title={room.name}>{room.name}</h3>
                         <p className="text-sm font-medium text-gray-400 mt-1">Room #{room.roomNumber} {room.floor !== 'N/A' && <span className="text-gray-300">• {room.floor}</span>}</p>
                       </div>
                     </div>
@@ -399,7 +439,6 @@ const Rooms = () => {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex items-center justify-between pt-5 border-t border-gray-100 mt-auto gap-3">
                       <button
                         onClick={() => navigate(`/room-detail/${room.roomNumber || room.id}`)}
@@ -407,19 +446,23 @@ const Rooms = () => {
                       >
                         <FaEye /> View
                       </button>
-                      <button
-                        onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)}
-                        className="flex-1 py-2.5 rounded-xl bg-amber-50 text-amber-600 font-bold text-xs uppercase tracking-wider hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <FaEdit /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(room.id, room.name)}
-                        className="flex-none p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
-                        title="Delete Room"
-                      >
-                        <FaTrash />
-                      </button>
+                      {user.role === 'Admin' && (
+                        <>
+                          <button
+                            onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)}
+                            className="flex-1 py-2.5 rounded-xl bg-amber-50 text-amber-600 font-bold text-xs uppercase tracking-wider hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <FaEdit /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(room.id, room.name)}
+                            className="flex-none p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                            title="Delete Room"
+                          >
+                            <FaTrash />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -427,15 +470,11 @@ const Rooms = () => {
             </div>
           )}
 
-
-
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex  justify-between items-center">
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Page {currentPage} of {totalPages}</span>
                 <div className="flex items-center space-x-1">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
@@ -451,10 +490,7 @@ const Rooms = () => {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-2 text-sm rounded-lg ${currentPage === pageNum
-                          ? 'bg-[#D4AF37] text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
-                          }`}
+                        className={`px-3 py-2 text-sm rounded-lg ${currentPage === pageNum ? 'bg-[#D4AF37] text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
                       >
                         {pageNum}
                       </button>

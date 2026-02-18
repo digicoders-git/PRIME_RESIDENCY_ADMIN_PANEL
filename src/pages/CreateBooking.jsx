@@ -61,9 +61,13 @@ const CreateBooking = () => {
         fetchRooms();
     }, []);
 
-    const fetchRooms = async () => {
+    const fetchRooms = async (propName = null) => {
         try {
-            const { data } = await api.get('/rooms');
+            // If Admin, they can filter by property. If Manager, backend handle it.
+            const queryProp = propName || (user.role === 'Manager' ? user.property : null);
+            const params = queryProp ? { property: queryProp } : {};
+
+            const { data } = await api.get('/rooms', { params });
             if (data.success) {
                 const fetchedRooms = data.data.map(r => {
                     // Auto-enable charges if discount, tax, or extraBed exists
@@ -92,8 +96,6 @@ const CreateBooking = () => {
                             extraBedPrice: found.extraBedPrice?.toString() || '0',
                             taxGST: found.taxGST?.toString() || '0'
                         }));
-                    } else {
-                        toast.error('Selected room not found');
                     }
                 }
             }
@@ -103,6 +105,23 @@ const CreateBooking = () => {
             setLoading(false);
         }
     };
+
+    const [user, setUser] = useState({ role: 'Admin', property: '' });
+    const [selectedProperty, setSelectedProperty] = useState('');
+
+    useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        setUser(userData);
+        if (userData.property) {
+            setSelectedProperty(userData.property);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (user.role) {
+            fetchRooms(selectedProperty);
+        }
+    }, [selectedProperty, user.role]);
 
     const handleRoomChange = (e) => {
         const selectedId = e.target.value;
@@ -226,6 +245,7 @@ const CreateBooking = () => {
                 dataToSend.append('idType', formData.idType);
                 dataToSend.append('idNumber', formData.idNumber);
                 dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
+                dataToSend.append('property', room.property);
 
                 if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
                 if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
@@ -291,6 +311,7 @@ const CreateBooking = () => {
                             dataToSend.append('idType', formData.idType);
                             dataToSend.append('idNumber', formData.idNumber);
                             dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
+                            dataToSend.append('property', room.property);
                             dataToSend.append('razorpayOrderId', result.razorpay_order_id);
                             dataToSend.append('razorpayPaymentId', result.razorpay_payment_id);
 
@@ -345,6 +366,7 @@ const CreateBooking = () => {
             dataToSend.append('idType', formData.idType);
             dataToSend.append('idNumber', formData.idNumber);
             dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
+            dataToSend.append('property', room.property);
 
             if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
             if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
@@ -392,7 +414,7 @@ const CreateBooking = () => {
                 <div className="text-right">
                     <h1 className="text-3xl font-black text-gray-900 tracking-tight">New Reservation</h1>
                     {room ? (
-                        <p className="text-gray-500 text-sm font-medium italic">#{room.name} — Unit {String(room.roomNumber || 'N/A')}</p>
+                        <p className="text-gray-500 text-sm font-medium italic">#{room.name} — Unit {String(room.roomNumber || 'N/A')} ({room.property})</p>
                     ) : (
                         <p className="text-gray-500 text-sm font-medium italic">Please select a room to continue</p>
                     )}
@@ -407,11 +429,28 @@ const CreateBooking = () => {
                         {!roomId && (
                             <div className="space-y-6 pb-8 border-b border-gray-50">
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-                                            <FaBed size={14} />
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                                                <FaBed size={14} />
+                                            </div>
+                                            <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Select Unit</h3>
                                         </div>
-                                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Select Unit</h3>
+
+                                        {/* Property Selector for Admins */}
+                                        {user.role === 'Admin' && (
+                                            <div className="relative">
+                                                <select
+                                                    value={selectedProperty}
+                                                    onChange={(e) => setSelectedProperty(e.target.value)}
+                                                    className="pl-3 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-1 focus:ring-[#D4AF37] appearance-none cursor-pointer"
+                                                >
+                                                    <option value="">All Properties</option>
+                                                    <option value="Prime Residency">Prime Residency</option>
+                                                    <option value="Prem Kunj">Prem Kunj</option>
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-2">
                                         {['All', 'Room', 'Banquet', 'Lawn'].map(cat => (
@@ -439,7 +478,7 @@ const CreateBooking = () => {
                                         .filter(r => filterCategory === 'All' || r.category === filterCategory)
                                         .map(r => (
                                             <option key={r.id} value={r.id}>
-                                                [{r.category}] {r.name} - ₹{r.price} (Unit {String(r.roomNumber || 'N/A')})
+                                                [{r.category}] {r.name} - ₹{r.price} (Unit {String(r.roomNumber || 'N/A')}) - {r.property}
                                             </option>
                                         ))
                                     }

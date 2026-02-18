@@ -48,6 +48,7 @@ const RoomDetail = () => {
                     id: r._id,
                     name: r.name || 'Unit Details',
                     category: r.category || 'Room',
+                    property: r.property || 'Prime Residency',
                     type: r.type || 'Standard',
                     price: r.price ? r.price.toLocaleString() : '5000',
                     totalPrice: finalTotalPrice ? finalTotalPrice.toLocaleString() : null,
@@ -144,6 +145,11 @@ const RoomDetail = () => {
                                             <span className="px-2 py-1 sm:px-3 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-white/20 backdrop-blur-md bg-white/10">
                                                 {room.category}
                                             </span>
+                                            {room.property && (
+                                                <span className="px-2 py-1 sm:px-3 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-amber-400/30 backdrop-blur-md bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                                                    {room.property}
+                                                </span>
+                                            )}
                                             <span className={`flex items-center gap-1.5 px-2 py-1 sm:px-3 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border backdrop-blur-md ${room.status === 'Available' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
                                                 room.status === 'Occupied' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
                                                     'bg-amber-500/20 text-amber-300 border-amber-500/30'

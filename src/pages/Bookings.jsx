@@ -7,7 +7,7 @@ import {
   FaEye, FaEdit, FaTrash, FaPlus, FaDownload, FaChevronLeft,
   FaChevronRight, FaBed, FaMapMarkerAlt, FaCreditCard, FaClock,
   FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaSpinner,
-  FaBuilding, FaGlobe, FaLaptop, FaIdCard, FaFileInvoiceDollar
+  FaBuilding, FaGlobe, FaLaptop, FaIdCard, FaFileInvoiceDollar, FaUtensils, FaPlusCircle
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -29,21 +29,40 @@ const Bookings = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [propertyFilter, setPropertyFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [user, setUser] = useState({ role: 'Admin', property: '' });
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [showExtraChargeModal, setShowExtraChargeModal] = useState(false);
+  const [foodData, setFoodData] = useState({ item: '', quantity: 1, price: '' });
+  const [extraChargeData, setExtraChargeData] = useState({ description: '', amount: '' });
+  const [isEditBillModal, setIsEditBillModal] = useState(false);
+  const [editBillData, setEditBillData] = useState({ amount: '', discount: '', extraBedPrice: '', taxGST: '' });
 
   const [bookings, setBookings] = useState([]);
 
-  // Load from API
+  // Load user data
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    setUser(userData);
+    if (userData.property) {
+      setPropertyFilter(userData.property);
+    }
+  }, []);
+
+  // Load from API when filter changes
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [propertyFilter]);
 
   const fetchBookings = async () => {
     setLoading(true);
+    // Manager ke liye NO params bhejenge, backend middleware handle karega
+    const params = (user.role === 'Admin' && propertyFilter !== 'All') ? { property: propertyFilter } : {};
     try {
-      const { data } = await api.get('/bookings');
+      const { data } = await api.get('/bookings', { params });
       if (data.success) {
         setBookings(data.data.map(b => ({
           ...b,
@@ -67,8 +86,9 @@ const Bookings = () => {
       booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.room.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || booking.status === statusFilter;
+    const matchesProperty = propertyFilter === 'All' || booking.property === propertyFilter;
     const matchesDate = !dateFilter || booking.checkIn === dateFilter;
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesSearch && matchesStatus && matchesProperty && matchesDate;
   });
 
   // Pagination
@@ -148,6 +168,64 @@ const Bookings = () => {
     }
   };
 
+  const handleAddFoodOrder = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.post(`/bookings/${selectedBooking.id}/food-order`, foodData);
+      if (data.success) {
+        setSelectedBooking(data.data);
+        setBookings(prev => prev.map(b => b.id === selectedBooking.id ? { ...b, ...data.data } : b));
+        setShowFoodModal(false);
+        setFoodData({ item: '', quantity: 1, price: '' });
+        toast.success('Food order added successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to add food order');
+    }
+  };
+
+  const handleAddExtraCharge = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.post(`/bookings/${selectedBooking.id}/extra-charge`, extraChargeData);
+      if (data.success) {
+        setSelectedBooking(data.data);
+        setBookings(prev => prev.map(b => b.id === selectedBooking.id ? { ...b, ...data.data } : b));
+        setShowExtraChargeModal(false);
+        setExtraChargeData({ description: '', amount: '' });
+        toast.success('Extra charge added successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to add extra charge');
+    }
+  };
+
+  const handleEditBill = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.put(`/bookings/${selectedBooking.id}`, editBillData);
+      if (data.success) {
+        const updated = { ...data.data, id: data.data._id };
+        setSelectedBooking(updated);
+        setBookings(prev => prev.map(b => b.id === selectedBooking.id ? updated : b));
+        setIsEditBillModal(false);
+        toast.success('Bill updated successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to update bill');
+    }
+  };
+
+  const openEditBill = () => {
+    setEditBillData({
+      amount: selectedBooking.amount,
+      discount: selectedBooking.discount || 0,
+      extraBedPrice: selectedBooking.extraBedPrice || 0,
+      taxGST: selectedBooking.taxGST || 0
+    });
+    setIsEditBillModal(true);
+  };
+
   const exportBookings = () => {
     toast.success('Bookings exported successfully!');
   };
@@ -169,9 +247,28 @@ const Bookings = () => {
             <FaChevronLeft /> Back to Bookings
           </button>
           <div className="flex  items-center gap-3">
-            <button className="flex mb-3 items-center px-4 py-2 bg-white border border-gray-200 text-amber-600 rounded-xl hover:bg-gray-50 transition-all font-bold shadow-sm cursor-pointer">
-              <FaEdit className="mr-2" /> Edit Booking
+            <button
+              onClick={openEditBill}
+              className="flex mb-3 items-center px-4 py-2 bg-white border border-gray-200 text-amber-600 rounded-xl hover:bg-gray-50 transition-all font-bold shadow-sm cursor-pointer"
+            >
+              <FaEdit className="mr-2" /> Edit Bill
             </button>
+            {selectedBooking.status === 'Checked-in' && (
+              <>
+                <button
+                  onClick={() => setShowFoodModal(true)}
+                  className="flex mb-3 items-center px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all font-bold cursor-pointer"
+                >
+                  <FaUtensils className="mr-2" /> Add Food
+                </button>
+                <button
+                  onClick={() => setShowExtraChargeModal(true)}
+                  className="flex mb-3 items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all font-bold cursor-pointer"
+                >
+                  <FaPlusCircle className="mr-2" /> Extra Charge
+                </button>
+              </>
+            )}
             <button
               onClick={() => handleDelete(selectedBooking.id, selectedBooking.guest)}
               className="flex items-center px-4 mb-3 py-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all font-bold cursor-pointer"
@@ -272,6 +369,13 @@ const Bookings = () => {
                       <div className="text-left">
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Guest Count</p>
                         <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.adults} Adults, {selectedBooking.children} Kids</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100"><FaBuilding size={14} /></div>
+                      <div className="text-left">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Property Location</p>
+                        <p className="text-sm font-black text-gray-900 tracking-tight">{selectedBooking.property}</p>
                       </div>
                     </div>
                     {selectedBooking.extraBed && (
@@ -535,6 +639,186 @@ const Bookings = () => {
           onClose={() => setShowReceiptModal(false)}
           booking={selectedBooking}
         />
+
+        {/* Food Order Modal */}
+        {showFoodModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
+              <h3 className="text-2xl font-black mb-6 text-gray-900 flex items-center gap-3">
+                <FaUtensils className="text-emerald-500" /> Add Food Order
+              </h3>
+              <form onSubmit={handleAddFoodOrder} className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Item Name</label>
+                  <input
+                    type="text"
+                    value={foodData.item}
+                    onChange={(e) => setFoodData({ ...foodData, item: e.target.value })}
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    placeholder="e.g. Tea, Samosa, Dinner"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Quantity</label>
+                    <input
+                      type="number"
+                      value={foodData.quantity}
+                      onChange={(e) => setFoodData({ ...foodData, quantity: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      min="1"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Price (per unit)</label>
+                    <input
+                      type="number"
+                      value={foodData.price}
+                      onChange={(e) => setFoodData({ ...foodData, price: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-emerald-500 text-white py-4 rounded-2xl hover:bg-emerald-600 font-bold transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+                  >
+                    Add Order
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowFoodModal(false)}
+                    className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Extra Charge Modal */}
+        {showExtraChargeModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
+              <h3 className="text-2xl font-black mb-6 text-gray-900 flex items-center gap-3">
+                <FaPlusCircle className="text-blue-500" /> Add Extra Charge
+              </h3>
+              <form onSubmit={handleAddExtraCharge} className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                  <input
+                    type="text"
+                    value={extraChargeData.description}
+                    onChange={(e) => setExtraChargeData({ ...extraChargeData, description: e.target.value })}
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="e.g. Laundry, Late Checkout"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Amount</label>
+                  <input
+                    type="number"
+                    value={extraChargeData.amount}
+                    onChange={(e) => setExtraChargeData({ ...extraChargeData, amount: e.target.value })}
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    required
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-500 text-white py-4 rounded-2xl hover:bg-blue-600 font-bold transition-all shadow-lg shadow-blue-500/20 cursor-pointer"
+                  >
+                    Add Charge
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowExtraChargeModal(false)}
+                    className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Bill Modal */}
+        {isEditBillModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
+              <h3 className="text-2xl font-black mb-6 text-gray-900 flex items-center gap-3">
+                <FaEdit className="text-amber-500" /> Edit Bill Details
+              </h3>
+              <form onSubmit={handleEditBill} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Total Amount</label>
+                    <input
+                      type="number"
+                      value={editBillData.amount}
+                      onChange={(e) => setEditBillData({ ...editBillData, amount: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Discount (%)</label>
+                    <input
+                      type="number"
+                      value={editBillData.discount}
+                      onChange={(e) => setEditBillData({ ...editBillData, discount: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Extra Bed Price</label>
+                    <input
+                      type="number"
+                      value={editBillData.extraBedPrice}
+                      onChange={(e) => setEditBillData({ ...editBillData, extraBedPrice: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Tax/GST (%)</label>
+                    <input
+                      type="number"
+                      value={editBillData.taxGST}
+                      onChange={(e) => setEditBillData({ ...editBillData, taxGST: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-amber-500 text-white py-4 rounded-2xl hover:bg-amber-600 font-bold transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditBillModal(false)}
+                    className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </motion.div>
     );
   }
@@ -617,6 +901,19 @@ const Bookings = () => {
               </div>
               <div className="w-full lg:w-auto flex flex-wrap gap-4">
                 <div className="relative flex-1 lg:flex-none">
+                  <FaBuilding className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                  <select
+                    value={propertyFilter}
+                    onChange={(e) => setPropertyFilter(e.target.value)}
+                    disabled={user.role === 'Manager'}
+                    className="w-full pl-10 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 appearance-none cursor-pointer disabled:opacity-50"
+                  >
+                    {user.role === 'Admin' && <option value="All">All Properties</option>}
+                    <option value="Prime Residency">Prime Residency</option>
+                    <option value="Prem Kunj">Prem Kunj</option>
+                  </select>
+                </div>
+                <div className="relative flex-1 lg:flex-none">
                   <FaFilter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                   <select
                     value={statusFilter}
@@ -668,6 +965,7 @@ const Bookings = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Property</th>
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Guest Identity</th>
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Unit Selection</th>
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Stay Duration</th>
@@ -675,7 +973,6 @@ const Bookings = () => {
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Current Status</th>
                     <th className="px-4 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Financials</th>
                     <th className="px-4 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">Actions</th>
-
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -686,6 +983,12 @@ const Bookings = () => {
                       animate={{ opacity: 1 }}
                       className="group hover:bg-gray-50/50 transition-colors duration-300"
                     >
+                      <td className="px-4 py-5">
+                        <div className="flex items-center gap-2">
+                          <FaBuilding className="text-gray-400 text-[10px]" />
+                          <span className="font-bold text-gray-900 text-[11px] whitespace-nowrap">{booking.property || 'N/A'}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-5">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm group-hover:scale-110 group-hover:bg-amber-50 group-hover:text-amber-600 group-hover:border-amber-100 transition-all">
@@ -831,8 +1134,9 @@ const Bookings = () => {
               </div>
             )}
         </>
-      )}
-    </motion.div>
+      )
+      }
+    </motion.div >
   );
 };
 

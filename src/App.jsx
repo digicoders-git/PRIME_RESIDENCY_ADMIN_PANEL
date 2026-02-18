@@ -24,8 +24,10 @@ import ServicesManagement from './pages/ServicesManagement';
 import AddService from './pages/AddService';
 import Enquiries from './pages/Enquiries';
 import Revenue from './pages/Revenue';
+import Managers from './pages/Managers';
 
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import RoomDetail from './pages/RoomDetail';
 import CreateBooking from './pages/CreateBooking';
 import EditRoom from './pages/EditRoom';
@@ -56,6 +58,7 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
       </AnimatePresence>
       <Routes location={location} key={location.pathname}>
         <Route path="/login" element={!isAuthenticated ? <Login setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/" replace />} />
+        <Route path="/resetpassword/:resettoken" element={!isAuthenticated ? <ResetPassword setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/" replace />} />
         <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} />
         <Route path="/rooms" element={isAuthenticated ? <Rooms /> : <Navigate to="/login" replace />} />
         <Route path="/banquets" element={isAuthenticated ? <Banquets /> : <Navigate to="/login" replace />} />
@@ -71,6 +74,7 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/add-service" element={isAuthenticated ? <AddService /> : <Navigate to="/login" replace />} />
         <Route path="/enquiries" element={isAuthenticated ? <Enquiries /> : <Navigate to="/login" replace />} />
         <Route path="/revenue" element={isAuthenticated ? <Revenue /> : <Navigate to="/login" replace />} />
+        <Route path="/managers" element={isAuthenticated ? <Managers /> : <Navigate to="/login" replace />} />
 
         <Route path="/room-detail/:id" element={isAuthenticated ? <RoomDetail /> : <Navigate to="/login" replace />} />
         <Route path="/edit-room/:id" element={isAuthenticated ? <EditRoom /> : <Navigate to="/login" replace />} />

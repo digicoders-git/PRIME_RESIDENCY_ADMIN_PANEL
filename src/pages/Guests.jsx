@@ -21,6 +21,7 @@ const Guests = () => {
   const fetchGuests = async () => {
     setLoading(true);
     try {
+      // Manager ke liye NO params, backend middleware handle karega
       const { data } = await api.get('/guests');
       if (data.success) {
         setGuests(data.data.map(g => ({

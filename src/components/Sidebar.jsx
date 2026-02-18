@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers } from 'react-icons/fa';
+import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers, FaUserTie } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import api from '../api/api';
 
 const Sidebar = ({ isOpen, setIsAuthenticated }) => {
   const location = useLocation();
   const [enquiryCount, setEnquiryCount] = useState(0);
+  const [userRole, setUserRole] = useState('admin');
+  const [userProperty, setUserProperty] = useState('');
+  const [permissions, setPermissions] = useState({});
 
   useEffect(() => {
+    // Get user role and permissions from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role || 'admin');
+    setUserProperty(user.property || '');
+    setPermissions(user.permissions || {});
+
     fetchEnquiryCount();
     const interval = setInterval(fetchEnquiryCount, 10000);
     return () => clearInterval(interval);
@@ -44,27 +53,38 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
   };
 
   const menuItems = [
-    { name: 'Dashboard', path: '/', icon: FaHome },
-    { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck },
-    { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt },
-    { name: 'Rooms', path: '/rooms', icon: FaBed },
-    { name: 'Banquets & Lawns', path: '/banquets', icon: FaGlassCheers },
-    { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar },
-    { name: 'Revenue', path: '/revenue', icon: FaRupeeSign },
-    { name: 'Services Mgmt', path: '/services-management', icon: FaCog },
-    { name: 'Reviews', path: '/reviews', icon: FaStar },
-    { name: 'Contacts', path: '/contacts', icon: FaEnvelope },
-    { name: 'Enquiries', path: '/enquiries', icon: FaQuestionCircle, count: enquiryCount },
-    { name: 'Gallery', path: '/gallery', icon: FaImages },
-    { name: 'Services', path: '/services', icon: FaConciergeBell },
+    { name: 'Dashboard', path: '/', icon: FaHome, permission: null },
+    { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck, permission: 'checkInOut' },
+    { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt, permission: 'viewBookings' },
+    { name: 'Rooms', path: '/rooms', icon: FaBed, permission: 'viewRooms' },
+    { name: 'Banquets & Lawns', path: '/banquets', icon: FaGlassCheers, permission: 'viewRooms' },
+    { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar, permission: 'billing' },
+    { name: 'Revenue', path: '/revenue', icon: FaRupeeSign, permission: 'viewHistory' },
+    { name: 'Managers', path: '/managers', icon: FaUserTie, permission: 'admin' },
+    { name: 'Services Mgmt', path: '/services-management', icon: FaCog, permission: 'admin' },
+    { name: 'Reviews', path: '/reviews', icon: FaStar, permission: 'admin' },
+    { name: 'Contacts', path: '/contacts', icon: FaEnvelope, permission: 'admin' },
+    { name: 'Enquiries', path: '/enquiries', icon: FaQuestionCircle, count: enquiryCount, permission: 'admin' },
+    { name: 'Gallery', path: '/gallery', icon: FaImages, permission: 'admin' },
+    { name: 'Services', path: '/services', icon: FaConciergeBell, permission: 'admin' },
   ];
+
+  // Filter menu items based on user role and permissions
+  const filteredMenuItems = menuItems.filter(item => {
+    if (userRole === 'admin') return true; // Admin sees everything
+    if (item.permission === 'admin') return false; // Managers can't see admin-only items
+    if (item.permission === null) return true; // Items without permission (like Dashboard)
+    return permissions[item.permission] === true; // Check if manager has permission
+  });
 
   return (
     <div className={`fixed left-0 top-0 h-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl z-30 border-r border-slate-700 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'} flex flex-col`}>
       <div className={`p-6 border-b border-slate-700/50 ${!isOpen && 'py-10 px-5'}`}>
         {isOpen ? (
           <>
-            <h2 className="text-2xl font-serif text-[#D4AF37] font-bold">Prime Admin</h2>
+            <h2 className="text-2xl font-serif text-[#D4AF37] font-bold">
+              {userProperty === 'Prem Kunj' ? 'Prem Kunj Admin' : 'Prime Admin'}
+            </h2>
             <p className="text-sm text-slate-400 mt-1">Hotel Management</p>
           </>
         ) : (
@@ -77,7 +97,7 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
       </div>
 
       <nav className="mt-6 gap-3 flex flex-col flex-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 

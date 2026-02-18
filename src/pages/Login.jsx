@@ -11,6 +11,9 @@ const Login = ({ setIsAuthenticated }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
 
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
@@ -20,19 +23,61 @@ const Login = ({ setIsAuthenticated }) => {
 
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/login', formData);
+      // Try admin login first
+      let response = await api.post('/auth/login', formData).catch(() => null);
 
-      if (data.success) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        toast.success('Login successful!', { autoClose: 1500 });
+      // If admin login fails, try manager login
+      if (!response || !response.data.success) {
+        response = await api.post('/managers/login', formData);
+      }
 
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token);
+
+        // Store user data with role
+        const userData = response.data.user || response.data.data;
+        const userRole = userData.role || 'admin';
+
+        localStorage.setItem('user', JSON.stringify({
+          ...userData,
+          role: userRole,
+          isManager: userRole === 'Manager'
+        }));
+
+        toast.success(`Welcome ${userData.name || 'back'}!`, { autoClose: 1500 });
+
+        // Only trigger authentication state change after a short delay
+        // This prevents immediate re-render issues in some cases
         setTimeout(() => {
           setIsAuthenticated(true);
-        }, 500);
+        }, 100);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed', { autoClose: 2000 });
+      toast.error(error.response?.data?.message || 'Invalid credentials', { autoClose: 2000 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error('Please enter your email', { autoClose: 2000 });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/forgotpassword', { email: resetEmail });
+      if (response.data.success) {
+        toast.success('Password reset link has been sent to your email!', { autoClose: 3000 });
+        // In a real app, the user would check their email. 
+        // For development, we might want to log the token or show it (optional)
+        console.log('Reset Token:', response.data.data);
+        setIsForgotPassword(false);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Something went wrong', { autoClose: 2000 });
     } finally {
       setLoading(false);
     }
@@ -42,7 +87,7 @@ const Login = ({ setIsAuthenticated }) => {
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Hotel-themed animated background */}
       <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-        {/* Animated bubbles */}
+        {/* Animated bubbles and icons remain same */}
         {[...Array(15)].map((_, i) => (
           <motion.div
             key={i}
@@ -112,6 +157,7 @@ const Login = ({ setIsAuthenticated }) => {
           className="absolute bottom-0 right-0 w-full h-24 bg-gradient-to-l from-[#B8860B]/10 via-[#D4AF37]/15 to-[#B8860B]/10 transform skew-y-1"
         />
       </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -122,69 +168,105 @@ const Login = ({ setIsAuthenticated }) => {
           <div className='flex justify-center items-center mx-auto rounded-full bg-slate-200 w-30 h-30 mb-4'>
             <img src={logo} alt="logo" className='w-30 h-30 object-contain' />
           </div>
-          <p className="text-gray-600">Sign in to your account</p>
+          <p className="text-gray-600">
+            {isForgotPassword ? 'Reset your password' : 'Sign in to your account'}
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <div className="relative">
-              <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
-                placeholder="Enter your email"
-              />
+        {!isForgotPassword ? (
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <div className="relative">
+                <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
+                  placeholder="Enter your email"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className='mt-5'>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <div className="relative">
-              <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
-                placeholder="Enter your password"
-              />
+            <div className='mt-5'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <div className="relative">
+                <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full mt-4 py-3 bg-[#C6A87C] text-white rounded-lg hover:bg-[#B8996F] transition-colors font-medium cursor-pointer ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {loading ? 'Signing In...' : 'Sign In'}
+            </button>
+
+            <div className="flex items-center justify-between mt-6">
+              <label className="flex items-center cursor-pointer">
+                <input type="checkbox" className="rounded border-gray-300 text-[#C6A87C] focus:ring-[#C6A87C]" />
+                <span className="ml-2 text-sm text-gray-600">Remember me</span>
+              </label>
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                onClick={() => setIsForgotPassword(true)}
+                className="text-sm text-[#C6A87C] hover:underline cursor-pointer bg-transparent border-none"
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                Forgot password?
               </button>
             </div>
-          </div>
+          </form>
+        ) : (
+          <form onSubmit={handleForgotPassword} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email for Password Reset</label>
+              <div className="relative">
+                <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C6A87C] focus:border-transparent"
+                  placeholder="Enter your registered email"
+                />
+              </div>
+            </div>
 
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full mt-4 py-3 bg-[#C6A87C] text-white rounded-lg hover:bg-[#B8996F] transition-colors font-medium cursor-pointer ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {loading ? 'Sending Link...' : 'Send Reset Link'}
+            </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full mt-4 py-3 bg-[#C6A87C] text-white rounded-lg hover:bg-[#B8996F] transition-colors font-medium cursor-pointer ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {loading ? 'Signing In...' : 'Sign In'}
-          </button>
-        </form>
-
-        {/* <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account? 
-            <a href="#" className="text-[#C6A87C] hover:underline ml-1">Contact Administrator</a>
-          </p>
-        </div> */}
-
-        <div className="flex items-center justify-between mt-6">
-          <label className="flex items-center cursor-pointer">
-            <input type="checkbox" className="rounded border-gray-300 text-[#C6A87C] focus:ring-[#C6A87C]" />
-            <span className="ml-2 text-sm text-gray-600">Remember me</span>
-          </label>
-          <a href="#" className="text-sm text-[#C6A87C] hover:underline">Forgot password?</a>
-        </div>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                className="text-sm text-gray-600 hover:text-[#C6A87C] cursor-pointer bg-transparent border-none"
+              >
+                Back to Login
+              </button>
+            </div>
+          </form>
+        )}
       </motion.div>
     </div>
   );

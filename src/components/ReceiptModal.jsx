@@ -91,6 +91,28 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                 <td style="padding: 12px; text-align: center; color: #4b5563;">${booking.nights}</td>
                                 <td style="padding: 12px; text-align: right; font-weight: bold;">${formatCurrency(booking.amount)}</td>
                             </tr>
+                            ${(booking.foodOrders || []).map(order => `
+                                <tr>
+                                    <td style="padding: 12px; vertical-align: top;">
+                                        <p style="font-weight: bold; margin: 0;">Food: ${order.item}</p>
+                                        <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0;">${new Date(order.date).toLocaleDateString()}</p>
+                                    </td>
+                                    <td style="padding: 12px; text-align: center; color: #4b5563;">${formatCurrency(order.price)}</td>
+                                    <td style="padding: 12px; text-align: center; color: #4b5563;">${order.quantity}</td>
+                                    <td style="padding: 12px; text-align: right; font-weight: bold;">${formatCurrency(order.amount)}</td>
+                                </tr>
+                            `).join('')}
+                            ${(booking.extraCharges || []).map(charge => `
+                                <tr>
+                                    <td style="padding: 12px; vertical-align: top;">
+                                        <p style="font-weight: bold; margin: 0;">Extra: ${charge.description}</p>
+                                        <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0;">${new Date(charge.date).toLocaleDateString()}</p>
+                                    </td>
+                                    <td style="padding: 12px; text-align: center; color: #4b5563;">-</td>
+                                    <td style="padding: 12px; text-align: center; color: #4b5563;">1</td>
+                                    <td style="padding: 12px; text-align: right; font-weight: bold;">${formatCurrency(charge.amount)}</td>
+                                </tr>
+                            `).join('')}
                         </tbody>
                     </table>
 
@@ -278,6 +300,28 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                             {formatCurrency(booking.amount)}
                                         </td>
                                     </tr>
+                                    {(booking.foodOrders || []).map((order, idx) => (
+                                        <tr key={`food-${idx}`}>
+                                            <td className="py-4 px-4">
+                                                <p className="font-bold text-gray-900">Food: {order.item}</p>
+                                                <p className="text-xs text-gray-500 mt-1">{new Date(order.date).toLocaleDateString()}</p>
+                                            </td>
+                                            <td className="py-4 px-4 text-center text-gray-600 font-medium">{formatCurrency(order.price)}</td>
+                                            <td className="py-4 px-4 text-center text-gray-600 font-medium">{order.quantity}</td>
+                                            <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(order.amount)}</td>
+                                        </tr>
+                                    ))}
+                                    {(booking.extraCharges || []).map((charge, idx) => (
+                                        <tr key={`extra-${idx}`}>
+                                            <td className="py-4 px-4">
+                                                <p className="font-bold text-gray-900">Extra: {charge.description}</p>
+                                                <p className="text-xs text-gray-500 mt-1">{new Date(charge.date).toLocaleDateString()}</p>
+                                            </td>
+                                            <td className="py-4 px-4 text-center text-gray-600 font-medium">-</td>
+                                            <td className="py-4 px-4 text-center text-gray-600 font-medium">1</td>
+                                            <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(charge.amount)}</td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>

@@ -17,6 +17,7 @@ const ManageCheckIns = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [user, setUser] = useState({ role: 'Admin', property: '' });
 
     const [stats, setStats] = useState({
         checkInsToday: 0,
@@ -27,6 +28,8 @@ const ManageCheckIns = () => {
     });
 
     useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        setUser(userData);
         fetchData();
         const interval = setInterval(fetchData, 30000); // Auto-refresh every 30s
         return () => clearInterval(interval);
@@ -38,6 +41,7 @@ const ManageCheckIns = () => {
 
     const fetchData = async () => {
         try {
+            // Manager ke liye NO params, backend middleware handle karega
             const { data } = await api.get('/bookings');
             console.log("API Response:", data);
             if (data.success) {

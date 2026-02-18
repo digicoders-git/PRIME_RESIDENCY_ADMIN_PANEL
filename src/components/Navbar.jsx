@@ -6,11 +6,22 @@ import NotificationModal from './NotificationModal';
 
 const Navbar = ({ toggleSidebar, sidebarOpen }) => {
   const navigate = useNavigate();
+
   const [notificationCount, setNotificationCount] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotifications, setShowNotifications] = useState(false);
 
+  const [userName, setUserName] = useState('Admin');
+  const [userRole, setUserRole] = useState('admin');
+  const [userProperty, setUserProperty] = useState('');
+
   useEffect(() => {
+    // Get user details
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserName(user.name || 'User');
+    setUserRole(user.role || 'admin');
+    setUserProperty(user.property || '');
+
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000); // Changed from 10000 to 30000 (30 seconds)
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -65,24 +76,30 @@ const Navbar = ({ toggleSidebar, sidebarOpen }) => {
 
 
         <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 text-slate-300 hover:text-[#D4AF37] transition-colors cursor-pointer rounded-lg hover:bg-slate-700/50"
-            title="View Notifications"
-          >
-            <FaBell className="text-xl" />
-            {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full px-1 shadow-sm ring-1 ring-slate-900">
-                {notificationCount > 9 ? '9+' : notificationCount}
-              </span>
-            )}
-          </button>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-slate-300 hover:text-[#D4AF37] transition-colors cursor-pointer rounded-lg hover:bg-slate-700/50"
+            >
+              <FaBell className="text-xl" />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+          )}
+
+
 
           <div className="flex items-center space-x-3 cursor-pointer hover:bg-slate-700/50 rounded-lg p-2 transition-colors">
             <div className="w-8 h-8 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] rounded-full flex items-center mr-3 justify-center">
               <FaUser className="text-slate-900 text-sm" />
             </div>
-            <span className="text-sm font-medium text-white">Admin</span>
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-medium text-white">{userName}</span>
+              <span className="text-xs text-slate-400 capitalize">{userRole}{userProperty ? ` - ${userProperty}` : ''}</span>
+            </div>
           </div>
         </div>
       </div>

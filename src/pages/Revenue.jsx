@@ -26,6 +26,7 @@ const Revenue = () => {
 
     const fetchRevenues = async () => {
         try {
+            // Manager ke liye NO params, backend middleware handle karega
             const res = await api.get('/revenue');
             setRevenues(res.data.data);
         } catch (error) {
@@ -37,6 +38,7 @@ const Revenue = () => {
 
     const fetchAnalytics = async () => {
         try {
+            // Manager ke liye NO params, backend middleware handle karega
             const res = await api.get('/revenue/analytics');
             setAnalytics(res.data.data);
         } catch (error) {
