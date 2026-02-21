@@ -2,7 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/api';
 import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
-import { FaBath, FaMugHot, FaParking, FaSnowflake, FaTv, FaWifi, FaArrowLeft, FaEdit, FaCheckCircle, FaExclamationTriangle, FaTools, FaHistory, FaExpand, FaUsers, FaBed, FaBuilding } from 'react-icons/fa';
+import { FaBath, FaMugHot, FaParking, FaSnowflake, FaTv, FaWifi, FaArrowLeft, FaEdit, FaCheckCircle, FaExclamationTriangle, FaTools, FaHistory, FaExpand, FaUsers, FaBed, FaBuilding, FaGlassCheers } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 const RoomDetail = () => {

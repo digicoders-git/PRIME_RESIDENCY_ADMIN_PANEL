@@ -310,7 +310,14 @@ const EditRoom = () => {
                 navigate('/rooms');
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update room');
+            const errorMessage = error.response?.data?.message || 'Failed to update room';
+            
+            // Check for duplicate key error
+            if (errorMessage.includes('duplicate') || errorMessage.includes('E11000') || errorMessage.includes('already exists')) {
+                toast.error(`${formData.category} number ${formData.roomNumber} already exists in ${formData.property}. Please use a different number.`);
+            } else {
+                toast.error(errorMessage);
+            }
             console.error(error);
         } finally {
             setSaving(false);

@@ -9,7 +9,7 @@ const CreateOrder = () => {
     const [availableRooms, setAvailableRooms] = useState([]);
     const [foodItems, setFoodItems] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState('');
-    const [orderItems, setOrderItems] = useState([{ foodItemId: '', quantity: 1 }]);
+    const [orderItems, setOrderItems] = useState([{ foodItemId: '', quantity: '' }]);
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState({ property: '' });
     const [recentOrders, setRecentOrders] = useState([]);
@@ -56,7 +56,19 @@ const CreateOrder = () => {
             const params = property ? { property } : {};
             const { data } = await api.get('/food-orders', { params });
             if (data.success) {
-                setRecentOrders(data.data.slice(0, 10));
+                // Populate booking data to check payment status
+                const ordersWithBooking = await Promise.all(
+                    data.data.map(async (order) => {
+                        try {
+                            const bookingId = order.bookingId?._id || order.bookingId;
+                            const { data: bookingData } = await api.get(`/bookings/${bookingId}`);
+                            return { ...order, bookingDetails: bookingData.data };
+                        } catch (error) {
+                            return order;
+                        }
+                    })
+                );
+                setRecentOrders(ordersWithBooking.slice(0, 10));
             }
         } catch (error) {
             console.error('Failed to fetch orders');
@@ -64,7 +76,7 @@ const CreateOrder = () => {
     };
 
     const addOrderItem = () => {
-        setOrderItems([...orderItems, { foodItemId: '', quantity: 1 }]);
+        setOrderItems([...orderItems, { foodItemId: '', quantity: '' }]);
     };
 
     const removeOrderItem = (index) => {
@@ -98,6 +110,15 @@ const CreateOrder = () => {
             return;
         }
 
+        // Validate stock availability
+        for (const item of validItems) {
+            const foodItem = foodItems.find(f => f._id === item.foodItemId);
+            if (foodItem && item.quantity > foodItem.stock) {
+                toast.error(`Insufficient stock for ${foodItem.name}. Available: ${foodItem.stock}`);
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             const { data } = await api.post('/food-orders', {
@@ -120,20 +141,43 @@ const CreateOrder = () => {
         }
     };
 
-    const filteredOrders = roomFilter === 'All' 
-        ? recentOrders 
+    const filteredOrders = roomFilter === 'All'
+        ? recentOrders
         : recentOrders.filter(o => o.roomNumber === roomFilter);
+
+    // Check if room's food orders are paid by checking booking balance
+    const isRoomPaid = () => {
+        if (roomFilter === 'All' || filteredOrders.length === 0) return false;
+        const booking = filteredOrders[0]?.bookingDetails;
+        if (!booking) return false;
+        // Check if booking balance is 0 or less (fully paid)
+        return booking.balance <= 0;
+    };
 
     const stats = {
         totalOrders: filteredOrders.length,
         totalRevenue: filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0),
-        paidOrders: filteredOrders.length,
-        pendingAmount: 0
+        paidOrders: filteredOrders.filter(o => o.bookingDetails?.balance <= 0).length,
+        pendingAmount: filteredOrders
+            .filter(o => o.bookingDetails?.balance > 0)
+            .reduce((sum, o) => sum + o.totalAmount, 0)
     };
 
     const handleRoomPayment = async () => {
         const amount = stats.totalRevenue;
-        const bookingId = filteredOrders[0]?.bookingId;
+        const roomOrders = filteredOrders.filter(o => o.roomNumber === roomFilter);
+        
+        if (roomOrders.length === 0) {
+            toast.error('No orders found for this room');
+            return;
+        }
+
+        const bookingId = roomOrders[0]?.bookingId?._id || roomOrders[0]?.bookingId;
+        
+        if (!bookingId) {
+            toast.error('Invalid booking ID');
+            return;
+        }
 
         if (paymentMethod === 'Online') {
             const isLoaded = await loadRazorpayScript();
@@ -144,7 +188,7 @@ const CreateOrder = () => {
 
             try {
                 const orderData = await createRazorpayOrder(amount, `FOOD_${roomFilter}_${Date.now()}`);
-                
+
                 const options = {
                     key: import.meta.env.VITE_RAZORPAY_KEY_ID,
                     amount: orderData.data.amount,
@@ -154,17 +198,14 @@ const CreateOrder = () => {
                     order_id: orderData.data.id,
                     handler: async (response) => {
                         try {
+                            // Get current booking to check existing advance
+                            const { data: bookingData } = await api.get(`/bookings/${bookingId}`);
+                            const currentAdvance = bookingData.data.advance || 0;
+                            const totalAdvance = currentAdvance + amount;
+
                             await api.put(`/bookings/${bookingId}/payment`, {
                                 advance: amount,
                                 paymentMethod: 'Online'
-                            });
-
-                            await api.post('/revenue', {
-                                source: 'Food Order',
-                                amount: amount,
-                                category: 'Food',
-                                description: `Food orders payment for Room ${roomFilter}`,
-                                property: user.property
                             });
 
                             toast.success('Payment successful!');
@@ -192,19 +233,12 @@ const CreateOrder = () => {
                     paymentMethod: 'Cash'
                 });
 
-                await api.post('/revenue', {
-                    source: 'Food Order',
-                    amount: amount,
-                    category: 'Food',
-                    description: `Food orders payment for Room ${roomFilter}`,
-                    property: user.property
-                });
-
                 toast.success('Cash payment recorded successfully!');
                 setShowPaymentModal(false);
                 fetchRecentOrders(user.property);
             } catch (error) {
-                toast.error('Failed to record payment');
+                console.error('Payment error:', error);
+                toast.error(error.response?.data?.message || 'Failed to record payment');
             }
         }
     };
@@ -300,13 +334,18 @@ const CreateOrder = () => {
                             ))}
                         </select>
                     </div>
-                    {roomFilter !== 'All' && filteredOrders.length > 0 && (
+                    {roomFilter !== 'All' && filteredOrders.length > 0 && !isRoomPaid() && (
                         <button
                             onClick={() => setShowPaymentModal(true)}
                             className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg font-bold cursor-pointer"
                         >
                             <FaCreditCard /> Pay All Orders (₹{stats.totalRevenue})
                         </button>
+                    )}
+                    {roomFilter !== 'All' && filteredOrders.length > 0 && isRoomPaid() && (
+                        <div className="flex items-center gap-2 px-6 py-2 bg-green-100 text-green-700 rounded-xl font-bold border-2 border-green-200">
+                            <FaCheckCircle /> All Orders Paid
+                        </div>
                     )}
                 </div>
             </div>
@@ -330,7 +369,7 @@ const CreateOrder = () => {
                         </thead>
                         <tbody className="divide-y">
                             {filteredOrders.map(order => (
-                                <motion.tr 
+                                <motion.tr
                                     key={order._id}
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -351,12 +390,11 @@ const CreateOrder = () => {
                                     <td className="px-4 py-3 font-bold">₹{order.totalAmount}</td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                            order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-                                            order.status === 'Preparing' ? 'bg-purple-100 text-purple-700' :
-                                            order.status === 'Accepted' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-yellow-100 text-yellow-700'
+                                            order.bookingDetails?.balance <= 0 ? 'bg-green-100 text-green-700' :
+                                            order.bookingDetails?.balance > 0 ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-gray-100 text-gray-700'
                                         }`}>
-                                            {order.status}
+                                            {order.bookingDetails?.balance <= 0 ? 'Paid' : 'Pending'}
                                         </span>
                                     </td>
                                 </motion.tr>
@@ -369,7 +407,7 @@ const CreateOrder = () => {
             {/* Create Order Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <motion.div 
+                    <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
@@ -424,7 +462,8 @@ const CreateOrder = () => {
                                                 type="number"
                                                 min="1"
                                                 value={item.quantity}
-                                                onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                                onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || '')}
+                                                placeholder="Qty"
                                                 className="w-20 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]"
                                             />
                                             {orderItems.length > 1 && (
@@ -460,7 +499,7 @@ const CreateOrder = () => {
                                 onClick={() => {
                                     setShowModal(false);
                                     setSelectedRoom('');
-                                    setOrderItems([{ foodItemId: '', quantity: 1 }]);
+                                    setOrderItems([{ foodItemId: '', quantity: '' }]);
                                 }}
                                 className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold cursor-pointer hover:bg-gray-300"
                             >
@@ -478,7 +517,7 @@ const CreateOrder = () => {
                         <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
                             <FaCreditCard className="text-emerald-500" /> Pay All Orders - Room {roomFilter}
                         </h3>
-                        
+
                         <div className="space-y-4">
                             <div className="bg-gray-50 p-4 rounded-xl">
                                 <p className="text-sm text-gray-600 mb-2">Total Orders: <span className="font-bold text-gray-900">{filteredOrders.length}</span></p>
@@ -492,22 +531,20 @@ const CreateOrder = () => {
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         onClick={() => setPaymentMethod('Cash')}
-                                        className={`p-4 rounded-xl border-2 font-bold transition-all ${
-                                            paymentMethod === 'Cash'
+                                        className={`p-4 rounded-xl border-2 font-bold transition-all ${paymentMethod === 'Cash'
                                                 ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                                                 : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         <FaMoneyBillWave className="mx-auto mb-2 text-2xl" />
                                         Cash Payment
                                     </button>
                                     <button
                                         onClick={() => setPaymentMethod('Online')}
-                                        className={`p-4 rounded-xl border-2 font-bold transition-all ${
-                                            paymentMethod === 'Online'
+                                        className={`p-4 rounded-xl border-2 font-bold transition-all ${paymentMethod === 'Online'
                                                 ? 'border-blue-500 bg-blue-50 text-blue-700'
                                                 : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         <FaCreditCard className="mx-auto mb-2 text-2xl" />
                                         Online Payment

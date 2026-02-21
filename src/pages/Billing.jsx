@@ -118,10 +118,18 @@ const Billing = () => {
             </div>
 
             {/* Financial Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Room Revenue</p>
+                    <h3 className="text-2xl font-black text-slate-800">₹{bookings.reduce((acc, b) => acc + (b.amount || 0), 0).toLocaleString()}</h3>
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Food Revenue</p>
+                    <h3 className="text-2xl font-black text-amber-600">₹{bookings.reduce((acc, b) => acc + ((b.foodOrders || []).reduce((sum, f) => sum + (f.amount || 0), 0)), 0).toLocaleString()}</h3>
+                </div>
                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Revenue</p>
-                    <h3 className="text-2xl font-black text-slate-800">₹{bookings.reduce((acc, b) => acc + (b.amount || 0), 0).toLocaleString()}</h3>
+                    <h3 className="text-2xl font-black text-blue-600">₹{bookings.reduce((acc, b) => acc + (b.amount || 0) + ((b.foodOrders || []).reduce((sum, f) => sum + (f.amount || 0), 0)), 0).toLocaleString()}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Collected</p>
@@ -130,10 +138,6 @@ const Billing = () => {
                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Balance</p>
                     <h3 className="text-2xl font-black text-rose-500">₹{bookings.reduce((acc, b) => acc + (b.balance || 0), 0).toLocaleString()}</h3>
-                </div>
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Paid Bookings</p>
-                    <h3 className="text-2xl font-black text-blue-600">{bookings.filter(b => b.paymentStatus === 'Paid').length} / {bookings.length}</h3>
                 </div>
             </div>
 
@@ -216,7 +220,9 @@ const Billing = () => {
                                 <th className="p-4 font-semibold text-slate-600">Booking ID</th>
                                 <th className="p-4 font-semibold text-slate-600">Guest</th>
                                 <th className="p-4 font-semibold text-slate-600">Room</th>
-                                <th className="p-4 font-semibold text-slate-600">Amount</th>
+                                <th className="p-4 font-semibold text-slate-600">Room Amt</th>
+                                <th className="p-4 font-semibold text-slate-600">Food Amt</th>
+                                <th className="p-4 font-semibold text-slate-600">Total</th>
                                 <th className="p-4 font-semibold text-slate-600">Paid</th>
                                 <th className="p-4 font-semibold text-slate-600">Balance</th>
                                 <th className="p-4 font-semibold text-slate-600">Status</th>
@@ -226,14 +232,17 @@ const Billing = () => {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="8" className="p-8 text-center text-slate-500">Loading billing data...</td>
+                                    <td colSpan="10" className="p-8 text-center text-slate-500">Loading billing data...</td>
                                 </tr>
                             ) : filteredBookings.length === 0 ? (
                                 <tr>
-                                    <td colSpan="8" className="p-8 text-center text-slate-500">No records found.</td>
+                                    <td colSpan="10" className="p-8 text-center text-slate-500">No records found.</td>
                                 </tr>
                             ) : (
-                                currentBookings.map((booking) => (
+                                currentBookings.map((booking) => {
+                                    const foodTotal = (booking.foodOrders || []).reduce((sum, f) => sum + (f.amount || 0), 0);
+                                    const grandTotal = booking.amount + foodTotal;
+                                    return (
                                     <tr key={booking._id} className="hover:bg-slate-50 transition-colors">
                                         <td className="p-4 font-mono text-sm text-slate-500">
                                             {booking._id.slice(-6).toUpperCase()}
@@ -246,6 +255,8 @@ const Billing = () => {
                                             {booking.room} <span className="text-slate-400">({booking.roomNumber})</span>
                                         </td>
                                         <td className="p-4 font-medium text-slate-800">₹{booking.amount}</td>
+                                        <td className="p-4 font-medium text-amber-600">₹{foodTotal}</td>
+                                        <td className="p-4 font-bold text-blue-600">₹{grandTotal}</td>
                                         <td className="p-4 text-green-600">₹{booking.advance}</td>
                                         <td className="p-4 text-red-500 font-medium">₹{booking.balance}</td>
                                         <td className="p-4">
@@ -279,7 +290,8 @@ const Billing = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                ))
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

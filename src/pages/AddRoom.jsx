@@ -256,6 +256,10 @@ const AddRoom = () => {
         });
       }
 
+      // Admin settings
+      form.append('featured', formData.featuredRoom);
+      form.append('visibility', formData.roomVisibility);
+
       const { data } = await api.post('/rooms', form, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -268,7 +272,14 @@ const AddRoom = () => {
       }
     } catch (error) {
       console.error('Error details:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to add room');
+      const errorMessage = error.response?.data?.message || 'Failed to add room';
+      
+      // Check for duplicate key error
+      if (errorMessage.includes('duplicate') || errorMessage.includes('E11000') || errorMessage.includes('already exists')) {
+        toast.error(`${formData.category} number ${formData.roomNumber} already exists in ${formData.property}. Please use a different number.`);
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -826,6 +837,41 @@ const AddRoom = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Submit Buttons */}
+        <div className="bg-pink-50 p-6 rounded-xl border border-pink-200 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <FaStar className="text-pink-600 mr-3" />
+            <span className="w-8 h-8 bg-pink-600 text-white rounded-full flex items-center justify-center text-sm mr-3">6</span>
+            Admin Settings
+          </h3>
+          <div className="space-y-4">
+            <label className="flex items-center cursor-pointer p-4 border border-gray-200 rounded-lg hover:bg-pink-100">
+              <input
+                type="checkbox"
+                checked={formData.featuredRoom}
+                onChange={(e) => setFormData(prev => ({ ...prev, featuredRoom: e.target.checked }))}
+                className="rounded border-gray-300 text-pink-500 focus:ring-pink-500 mr-3 w-5 h-5"
+              />
+              <div>
+                <span className="text-sm font-bold text-gray-700">Featured {formData.category}</span>
+                <p className="text-xs text-gray-500 mt-1">Display this {formData.category.toLowerCase()} in the "Preferred Suites" section on homepage (max 3 featured)</p>
+              </div>
+            </label>
+            <label className="flex items-center cursor-pointer p-4 border border-gray-200 rounded-lg hover:bg-pink-100">
+              <input
+                type="checkbox"
+                checked={formData.roomVisibility}
+                onChange={(e) => setFormData(prev => ({ ...prev, roomVisibility: e.target.checked }))}
+                className="rounded border-gray-300 text-pink-500 focus:ring-pink-500 mr-3 w-5 h-5"
+              />
+              <div>
+                <span className="text-sm font-bold text-gray-700">Visible on Website</span>
+                <p className="text-xs text-gray-500 mt-1">Show this {formData.category.toLowerCase()} to customers on the website</p>
+              </div>
+            </label>
           </div>
         </div>
 
