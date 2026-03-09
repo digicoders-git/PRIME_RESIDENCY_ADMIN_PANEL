@@ -88,7 +88,7 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
 
                     {/* Receipt Content */}
                     <div className="p-12 bg-white print:p-8" ref={receiptRef} id="receipt-content">
-                        
+
                         {/* Header */}
                         <div className="flex justify-between items-start border-b-2 border-gray-200 pb-6 mb-8">
                             <div className="flex items-center gap-4">
@@ -127,7 +127,7 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                 <div className="space-y-1">
                                     <p className="font-bold text-lg text-gray-900">Prime Residency</p>
                                     <p className="text-sm text-gray-600 flex items-center justify-end gap-2"><FaMapMarkerAlt size={10} /> Near Railway Station, Delhi</p>
-                                    <p className="text-sm text-gray-600 flex items-center justify-end gap-2"><FaPhone size={10} /> +91 98765 43210</p>
+                                    <p className="text-sm text-gray-600 flex items-center justify-end gap-2"><FaPhone size={10} /> +91 9118808054</p>
                                     <p className="text-sm text-gray-600 flex items-center justify-end gap-2"><FaEnvelope size={10} /> info@primeresidency.com</p>
                                 </div>
                             </div>
@@ -227,11 +227,10 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                 </p>
                             </div>
                             <div className="text-center">
-                                <div className={`px-6 py-2 border-2 rounded-lg font-black text-lg uppercase rotate-[-12deg] ${
-                                    booking.paymentStatus === 'Paid' ? 'border-emerald-500 text-emerald-500' :
-                                    booking.paymentStatus === 'Partial' ? 'border-amber-500 text-amber-500' :
-                                    'border-rose-500 text-rose-500'
-                                }`}>
+                                <div className={`px-6 py-2 border-2 rounded-lg font-black text-lg uppercase rotate-[-12deg] ${booking.paymentStatus === 'Paid' ? 'border-emerald-500 text-emerald-500' :
+                                        booking.paymentStatus === 'Partial' ? 'border-amber-500 text-amber-500' :
+                                            'border-rose-500 text-rose-500'
+                                    }`}>
                                     {booking.paymentStatus}
                                 </div>
                                 <p className="text-xs text-gray-400 font-bold uppercase mt-4">Authorized Signature</p>
