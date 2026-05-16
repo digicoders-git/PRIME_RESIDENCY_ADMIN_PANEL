@@ -67,7 +67,7 @@ const Rooms = () => {
       }
     } catch (error) {
       toast.error('Failed to fetch rooms');
-      console.error(error);
+      // console.error(error);
     } finally {
       setLoading(false);
     }

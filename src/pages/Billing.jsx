@@ -49,10 +49,10 @@ const Billing = () => {
                 params.property = filter;
             }
             
-            console.log('Billing - Fetching with params:', params, 'User:', userData.role, 'Filter:', filter);
+            // console.log('Billing - Fetching with params:', params, 'User:', userData.role, 'Filter:', filter);
             const res = await api.get('/bookings', { params });
             if (res.data.success) {
-                console.log('Billing - Received bookings:', res.data.data.length);
+                // console.log('Billing - Received bookings:', res.data.data.length);
                 setBookings(res.data.data);
             }
         } catch (error) {

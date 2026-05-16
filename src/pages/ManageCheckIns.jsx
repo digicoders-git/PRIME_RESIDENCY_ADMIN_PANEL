@@ -70,7 +70,7 @@ const ManageCheckIns = () => {
     const getTodayStr = () => {
         const d = new Date();
         const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        console.log("System Today:", str);
+        // console.log("System Today:", str);
         return str;
     };
 

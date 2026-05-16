@@ -73,7 +73,7 @@ const Login = ({ setIsAuthenticated }) => {
         toast.success('Password reset link has been sent to your email!', { autoClose: 3000 });
         // In a real app, the user would check their email. 
         // For development, we might want to log the token or show it (optional)
-        console.log('Reset Token:', response.data.data);
+        // console.log('Reset Token:', response.data.data);
         setIsForgotPassword(false);
       }
     } catch (error) {

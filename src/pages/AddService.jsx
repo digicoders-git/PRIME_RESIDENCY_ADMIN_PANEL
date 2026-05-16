@@ -119,7 +119,7 @@ const AddService = () => {
         }
 
 
-        console.log("Submitting service with token:", token ? "Token present" : "No token");
+        // console.log("Submitting service with token:", token ? "Token present" : "No token");
 
         try {
             // Explicitly set headers. Content-Type must be undefined for FormData to work correctly (browser sets boundary)
@@ -136,7 +136,7 @@ const AddService = () => {
             }
         } catch (error) {
             console.error('Error saving service:', error);
-            console.log('Error config headers:', error.config?.headers);
+            // console.log('Error config headers:', error.config?.headers);
 
             // Handle 401 specifically
             if (error.response && error.response.status === 401) {

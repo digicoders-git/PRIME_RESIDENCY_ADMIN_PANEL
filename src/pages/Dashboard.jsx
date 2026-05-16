@@ -52,7 +52,7 @@ const Dashboard = () => {
         api.get('/revenue/analytics', { params })
       ]);
 
-      console.log('Revenue Analytics Data:', revenueRes.data.data); // Debug log
+      // console.log('Revenue Analytics Data:', revenueRes.data.data); // Debug log
 
       setData({
         rooms: roomsRes.data.data || [],
@@ -125,7 +125,7 @@ const Dashboard = () => {
     { _id: '2024-01-07', total: 0, online: 0, offline: 0 }
   ];
 
-  console.log('Chart Data:', chartData); // Debug log
+  // console.log('Chart Data:', chartData); // Debug log
 
   return (
     <motion.div

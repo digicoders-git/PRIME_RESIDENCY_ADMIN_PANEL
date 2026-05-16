@@ -250,7 +250,7 @@ const CreateBooking = () => {
                 if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
                 if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
 
-                console.log('Creating Cash booking...');
+                // console.log('Creating Cash booking...');
                 const { data } = await api.post('/bookings', dataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
@@ -288,7 +288,7 @@ const CreateBooking = () => {
                     orderData.data,
                     bookingData,
                     async (result) => {
-                        console.log('Payment successful. Creating booking now...');
+                        // console.log('Payment successful. Creating booking now...');
                         try {
                             const dataToSend = new FormData();
                             dataToSend.append('guest', formData.guest);

@@ -20,7 +20,7 @@ const RoomDetail = () => {
             const { data } = await api.get(`/rooms/by-number/${id}`);
             if (data.success) {
                 const r = data.data;
-                console.log('Room data from API:', r); // Debug log
+                // console.log('Room data from API:', r); // Debug log
 
                 // Set recent bookings
                 if (r.recentBookings && r.recentBookings.length > 0) {

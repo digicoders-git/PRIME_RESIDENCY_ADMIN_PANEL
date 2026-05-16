@@ -56,7 +56,7 @@ export const initiatePayment = async (orderData, bookingData, onSuccess, onFailu
                     amount: orderData.amount / 100 // Convert paise back to rupees
                 };
 
-                console.log('Sending payment verification data:', verificationData);
+                // console.log('Sending payment verification data:', verificationData);
 
                 const result = await verifyPayment(verificationData);
                 onSuccess(result);
