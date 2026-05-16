@@ -44,6 +44,8 @@ const Bookings = () => {
   const [extraChargeData, setExtraChargeData] = useState({ description: '', amount: '' });
   const [isEditBillModal, setIsEditBillModal] = useState(false);
   const [editBillData, setEditBillData] = useState({ amount: '', discount: '', extraBedPrice: '', taxGST: '' });
+  const [isEditCustomerModal, setIsEditCustomerModal] = useState(false);
+  const [editCustomerData, setEditCustomerData] = useState({ guest: '', email: '', phone: '', idType: '', idNumber: '', adults: 1, children: 0, specialRequests: '', checkIn: '', checkOut: '' });
 
   const [bookings, setBookings] = useState([]);
 
@@ -79,11 +81,11 @@ const Bookings = () => {
         params.property = propertyFilter;
       }
       
-      console.log('Fetching bookings with params:', params, 'User:', userData.role, 'Filter:', propertyFilter);
+      // console.log('Fetching bookings with params:', params, 'User:', userData.role, 'Filter:', propertyFilter);
 
       const { data } = await api.get('/bookings', { params });
       if (data.success) {
-        console.log('Received bookings:', data.data.length);
+        // console.log('Received bookings:', data.data.length);
         setBookings(data.data.map(b => ({
           ...b,
           id: b._id,
@@ -91,7 +93,7 @@ const Bookings = () => {
         })));
       }
     } catch (error) {
-      console.error('Fetch error:', error);
+      // console.error('Fetch error:', error);
       toast.error('Failed to fetch bookings');
     } finally {
       setLoading(false);
@@ -259,6 +261,38 @@ const Bookings = () => {
     }
   };
 
+  const handleEditCustomer = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.put(`/bookings/${selectedBooking.id}`, editCustomerData);
+      if (data.success) {
+        const updated = { ...data.data, id: data.data._id };
+        setSelectedBooking(updated);
+        setBookings(prev => prev.map(b => b.id === selectedBooking.id ? updated : b));
+        setIsEditCustomerModal(false);
+        toast.success('Customer details updated successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to update customer details');
+    }
+  };
+
+  const openEditCustomer = () => {
+    setEditCustomerData({
+      guest: selectedBooking.guest || '',
+      email: selectedBooking.email || '',
+      phone: selectedBooking.phone || '',
+      idType: selectedBooking.idType || '',
+      idNumber: selectedBooking.idNumber || '',
+      adults: selectedBooking.adults || 1,
+      children: selectedBooking.children || 0,
+      specialRequests: selectedBooking.specialRequests || '',
+      checkIn: selectedBooking.checkIn ? new Date(selectedBooking.checkIn).toISOString().split('T')[0] : '',
+      checkOut: selectedBooking.checkOut ? new Date(selectedBooking.checkOut).toISOString().split('T')[0] : ''
+    });
+    setIsEditCustomerModal(true);
+  };
+
   const openEditBill = () => {
     setEditBillData({
       amount: selectedBooking.amount,
@@ -313,6 +347,12 @@ const Bookings = () => {
               <div className="mb-4 space-y-2 text-left">
                 <div className="flex items-center gap-3">
                   <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{selectedBooking.guest}</h2>
+                  <button
+                    onClick={openEditCustomer}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-100 transition-all cursor-pointer"
+                  >
+                    <FaEdit size={10} /> Edit Details
+                  </button>
                   <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${selectedBooking.status === 'Confirmed' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                     selectedBooking.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                       selectedBooking.status === 'Checked-in' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
@@ -588,8 +628,9 @@ const Bookings = () => {
 
                   </div>
                   <select
-                    className="w-full text-xs font-black appearance-none bg-white border-2 border-gray-100 rounded-2xl px-12 py-4 focus:outline-none focus:border-amber-500 transition-all cursor-pointer shadow-sm uppercase tracking-widest"
+                    className="w-full text-xs font-black appearance-none bg-white border-2 border-gray-100 rounded-2xl px-12 py-4 focus:outline-none focus:border-amber-500 transition-all cursor-pointer shadow-sm uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                     value={selectedBooking.status}
+                    disabled={selectedBooking.status === 'Checked-out'}
                     onChange={(e) => {
                       handleStatusChange(selectedBooking.id, e.target.value);
                       setSelectedBooking(prev => ({ ...prev, status: e.target.value }));
@@ -599,6 +640,9 @@ const Bookings = () => {
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
+                  {selectedBooking.status === 'Checked-out' && (
+                    <p className="text-[10px] text-gray-400 text-center mt-2 font-bold uppercase tracking-widest">Checkout complete — status locked</p>
+                  )}
                   <FaChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-300 rotate-90" size={12} />
                 </div>
               </div>
@@ -835,6 +879,72 @@ const Bookings = () => {
                   >
                     Cancel
                   </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Customer Modal */}
+        {isEditCustomerModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-2xl font-black mb-6 text-gray-900 flex items-center gap-3">
+                <FaUser className="text-amber-500" /> Edit Customer Details
+              </h3>
+              <form onSubmit={handleEditCustomer} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Guest Name</label>
+                    <input type="text" value={editCustomerData.guest} onChange={(e) => setEditCustomerData({ ...editCustomerData, guest: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50" required />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Email</label>
+                    <input type="email" value={editCustomerData.email} onChange={(e) => setEditCustomerData({ ...editCustomerData, email: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50" required />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Phone</label>
+                    <input type="text" value={editCustomerData.phone} onChange={(e) => setEditCustomerData({ ...editCustomerData, phone: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50" required />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">ID Type</label>
+                    <select value={editCustomerData.idType} onChange={(e) => setEditCustomerData({ ...editCustomerData, idType: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer">
+                      <option value="">Select ID Type</option>
+                      <option value="Aadhar">Aadhar Card</option>
+                      <option value="PAN">PAN Card</option>
+                      <option value="Passport">Passport</option>
+                      <option value="Driving License">Driving License</option>
+                      <option value="Voter ID">Voter ID</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">ID Number</label>
+                    <input type="text" value={editCustomerData.idNumber} onChange={(e) => setEditCustomerData({ ...editCustomerData, idNumber: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Adults</label>
+                    <input type="number" min="1" value={editCustomerData.adults} onChange={(e) => setEditCustomerData({ ...editCustomerData, adults: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Children</label>
+                    <input type="number" min="0" value={editCustomerData.children} onChange={(e) => setEditCustomerData({ ...editCustomerData, children: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Check-In Date</label>
+                    <input type="date" value={editCustomerData.checkIn} onChange={(e) => setEditCustomerData({ ...editCustomerData, checkIn: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Check-Out Date</label>
+                    <input type="date" value={editCustomerData.checkOut} onChange={(e) => setEditCustomerData({ ...editCustomerData, checkOut: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Special Requests</label>
+                    <textarea value={editCustomerData.specialRequests} onChange={(e) => setEditCustomerData({ ...editCustomerData, specialRequests: e.target.value })} rows={3} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none" placeholder="Any special requests..." />
+                  </div>
+                </div>
+                <div className="flex gap-4 pt-2">
+                  <button type="submit" className="flex-1 bg-amber-500 text-white py-4 rounded-2xl hover:bg-amber-600 font-bold transition-all shadow-lg shadow-amber-500/20 cursor-pointer">Save Changes</button>
+                  <button type="button" onClick={() => setIsEditCustomerModal(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer">Cancel</button>
                 </div>
               </form>
             </div>

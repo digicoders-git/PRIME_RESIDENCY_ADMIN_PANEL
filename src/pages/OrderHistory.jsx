@@ -14,18 +14,19 @@ const OrderHistory = () => {
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('user') || '{}');
         setUser(userData);
-        if (userData.role === 'Manager' && userData.property) {
-            setPropertyFilter(userData.property);
-        }
+        const property = userData.role === 'Manager' && userData.property ? userData.property : 'All';
+        setPropertyFilter(property);
+        fetchOrders(property);
     }, []);
 
     useEffect(() => {
         if (propertyFilter) {
-            fetchOrders();
+            fetchOrders(propertyFilter);
         }
     }, [propertyFilter, statusFilter]);
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (propFilter) => {
+        const filterToUse = propFilter !== undefined ? propFilter : propertyFilter;
         setLoading(true);
         try {
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -33,13 +34,12 @@ const OrderHistory = () => {
             
             if (userData.role === 'Manager' && userData.property) {
                 params.property = userData.property;
-            } else if (userData.role === 'Admin' && propertyFilter !== 'All') {
-                params.property = propertyFilter;
+            } else if (filterToUse !== 'All') {
+                params.property = filterToUse;
             }
             
             const { data } = await api.get('/food-orders', { params });
             if (data.success) {
-                // Always filter only Delivered orders
                 const filteredOrders = data.data.filter(o => o.status === 'Delivered');
                 setOrders(filteredOrders);
             }
@@ -97,7 +97,7 @@ const OrderHistory = () => {
                             {['All', 'Prime Residency', 'Prem Kunj'].map(p => (
                                 <button
                                     key={p}
-                                    onClick={() => setPropertyFilter(p)}
+                                    onClick={() => { setPropertyFilter(p); fetchOrders(p); }}
                                     className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${
                                         propertyFilter === p 
                                             ? 'bg-[#D4AF37] text-white shadow-md' 

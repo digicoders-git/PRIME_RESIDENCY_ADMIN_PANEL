@@ -45,6 +45,7 @@ const Gallery = () => {
   const [uploadForm, setUploadForm] = useState({
     title: '',
     category: 'Rooms',
+    property: 'Prime Residency',
     files: []
   });
 
@@ -125,6 +126,7 @@ const Gallery = () => {
         const title = uploadForm.title || fileObj.file.name.split('.')[0] || `Image ${index + 1}`;
         formData.append('title', title);
         formData.append('category', uploadForm.category);
+        formData.append('property', uploadForm.property);
         formData.append('image', fileObj.file);
 
         return api.post('/gallery', formData, {
@@ -138,7 +140,7 @@ const Gallery = () => {
 
       toast.success('Images uploaded successfully!');
       setUploadModal(false);
-      setUploadForm({ title: '', category: 'Rooms', files: [] });
+      setUploadForm({ title: '', category: 'Rooms', property: 'Prime Residency', files: [] });
       fetchGallery();
 
     } catch (error) {
@@ -390,6 +392,17 @@ const Gallery = () => {
                           className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-black text-xs uppercase tracking-widest cursor-pointer"
                         >
                           {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-3 md:col-span-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Property</label>
+                        <select
+                          value={uploadForm.property}
+                          onChange={(e) => setUploadForm({ ...uploadForm, property: e.target.value })}
+                          className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-black text-xs uppercase tracking-widest cursor-pointer"
+                        >
+                          <option value="Prime Residency">Prime Residency</option>
+                          <option value="Prem Kunj">Prem Kunj</option>
                         </select>
                       </div>
                     </div>
