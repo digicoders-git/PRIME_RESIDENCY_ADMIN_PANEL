@@ -223,13 +223,7 @@ const Login = ({ setIsAuthenticated }) => {
                 <input type="checkbox" className="rounded border-gray-300 text-[#C6A87C] focus:ring-[#C6A87C]" />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
-              <button
-                type="button"
-                onClick={() => setIsForgotPassword(true)}
-                className="text-sm text-[#C6A87C] hover:underline cursor-pointer bg-transparent border-none"
-              >
-                Forgot password?
-              </button>
+          
             </div>
           </form>
         ) : (

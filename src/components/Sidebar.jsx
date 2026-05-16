@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers, FaUserTie, FaUtensils, FaHistory, FaPlusCircle } from 'react-icons/fa';
+import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers, FaUserTie, FaUtensils, FaHistory, FaPlusCircle, FaUserCircle } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import api from '../api/api';
 
@@ -66,6 +66,7 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: FaHome, permission: null },
+    { name: 'My Profile', path: '/profile', icon: FaUserCircle, permission: null },
     { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck, permission: 'checkInOut' },
     { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt, permission: 'viewBookings' },
     { name: 'Rooms', path: '/rooms', icon: FaBed, permission: 'viewRooms' },

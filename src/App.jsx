@@ -38,6 +38,7 @@ import ManageCheckIns from './pages/ManageCheckIns';
 import Billing from './pages/Billing';
 import Invoice from './pages/Invoice';
 import Banquets from './pages/Banquets';
+import Profile from './pages/Profile';
 
 
 
@@ -90,6 +91,7 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/manage-checkins" element={isAuthenticated ? <ManageCheckIns /> : <Navigate to="/login" replace />} />
         <Route path="/billing" element={isAuthenticated ? <Billing /> : <Navigate to="/login" replace />} />
         <Route path="/invoice/:id" element={isAuthenticated ? <Invoice /> : <Navigate to="/login" replace />} />
+        <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" replace />} />
 
 
 
