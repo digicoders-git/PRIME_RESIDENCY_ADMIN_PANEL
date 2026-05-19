@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   FaBed, FaUsers, FaCalendarAlt, FaRupeeSign, FaArrowUp,
   FaStar, FaImages, FaClock, FaCheckCircle, FaUserPlus,
@@ -28,6 +29,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    
     setUser({
       name: userData.name || 'Admin',
       role: userData.role || 'Admin',
@@ -35,12 +43,11 @@ const Dashboard = () => {
       permissions: userData.permissions || {}
     });
     fetchDashboardData(userData.property || 'All');
-  }, []);
+  }, [navigate]);
 
   const fetchDashboardData = async (propertyOverride) => {
     setLoading(true);
     const propToUse = propertyOverride !== undefined ? propertyOverride : selectedProperty;
-    // Manager ke liye NO params, Admin ke liye property filter
     const params = (user.role === 'Admin' && propToUse !== 'All') ? { property: propToUse } : {};
 
     try {
@@ -52,19 +59,24 @@ const Dashboard = () => {
         api.get('/revenue/analytics', { params })
       ]);
 
-      // console.log('Revenue Analytics Data:', revenueRes.data.data); // Debug log
-
       setData({
         rooms: roomsRes.data.data || [],
         bookings: bookingsRes.data.data || [],
         guests: guestsRes.data.data || [],
-        reviews: [], // Reviews endpoint not implemented yet
+        reviews: [],
         gallery: galleryRes.data.data || [],
         revenue: revenueRes.data.data || {}
       });
     } catch (error) {
       console.error('Failed to fetch dashboard data', error);
-      // Fallback to empty or toast error
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        toast.error('Session expired. Please login again.');
+        navigate('/login');
+      } else {
+        toast.error('Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
     }

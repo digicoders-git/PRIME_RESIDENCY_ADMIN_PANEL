@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers, FaUserTie, FaUtensils, FaHistory, FaPlusCircle, FaUserCircle } from 'react-icons/fa';
+import { FaHome, FaBed, FaCalendarAlt, FaUsers, FaStar, FaImages, FaCog, FaSignOutAlt, FaEnvelope, FaConciergeBell, FaQuestionCircle, FaRupeeSign, FaClipboardCheck, FaFileInvoiceDollar, FaGlassCheers, FaUserTie, FaUtensils, FaHistory, FaPlusCircle, FaUserCircle, FaPalette } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import api from '../api/api';
 
@@ -78,6 +78,7 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
     { name: 'Order History', path: '/order-history', icon: FaHistory, permission: null },
     { name: 'Managers', path: '/managers', icon: FaUserTie, permission: 'admin' },
     { name: 'Services Mgmt', path: '/services-management', icon: FaCog, permission: 'admin' },
+    { name: 'Icon Management', path: '/icon-management', icon: FaPalette, permission: 'admin' },
     { name: 'Reviews', path: '/reviews', icon: FaStar, permission: 'admin' },
     { name: 'Contacts', path: '/contacts', icon: FaEnvelope, permission: 'admin' },
     { name: 'Enquiries', path: '/enquiries', icon: FaQuestionCircle, count: enquiryCount, permission: 'admin' },

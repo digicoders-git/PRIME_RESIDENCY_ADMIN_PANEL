@@ -21,6 +21,7 @@ import Contacts from './pages/Contacts';
 import Gallery from './pages/Gallery';
 import Services from './pages/Services';
 import ServicesManagement from './pages/ServicesManagement';
+import IconManagement from './pages/IconManagement';
 import AddService from './pages/AddService';
 import Enquiries from './pages/Enquiries';
 import Revenue from './pages/Revenue';
@@ -75,6 +76,7 @@ const AnimatedRoutes = ({ isAuthenticated, setIsAuthenticated }) => {
         <Route path="/gallery" element={isAuthenticated ? <Gallery /> : <Navigate to="/login" replace />} />
         <Route path="/services" element={isAuthenticated ? <Services /> : <Navigate to="/login" replace />} />
         <Route path="/services-management" element={isAuthenticated ? <ServicesManagement /> : <Navigate to="/login" replace />} />
+        <Route path="/icon-management" element={isAuthenticated ? <IconManagement /> : <Navigate to="/login" replace />} />
         <Route path="/add-service" element={isAuthenticated ? <AddService /> : <Navigate to="/login" replace />} />
         <Route path="/enquiries" element={isAuthenticated ? <Enquiries /> : <Navigate to="/login" replace />} />
         <Route path="/revenue" element={isAuthenticated ? <Revenue /> : <Navigate to="/login" replace />} />

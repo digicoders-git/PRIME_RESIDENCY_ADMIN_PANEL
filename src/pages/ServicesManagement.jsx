@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaPlus, FaTrash, FaBed, FaHome, FaWifi, FaSnowflake, FaTv, FaFire, FaBalanceScale, FaUtensils, FaBatteryFull, FaCube, FaShieldAlt, FaDesktop } from 'react-icons/fa';
+import * as FaIcons from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../api/api';
 
 const ServicesManagement = () => {
   const [activeTab, setActiveTab] = useState('amenity');
   const [configs, setConfigs] = useState([]);
+  const [savedIcons, setSavedIcons] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [newItem, setNewItem] = useState({ name: '', icon: '' });
-
-  const iconOptions = [
-    { value: 'FaWifi', label: 'Wi-Fi', icon: FaWifi },
-    { value: 'FaSnowflake', label: 'AC', icon: FaSnowflake },
-    { value: 'FaTv', label: 'TV', icon: FaTv },
-    { value: 'FaFire', label: 'Geyser', icon: FaFire },
-    { value: 'FaBalanceScale', label: 'Balcony', icon: FaBalanceScale },
-    { value: 'FaUtensils', label: 'Room Service', icon: FaUtensils },
-    { value: 'FaBatteryFull', label: 'Power Backup', icon: FaBatteryFull },
-    { value: 'FaCube', label: 'Mini Fridge', icon: FaCube },
-    { value: 'FaShieldAlt', label: 'Safe Locker', icon: FaShieldAlt },
-    { value: 'FaDesktop', label: 'Work Desk', icon: FaDesktop },
-    { value: 'FaBed', label: 'Bed', icon: FaBed },
-    { value: 'FaHome', label: 'Room', icon: FaHome }
-  ];
+  const [newItem, setNewItem] = useState({ name: '', iconId: '' });
 
   useEffect(() => {
     fetchConfigs();
+    fetchSavedIcons();
   }, [activeTab]);
 
   const fetchConfigs = async () => {
@@ -39,6 +26,16 @@ const ServicesManagement = () => {
     }
   };
 
+  const fetchSavedIcons = async () => {
+    try {
+      const { data } = await api.get('/icons');
+      setSavedIcons(data.data || []);
+    } catch (error) {
+      console.error('Failed to fetch icons:', error);
+      setSavedIcons([]);
+    }
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newItem.name.trim()) {
@@ -46,15 +43,24 @@ const ServicesManagement = () => {
       return;
     }
 
+    if (activeTab === 'amenity' && !newItem.iconId) {
+      toast.error('Please select an icon');
+      return;
+    }
+
     setLoading(true);
     try {
+      const selectedIcon = activeTab === 'amenity' 
+        ? savedIcons.find(icon => icon._id === newItem.iconId)
+        : null;
+
       await api.post('/room-config', {
         type: activeTab,
         name: newItem.name.trim(),
-        icon: newItem.icon
+        icon: selectedIcon ? selectedIcon.iconName : ''
       });
       toast.success('Added successfully!');
-      setNewItem({ name: '', icon: '' });
+      setNewItem({ name: '', iconId: '' });
       fetchConfigs();
     } catch (error) {
       toast.error('Failed to add');
@@ -63,21 +69,39 @@ const ServicesManagement = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
-
-    try {
-      await api.delete(`/room-config/${id}`);
-      toast.success('Deleted successfully!');
-      fetchConfigs();
-    } catch (error) {
-      toast.error('Failed to delete');
-    }
+  const handleDelete = (id) => {
+    toast(
+      ({ closeToast }) => (
+        <div>
+          <p className="mb-2 font-medium">Are you sure you want to delete this item?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                closeToast();
+                try {
+                  await api.delete(`/room-config/${id}`);
+                  toast.success('Deleted successfully!');
+                  fetchConfigs();
+                } catch {
+                  toast.error('Failed to delete');
+                }
+              }}
+              className="px-3 py-1 bg-red-500 text-white rounded text-sm"
+            >
+              Delete
+            </button>
+            <button onClick={closeToast} className="px-3 py-1 bg-gray-200 rounded text-sm">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      { autoClose: false, closeOnClick: false }
+    );
   };
 
-  const getIcon = (iconName) => {
-    const iconObj = iconOptions.find(opt => opt.value === iconName);
-    return iconObj ? iconObj.icon : FaHome;
+  const getIconComponent = (iconName) => {
+    return FaIcons[iconName] || FaIcons.FaHome;
   };
 
   return (
@@ -102,7 +126,7 @@ const ServicesManagement = () => {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <FaWifi className="inline mr-2" />
+          <FaIcons.FaWifi className="inline mr-2" />
           Amenities
         </button>
         <button
@@ -113,7 +137,7 @@ const ServicesManagement = () => {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <FaHome className="inline mr-2" />
+          <FaIcons.FaHome className="inline mr-2" />
           Room Types
         </button>
         <button
@@ -124,7 +148,7 @@ const ServicesManagement = () => {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <FaBed className="inline mr-2" />
+          <FaIcons.FaBed className="inline mr-2" />
           Bed Types
         </button>
       </div>
@@ -134,23 +158,25 @@ const ServicesManagement = () => {
         <h2 className="text-xl font-semibold mb-4">
           Add New {activeTab === 'amenity' ? 'Amenity' : activeTab === 'roomType' ? 'Room Type' : 'Bed Type'}
         </h2>
-        <form onSubmit={handleAdd} className="flex gap-4">
+        <form onSubmit={handleAdd} className="flex gap-4 flex-wrap">
           <input
             type="text"
             value={newItem.name}
             onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
             placeholder={`Enter ${activeTab === 'amenity' ? 'amenity' : activeTab === 'roomType' ? 'room type' : 'bed type'} name`}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+            className="flex-1 min-w-[200px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
           />
           {activeTab === 'amenity' && (
             <select
-              value={newItem.icon}
-              onChange={(e) => setNewItem({ ...newItem, icon: e.target.value })}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] cursor-pointer"
+              value={newItem.iconId}
+              onChange={(e) => setNewItem({ ...newItem, iconId: e.target.value })}
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] cursor-pointer min-w-[250px]"
             >
-              <option value="">Select Icon (Optional)</option>
-              {iconOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option value="">Select Icon</option>
+              {savedIcons.map(icon => (
+                <option key={icon._id} value={icon._id}>
+                  {icon.name}
+                </option>
               ))}
             </select>
           )}
@@ -159,7 +185,7 @@ const ServicesManagement = () => {
             disabled={loading}
             className="px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-lg hover:from-[#B8860B] hover:to-[#D4AF37] transition-all font-medium flex items-center gap-2 disabled:opacity-50"
           >
-            <FaPlus />
+            <FaIcons.FaPlus />
             {loading ? 'Adding...' : 'Add'}
           </button>
         </form>
@@ -177,7 +203,7 @@ const ServicesManagement = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {configs.map((item) => {
-              const IconComponent = item.icon ? getIcon(item.icon) : FaHome;
+              const IconComponent = item.icon ? getIconComponent(item.icon) : FaIcons.FaHome;
               return (
                 <div
                   key={item._id}
@@ -185,7 +211,9 @@ const ServicesManagement = () => {
                 >
                   <div className="flex items-center gap-3">
                     {activeTab === 'amenity' && item.icon && (
-                      <IconComponent className="text-2xl text-[#D4AF37]" />
+                      React.createElement(IconComponent, {
+                        className: 'text-2xl text-[#D4AF37]'
+                      })
                     )}
                     <span className="font-medium text-gray-800">{item.name}</span>
                   </div>
@@ -193,7 +221,7 @@ const ServicesManagement = () => {
                     onClick={() => handleDelete(item._id)}
                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <FaTrash />
+                    <FaIcons.FaTrash />
                   </button>
                 </div>
               );

@@ -23,13 +23,7 @@ const Login = ({ setIsAuthenticated }) => {
 
     setLoading(true);
     try {
-      // Try admin login first
-      let response = await api.post('/auth/login', formData).catch(() => null);
-
-      // If admin login fails, try manager login
-      if (!response || !response.data.success) {
-        response = await api.post('/managers/login', formData);
-      }
+      const response = await api.post('/auth/login', formData);
 
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
