@@ -29,55 +29,103 @@ const IconManagement = () => {
     { value: 'room-type', label: 'Room Types' }
   ];
 
-  const availableIcons = [
-    { value: 'FaWifi', label: 'Wi-Fi' },
-    { value: 'FaSnowflake', label: 'AC' },
-    { value: 'FaTv', label: 'TV' },
-    { value: 'FaFire', label: 'Geyser' },
-    { value: 'FaBatteryFull', label: 'Power Backup' },
-    { value: 'FaCube', label: 'Mini Fridge' },
-    { value: 'FaShieldAlt', label: 'Safe Locker' },
-    { value: 'FaDesktop', label: 'Work Desk' },
-    { value: 'FaBed', label: 'Bed' },
-    { value: 'FaHome', label: 'Room' },
-    { value: 'FaBath', label: 'Bathtub' },
-    { value: 'FaShower', label: 'Shower' },
-    { value: 'FaChair', label: 'Chair' },
-    { value: 'FaCouch', label: 'Sofa' },
-    { value: 'FaTable', label: 'Table' },
-    { value: 'FaDoorOpen', label: 'Door' },
-    { value: 'FaWindowMaximize', label: 'Window' },
-    { value: 'FaUtensils', label: 'Utensils' },
-    { value: 'FaCoffee', label: 'Coffee Maker' },
-    { value: 'FaConciergeBell', label: 'Concierge' },
-    { value: 'FaBalanceScale', label: 'Balcony' },
-    { value: 'FaCar', label: 'Car Rental' },
-    { value: 'FaParking', label: 'Parking' },
-    { value: 'FaSwimmingPool', label: 'Swimming Pool' },
-    { value: 'FaHotTub', label: 'Hot Tub' },
-    { value: 'FaDumbbell', label: 'Gym' },
-    { value: 'FaUmbrellaBeach', label: 'Beach Access' },
-    { value: 'FaTree', label: 'Garden' },
-    { value: 'FaLock', label: 'Lock' },
-    { value: 'FaKey', label: 'Key' },
-    { value: 'FaFirstAid', label: 'First Aid' },
-    { value: 'FaSmokingBan', label: 'No Smoking' },
-    { value: 'FaFan', label: 'Fan' },
-    { value: 'FaLightbulb', label: 'Lighting' },
-    { value: 'FaBroom', label: 'Cleaning' },
-    { value: 'FaTrashAlt', label: 'Trash Bin' },
-    { value: 'FaPaw', label: 'Pet Friendly' },
-    { value: 'FaWheelchair', label: 'Wheelchair Access' },
-    { value: 'FaBaby', label: 'Baby Friendly' },
-    { value: 'FaUserFriends', label: 'Family Room' },
-    { value: 'FaUser', label: 'Single Room' }
+  // Searchable icon list with friendly keywords
+  const iconLibrary = [
+    { value: 'FaWifi', keywords: 'wifi internet wireless network' },
+    { value: 'FaSnowflake', keywords: 'ac air conditioner cooling cold' },
+    { value: 'FaTv', keywords: 'tv television screen monitor' },
+    { value: 'FaFire', keywords: 'geyser heater fire hot water' },
+    { value: 'FaBatteryFull', keywords: 'power backup battery electricity' },
+    { value: 'FaCube', keywords: 'mini fridge refrigerator cube' },
+    { value: 'FaShieldAlt', keywords: 'safe locker security shield' },
+    { value: 'FaDesktop', keywords: 'work desk computer desktop' },
+    { value: 'FaBed', keywords: 'bed bedroom sleep' },
+    { value: 'FaHome', keywords: 'home room house' },
+    { value: 'FaBath', keywords: 'bath bathtub tub' },
+    { value: 'FaShower', keywords: 'shower bathroom wash' },
+    { value: 'FaChair', keywords: 'chair seat furniture' },
+    { value: 'FaCouch', keywords: 'sofa couch lounge' },
+    { value: 'FaDoorOpen', keywords: 'door entrance exit open' },
+    { value: 'FaUtensils', keywords: 'utensils food dining kitchen cutlery' },
+    { value: 'FaCoffee', keywords: 'coffee tea kettle maker drink' },
+    { value: 'FaConciergeBell', keywords: 'concierge bell service reception' },
+    { value: 'FaBalanceScale', keywords: 'balcony scale view' },
+    { value: 'FaCar', keywords: 'car vehicle transport rental' },
+    { value: 'FaParking', keywords: 'parking garage vehicle' },
+    { value: 'FaDumbbell', keywords: 'gym fitness exercise dumbbell workout' },
+    { value: 'FaTree', keywords: 'garden tree nature outdoor green' },
+    { value: 'FaLock', keywords: 'lock security safe' },
+    { value: 'FaKey', keywords: 'key access room entry' },
+    { value: 'FaFirstAid', keywords: 'first aid medical health kit' },
+    { value: 'FaSmokingBan', keywords: 'no smoking ban smoke free' },
+    { value: 'FaFan', keywords: 'fan air ventilation cool' },
+    { value: 'FaLightbulb', keywords: 'light bulb lamp lighting' },
+    { value: 'FaBroom', keywords: 'cleaning broom housekeeping sweep' },
+    { value: 'FaPaw', keywords: 'pet friendly dog cat animal paw' },
+    { value: 'FaWheelchair', keywords: 'wheelchair accessible disability' },
+    { value: 'FaBaby', keywords: 'baby child infant friendly' },
+    { value: 'FaUserFriends', keywords: 'family friends group people' },
+    { value: 'FaUser', keywords: 'single person user guest' },
+    { value: 'FaPhone', keywords: 'phone telephone call' },
+    { value: 'FaMapMarkerAlt', keywords: 'location map marker place' },
+    { value: 'FaSwimmingPool', keywords: 'swimming pool water swim' },
+    { value: 'FaHotTub', keywords: 'hot tub jacuzzi spa' },
+    { value: 'FaUmbrellaBeach', keywords: 'beach umbrella sea ocean' },
+    { value: 'FaMusic', keywords: 'music audio sound entertainment' },
+    { value: 'FaGlassCheers', keywords: 'bar drinks party event banquet' },
+    { value: 'FaCamera', keywords: 'camera cctv security photo' },
+    { value: 'FaMicrophone', keywords: 'microphone mic audio sound' },
+    { value: 'FaLeaf', keywords: 'leaf nature eco green lawn' },
+    { value: 'FaStar', keywords: 'star rating premium luxury' },
+    { value: 'FaHotel', keywords: 'hotel building property' },
+    { value: 'FaElevator', keywords: 'elevator lift floor' },
+    { value: 'FaRestroom', keywords: 'restroom toilet washroom' },
+    { value: 'FaWind', keywords: 'wind air ventilation breeze' },
+    { value: 'FaSpa', keywords: 'spa massage wellness relax' },
+    { value: 'FaUmbrella', keywords: 'umbrella rain weather' },
+    { value: 'FaBicycle', keywords: 'bicycle bike cycle rental' },
+    { value: 'FaPlane', keywords: 'airport shuttle transport travel' },
+    { value: 'FaBus', keywords: 'bus transport shuttle pickup' },
+    { value: 'FaUtensils', keywords: 'restaurant food dining' },
+    { value: 'FaWineGlass', keywords: 'wine bar drinks alcohol' },
+    { value: 'FaPizzaSlice', keywords: 'pizza food snack' },
+    { value: 'FaIceCream', keywords: 'ice cream dessert sweet' },
+    { value: 'FaGamepad', keywords: 'gaming gamepad entertainment play' },
+    { value: 'FaBook', keywords: 'book library reading' },
+    { value: 'FaPrint', keywords: 'printer print business' },
+    { value: 'FaBluetoothB', keywords: 'bluetooth wireless speaker' },
+    { value: 'FaVolumeUp', keywords: 'speaker sound volume audio' },
+    { value: 'FaThermometerHalf', keywords: 'temperature thermostat climate' },
+    { value: 'FaTshirt', keywords: 'laundry clothes washing' },
+    { value: 'FaSoap', keywords: 'soap wash hygiene clean' },
+    { value: 'FaToiletPaper', keywords: 'toilet paper bathroom' },
+    { value: 'FaHandsWash', keywords: 'handwash sanitizer hygiene' },
+    { value: 'FaFireExtinguisher', keywords: 'fire extinguisher safety emergency' },
+    { value: 'FaExclamationTriangle', keywords: 'warning alert safety' },
+    { value: 'FaCheckCircle', keywords: 'check done available tick' },
+    { value: 'FaClock', keywords: 'clock time checkin checkout' },
+    { value: 'FaCalendarAlt', keywords: 'calendar booking date schedule' },
+    { value: 'FaRupeeSign', keywords: 'rupee price cost money payment' },
+    { value: 'FaPercent', keywords: 'discount offer percent deal' },
+    { value: 'FaTag', keywords: 'tag price label offer' },
+    { value: 'FaGift', keywords: 'gift complimentary free bonus' },
+    { value: 'FaHeart', keywords: 'heart love honeymoon couple' },
+    { value: 'FaMoon', keywords: 'night moon sleep rest' },
+    { value: 'FaSun', keywords: 'sun morning daylight bright' },
+    { value: 'FaSnowman', keywords: 'snow winter cold season' },
+    { value: 'FaMountain', keywords: 'mountain view hill nature' },
+    { value: 'FaCity', keywords: 'city view urban skyline' },
+    { value: 'FaWater', keywords: 'water river lake view' },
   ];
 
-  const filteredAvailableIcons = availableIcons.filter(icon =>
-    icon.label.toLowerCase().includes(iconSearch.toLowerCase())
-  );
+  const filteredAvailableIcons = iconSearch.trim().length === 0
+    ? iconLibrary.slice(0, 40)
+    : iconLibrary.filter(icon =>
+        icon.keywords.toLowerCase().includes(iconSearch.toLowerCase()) ||
+        icon.value.toLowerCase().includes(iconSearch.toLowerCase())
+      );
 
-  const selectedAvailableIcon = availableIcons.find(i => i.value === newIcon.iconName);
+  const selectedAvailableIcon = iconLibrary.find(i => i.value === newIcon.iconName);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -173,13 +221,13 @@ const IconManagement = () => {
                 onClick={() => setIconDropdownOpen(prev => !prev)}
                 className="w-full flex items-center gap-3 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] bg-white text-left"
               >
-                {selectedAvailableIcon ? (
+                {newIcon.iconName ? (
                   <>
-                    {React.createElement(FaIcons[selectedAvailableIcon.value] || FaIcons.FaHome, { className: 'text-[#D4AF37] text-lg shrink-0' })}
-                    <span className="text-gray-800 text-sm">{selectedAvailableIcon.label}</span>
+                    {React.createElement(FaIcons[newIcon.iconName] || FaIcons.FaHome, { className: 'text-[#D4AF37] text-lg shrink-0' })}
+                    <span className="text-gray-800 text-sm">{selectedAvailableIcon?.keywords.split(' ')[0] || newIcon.iconName}</span>
                   </>
                 ) : (
-                  <span className="text-gray-400 text-sm">Select Icon</span>
+                  <span className="text-gray-400 text-sm">Search icon (e.g. wifi, bed, parking...)</span>
                 )}
                 <FaIcons.FaChevronDown className="ml-auto text-gray-400 text-xs" />
               </button>
@@ -206,6 +254,7 @@ const IconManagement = () => {
                     ) : (
                       filteredAvailableIcons.map(icon => {
                         const Icon = FaIcons[icon.value] || FaIcons.FaHome;
+                        const label = icon.keywords.split(' ')[0].charAt(0).toUpperCase() + icon.keywords.split(' ')[0].slice(1);
                         return (
                           <li
                             key={icon.value}
@@ -219,7 +268,7 @@ const IconManagement = () => {
                             }`}
                           >
                             <Icon className="text-[#D4AF37] text-lg shrink-0" />
-                            <span className="text-sm text-gray-700">{icon.label}</span>
+                            <span className="text-sm text-gray-700">{label}</span>
                           </li>
                         );
                       })
@@ -244,10 +293,10 @@ const IconManagement = () => {
             {newIcon.iconName && (
               <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
                 <span className="text-gray-600 text-sm">Preview:</span>
-                {React.createElement(getIconComponent(newIcon.iconName), {
-                  className: 'text-2xl text-[#D4AF37]'
-                })}
-                <span className="text-sm text-gray-700 font-medium">{selectedAvailableIcon?.label}</span>
+                {React.createElement(getIconComponent(newIcon.iconName), { className: 'text-2xl text-[#D4AF37]' })}
+                <span className="text-sm text-gray-700 font-medium">
+                  {selectedAvailableIcon ? selectedAvailableIcon.keywords.split(' ')[0].charAt(0).toUpperCase() + selectedAvailableIcon.keywords.split(' ')[0].slice(1) : newIcon.iconName}
+                </span>
               </div>
             )}
           </div>
