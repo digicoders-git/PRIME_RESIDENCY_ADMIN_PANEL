@@ -17,7 +17,8 @@ const Billing = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentData, setPaymentData] = useState({
         advance: '',
-        paymentMethod: 'Cash'
+        paymentMethod: 'Cash',
+        transactionRef: ''
     });
 
     useEffect(() => {
@@ -71,7 +72,7 @@ const Billing = () => {
                     b._id === selectedBooking._id ? { ...b, ...data.data } : b
                 ));
                 setShowPaymentModal(false);
-                setPaymentData({ advance: '', paymentMethod: 'Cash' });
+                setPaymentData({ advance: '', paymentMethod: 'Cash', transactionRef: '' });
                 alert('Payment updated successfully!');
             }
         } catch (error) {
@@ -266,20 +267,19 @@ const Billing = () => {
                                         </td>
                                         <td className="p-4">
                                             <div className="flex justify-center gap-2">
-                                                {/* <button
-                                                    onClick={() => {
-                                                        setSelectedBooking(booking);
-                                                        setPaymentData({
-                                                            advance: booking.advance,
-                                                            paymentMethod: 'Cash'
-                                                        });
-                                                        setShowPaymentModal(true);
-                                                    }}
-                                                    className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                                    title="Update Payment"
-                                                >
-                                                    <FaMoneyBillWave size={18} />
-                                                </button> */}
+                                                {(booking.paymentStatus === 'Pending' || booking.paymentStatus === 'Partial') && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedBooking(booking);
+                                                            setPaymentData({ advance: '', paymentMethod: 'Cash' });
+                                                            setShowPaymentModal(true);
+                                                        }}
+                                                        className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                        title="Receive Payment"
+                                                    >
+                                                        <FaMoneyBillWave size={18} />
+                                                    </button>
+                                                )}
                                                 <Link
                                                     to={`/invoice/${booking._id}`}
                                                     className="p-2 text-slate-500 hover:text-[#D4AF37] hover:bg-slate-100 rounded-lg transition-all"
@@ -360,40 +360,57 @@ const Billing = () => {
                         className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md"
                     >
                         <h3 className="text-xl font-bold mb-4 text-slate-800">Update Payment</h3>
-                        <div className="mb-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <div className="flex justify-between mb-1">
-                                <span className="text-sm text-slate-500">Total Amount:</span>
-                                <span className="font-bold text-slate-800">₹{selectedBooking.amount}</span>
+                        {selectedBooking && (() => {
+                            const foodTotal = (selectedBooking.foodOrders || []).reduce((sum, f) => sum + (f.amount || 0), 0);
+                            const grandTotal = selectedBooking.amount + foodTotal;
+                            return (
+                            <div className="mb-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-sm text-slate-500">Room Amount:</span>
+                                    <span className="font-bold text-slate-800">₹{selectedBooking.amount}</span>
+                                </div>
+                                {foodTotal > 0 && (
+                                    <div className="flex justify-between mb-1">
+                                        <span className="text-sm text-slate-500">Food Amount:</span>
+                                        <span className="font-bold text-amber-600">₹{foodTotal}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-sm text-slate-500">Grand Total:</span>
+                                    <span className="font-bold text-blue-600">₹{grandTotal}</span>
+                                </div>
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-sm text-slate-500">Already Paid:</span>
+                                    <span className="font-bold text-emerald-600">₹{selectedBooking.advance}</span>
+                                </div>
+                                <div className="flex justify-between border-t border-slate-200 mt-2 pt-2">
+                                    <span className="text-sm font-bold text-slate-800">Remaining Due:</span>
+                                    <span className="font-bold text-rose-500">₹{selectedBooking.balance}</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between mb-1">
-                                <span className="text-sm text-slate-500">Already Paid:</span>
-                                <span className="font-bold text-emerald-600">₹{selectedBooking.advance}</span>
-                            </div>
-                            <div className="flex justify-between border-t border-slate-200 mt-2 pt-2">
-                                <span className="text-sm font-bold text-slate-800">Remaining Due:</span>
-                                <span className="font-bold text-rose-500">₹{selectedBooking.balance}</span>
-                            </div>
-                        </div>
+                            );
+                        })()}
 
                         <form onSubmit={handlePaymentUpdate} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Total Received Amount (Cumulative)</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Amount Received Now</label>
                                 <input
                                     type="number"
                                     value={paymentData.advance}
                                     onChange={(e) => setPaymentData({ ...paymentData, advance: e.target.value })}
                                     className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4AF37]"
-                                    placeholder={`New total paid amount...`}
-                                    max={selectedBooking.amount}
+                                    placeholder="Enter amount received..."
+                                    min={1}
+                                    max={selectedBooking?.balance}
                                     required
                                 />
-                                <p className="text-[10px] text-slate-400 mt-1">Enter the total amount received from this guest so far.</p>
+                                <p className="text-[10px] text-slate-400 mt-1">Sirf abhi receive hua amount enter karein. Pehle ka amount automatically add ho jayega.</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
                                 <select
                                     value={paymentData.paymentMethod}
-                                    onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
+                                    onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value, transactionRef: '' })}
                                     className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4AF37]"
                                 >
                                     <option value="Cash">Cash</option>
@@ -403,6 +420,46 @@ const Billing = () => {
                                     <option value="Online">Online</option>
                                 </select>
                             </div>
+                            {paymentData.paymentMethod === 'Card' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Card Last 4 Digits</label>
+                                    <input
+                                        type="text"
+                                        maxLength={4}
+                                        value={paymentData.transactionRef}
+                                        onChange={(e) => setPaymentData({ ...paymentData, transactionRef: e.target.value.replace(/\D/g, '') })}
+                                        className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4AF37]"
+                                        placeholder="e.g. 4242"
+                                        required
+                                    />
+                                </div>
+                            )}
+                            {paymentData.paymentMethod === 'UPI' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">UPI Transaction ID</label>
+                                    <input
+                                        type="text"
+                                        value={paymentData.transactionRef}
+                                        onChange={(e) => setPaymentData({ ...paymentData, transactionRef: e.target.value })}
+                                        className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4AF37]"
+                                        placeholder="e.g. 123456789012"
+                                        required
+                                    />
+                                </div>
+                            )}
+                            {paymentData.paymentMethod === 'Bank Transfer' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Reference / UTR Number</label>
+                                    <input
+                                        type="text"
+                                        value={paymentData.transactionRef}
+                                        onChange={(e) => setPaymentData({ ...paymentData, transactionRef: e.target.value })}
+                                        className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4AF37]"
+                                        placeholder="e.g. UTR123456789"
+                                        required
+                                    />
+                                </div>
+                            )}
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="submit"

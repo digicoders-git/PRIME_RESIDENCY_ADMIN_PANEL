@@ -78,55 +78,40 @@ const EditRoom = () => {
 
     useEffect(() => {
         const loadData = async () => {
-            await fetchConfigs();
-            await fetchRoomData();
+            const configs = await fetchConfigs();
+            await fetchRoomData(configs);
         };
         loadData();
     }, [id]);
-
-    // Re-apply amenities when amenitiesList changes or room is loaded
-    useEffect(() => {
-        if (amenitiesList.length > 0 && mongoId) {
-            fetchRoomData();
-        }
-    }, [amenitiesList, mongoId]);
 
     const fetchConfigs = async () => {
         try {
             const { data } = await api.get('/room-config');
             const configs = data.data;
-
+            const amenities = configs.filter(c => c.type === 'amenity');
             setRoomTypes(configs.filter(c => c.type === 'roomType').map(c => c.name));
             setBedTypes(configs.filter(c => c.type === 'bedType').map(c => c.name));
-
-            const amenities = configs.filter(c => c.type === 'amenity');
             setAmenitiesList(amenities);
+            return amenities;
         } catch (error) {
             console.error('Failed to fetch configs');
+            return [];
         }
     };
 
-    const fetchRoomData = async () => {
+    const fetchRoomData = async (amenities = amenitiesList) => {
         setLoading(true);
         try {
-            // Fetch all rooms to find the correct one by roomNumber (since URL param is now roomNumber)
-            const { data } = await api.get('/rooms');
+            const { data } = await api.get(`/rooms/${id}`);
             if (data.success) {
-                let room = data.data.find(r => r.roomNumber === id);
-
-                // Fallback: If not found by roomNumber, maybe 'id' provided IS actually a MongoID?
-                if (!room) {
-                    room = data.data.find(r => r._id === id);
-                }
-
-                if (room) {
-                    setMongoId(room._id); // Save the actual ID for updates
+                const room = data.data;
+                    setMongoId(id);
                     const backendAmenities = room.amenities || [];
 
                     // Initialize amenities state from configs
                     const amenitiesObj = {};
-                    if (amenitiesList.length > 0) {
-                        amenitiesList.forEach(a => {
+                    if (amenities.length > 0) {
+                        amenities.forEach(a => {
                             const key = a.name.toLowerCase().replace(/\s+/g, '');
                             amenitiesObj[key] = backendAmenities.some(ba =>
                                 ba.toLowerCase().replace(/\s+/g, '') === key ||
@@ -188,7 +173,6 @@ const EditRoom = () => {
                     toast.error('Room not found');
                     navigate('/rooms');
                 }
-            }
         } catch (error) {
             toast.error('Failed to fetch room details');
             navigate('/rooms');
@@ -306,8 +290,8 @@ const EditRoom = () => {
             });
 
             if (data.success) {
-                toast.success('Room updated successfully!', { autoClose: 2000 });
-                navigate('/rooms');
+                toast.success(`${formData.category} updated successfully!`, { autoClose: 2000 });
+                navigate(formData.category === 'Room' ? '/rooms' : '/banquets');
             }
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Failed to update room';
@@ -889,7 +873,7 @@ const EditRoom = () => {
                 <div className="flex gap-6 justify-end space-x-4 pt-6 border-t border-gray-200 bg-gray-50 -mx-6 px-6 py-4 rounded-b-xl">
                     <button
                         type="button"
-                        onClick={() => navigate('/rooms')}
+                        onClick={() => navigate(formData.category === 'Room' ? '/rooms' : '/banquets')}
                         className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 cursor-pointer transition-all font-medium"
                     >
                         Cancel
@@ -899,7 +883,7 @@ const EditRoom = () => {
                         disabled={saving}
                         className={`px-8 py-3 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-lg hover:from-[#B8860B] hover:to-[#D4AF37] cursor-pointer transition-all font-medium shadow-lg hover:shadow-xl ${saving ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                        {saving ? 'Updating Room...' : 'Update Room'}
+                        {saving ? `Updating ${formData.category}...` : `Update ${formData.category}`}
                     </button>
                 </div>
             </form>

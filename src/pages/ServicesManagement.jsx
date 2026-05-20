@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import * as FaIcons from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -10,6 +10,26 @@ const ServicesManagement = () => {
   const [savedIcons, setSavedIcons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', iconId: '' });
+  const [iconSearch, setIconSearch] = useState('');
+  const [iconDropdownOpen, setIconDropdownOpen] = useState(false);
+
+  const filteredIcons = savedIcons.filter(icon =>
+    icon.name.toLowerCase().includes(iconSearch.toLowerCase())
+  );
+
+  const selectedIcon = savedIcons.find(i => i._id === newItem.iconId);
+
+  const iconDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (iconDropdownRef.current && !iconDropdownRef.current.contains(e.target)) {
+        setIconDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     fetchConfigs();
@@ -167,18 +187,70 @@ const ServicesManagement = () => {
             className="flex-1 min-w-[200px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
           />
           {activeTab === 'amenity' && (
-            <select
-              value={newItem.iconId}
-              onChange={(e) => setNewItem({ ...newItem, iconId: e.target.value })}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] cursor-pointer min-w-[250px]"
-            >
-              <option value="">Select Icon</option>
-              {savedIcons.map(icon => (
-                <option key={icon._id} value={icon._id}>
-                  {icon.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative min-w-[250px]" ref={iconDropdownRef}>
+              {/* Trigger */}
+              <button
+                type="button"
+                onClick={() => setIconDropdownOpen(prev => !prev)}
+                className="w-full flex items-center gap-3 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] bg-white text-left"
+              >
+                {selectedIcon ? (
+                  <>
+                    {React.createElement(FaIcons[selectedIcon.iconName] || FaIcons.FaHome, { className: 'text-[#D4AF37] text-lg shrink-0' })}
+                    <span className="text-gray-800 text-sm">{selectedIcon.name}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400 text-sm">Select Icon</span>
+                )}
+                <FaIcons.FaChevronDown className="ml-auto text-gray-400 text-xs" />
+              </button>
+
+              {/* Dropdown */}
+              {iconDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl">
+                  {/* Search */}
+                  <div className="p-2 border-b border-gray-100">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+                      <FaIcons.FaSearch className="text-gray-400 text-xs shrink-0" />
+                      <input
+                        type="text"
+                        value={iconSearch}
+                        onChange={(e) => setIconSearch(e.target.value)}
+                        placeholder="Search icons..."
+                        className="bg-transparent text-sm outline-none w-full"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  {/* Options */}
+                  <ul className="max-h-52 overflow-y-auto py-1">
+                    {filteredIcons.length === 0 ? (
+                      <li className="px-4 py-3 text-sm text-gray-400 text-center">No icons found</li>
+                    ) : (
+                      filteredIcons.map(icon => {
+                        const Icon = FaIcons[icon.iconName] || FaIcons.FaHome;
+                        return (
+                          <li
+                            key={icon._id}
+                            onClick={() => {
+                              setNewItem({ ...newItem, iconId: icon._id });
+                              setIconDropdownOpen(false);
+                              setIconSearch('');
+                            }}
+                            className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-yellow-50 transition-colors ${
+                              newItem.iconId === icon._id ? 'bg-yellow-50 font-semibold' : ''
+                            }`}
+                          >
+                            <Icon className="text-[#D4AF37] text-lg shrink-0" />
+                            <span className="text-sm text-gray-700">{icon.name}</span>
+                          </li>
+                        );
+                      })
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
           <button
             type="submit"

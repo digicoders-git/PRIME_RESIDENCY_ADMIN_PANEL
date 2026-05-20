@@ -322,7 +322,7 @@ const Rooms = () => {
                       <td className="px-8 py-5">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => navigate(`/room-detail/${room.roomNumber || room.id}`)}
+                            onClick={() => navigate(`/room-detail/${room.id}`)}
                             className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-blue-600 hover:border-blue-100 hover:shadow-lg transition-all cursor-pointer"
                           >
                             <FaEye size={12} />
@@ -331,7 +331,7 @@ const Rooms = () => {
                           {user.role === 'Admin' && (
                             <>
                               <button
-                                onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)}
+                                onClick={() => navigate(`/edit-room/${room.id}`)}
                                 className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-amber-500 hover:border-amber-100 hover:shadow-lg transition-all cursor-pointer"
                               >
                                 <FaEdit size={12} />
@@ -441,7 +441,7 @@ const Rooms = () => {
 
                     <div className="flex items-center justify-between pt-5 border-t border-gray-100 mt-auto gap-3">
                       <button
-                        onClick={() => navigate(`/room-detail/${room.roomNumber || room.id}`)}
+                        onClick={() => navigate(`/room-detail/${room.id}`)}
                         className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-bold text-xs uppercase tracking-wider hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
                       >
                         <FaEye /> View
@@ -449,7 +449,7 @@ const Rooms = () => {
                       {user.role === 'Admin' && (
                         <>
                           <button
-                            onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)}
+                            onClick={() => navigate(`/edit-room/${room.id}`)}
                             className="flex-1 py-2.5 rounded-xl bg-amber-50 text-amber-600 font-bold text-xs uppercase tracking-wider hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"
                           >
                             <FaEdit /> Edit

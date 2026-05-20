@@ -26,15 +26,11 @@ const Banquets = () => {
     const fetchRooms = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/rooms');
+            const { data } = await api.get('/rooms?category=Banquet,Lawn');
             if (data.success) {
-                // Filter for Banquets and Lawns only
-                const filtered = data.data.filter(r => r.category === 'Banquet' || r.category === 'Lawn');
-
-                const mappedRooms = filtered.map(room => ({
+                const mappedRooms = data.data.map(room => ({
                     ...room,
                     id: room._id,
-                    category: room.category,
                     type: room.type || 'Standard',
                     desc: room.description || 'No description available',
                     size: room.roomSize ? `${room.roomSize} sq ft` : 'N/A',
@@ -250,8 +246,8 @@ const Banquets = () => {
                                             </td>
                                             <td className="px-8 py-5 text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => navigate(`/room-detail/${room.roomNumber || room.id}`)} className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-blue-600 transition-all cursor-pointer"><FaEye size={12} /></button>
-                                                    <button onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)} className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-amber-500 transition-all cursor-pointer"><FaEdit size={12} /></button>
+                                                    <button onClick={() => navigate(`/room-detail/${room.id}`)} className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-blue-600 transition-all cursor-pointer"><FaEye size={12} /></button>
+                                                    <button onClick={() => navigate(`/edit-room/${room.id}`)} className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-amber-500 transition-all cursor-pointer"><FaEdit size={12} /></button>
                                                     <button onClick={() => handleDelete(room.id, room.name)} className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-rose-500 transition-all cursor-pointer"><FaTrash size={12} /></button>
                                                 </div>
                                             </td>
@@ -287,8 +283,8 @@ const Banquets = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center justify-between pt-5 border-t border-gray-100 mt-auto gap-3">
-                                            <button onClick={() => navigate(`/room-detail/${room.roomNumber || room.id}`)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-bold text-xs uppercase tracking-wider hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"><FaEye /> View</button>
-                                            <button onClick={() => navigate(`/edit-room/${room.roomNumber || room.id}`)} className="flex-1 py-2.5 rounded-xl bg-amber-50 text-amber-600 font-bold text-xs uppercase tracking-wider hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"><FaEdit /> Edit</button>
+                                            <button onClick={() => navigate(`/room-detail/${room.id}`)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-bold text-xs uppercase tracking-wider hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"><FaEye /> View</button>
+                                            <button onClick={() => navigate(`/edit-room/${room.id}`)} className="flex-1 py-2.5 rounded-xl bg-amber-50 text-amber-600 font-bold text-xs uppercase tracking-wider hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"><FaEdit /> Edit</button>
                                         </div>
                                     </div>
                                 </div>

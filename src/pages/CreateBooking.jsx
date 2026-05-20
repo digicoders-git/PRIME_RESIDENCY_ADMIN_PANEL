@@ -45,6 +45,7 @@ const CreateBooking = () => {
         idType: 'Aadhar Card',
         idNumber: '',
         paymentType: 'cash',
+
         discount: '0',
         extraBedPrice: '0',
         taxGST: '0'
@@ -246,11 +247,11 @@ const CreateBooking = () => {
                 dataToSend.append('idNumber', formData.idNumber);
                 dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
                 dataToSend.append('property', room.property);
+                dataToSend.append('category', room.category || 'Room');
 
                 if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
                 if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
 
-                // console.log('Creating Cash booking...');
                 const { data } = await api.post('/bookings', dataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
@@ -312,6 +313,7 @@ const CreateBooking = () => {
                             dataToSend.append('idNumber', formData.idNumber);
                             dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
                             dataToSend.append('property', room.property);
+                            dataToSend.append('category', room.category || 'Room');
                             dataToSend.append('razorpayOrderId', result.razorpay_order_id);
                             dataToSend.append('razorpayPaymentId', result.razorpay_payment_id);
 
@@ -367,6 +369,7 @@ const CreateBooking = () => {
             dataToSend.append('idNumber', formData.idNumber);
             dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
             dataToSend.append('property', room.property);
+            dataToSend.append('category', room.category || 'Room');
 
             if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
             if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
@@ -705,18 +708,19 @@ const CreateBooking = () => {
                                     </div>
                                     {formData.paymentType === 'cash' && (
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Cash Amount</label>
+                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Advance Amount</label>
                                             <input
                                                 type="number"
                                                 name="advance"
                                                 value={formData.advance}
                                                 onChange={handleInputChange}
                                                 max={calc.totalAmount}
-                                                placeholder="Enter cash amount"
+                                                placeholder="Enter advance amount"
                                                 className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-white outline-none transition-all font-bold text-gray-800"
                                             />
                                         </div>
                                     )}
+
                                 </div>
                             </div>
 
@@ -818,17 +822,9 @@ const CreateBooking = () => {
                                     </div>
                                 )}
                                 {formData.paymentType === 'cash' && (
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-emerald-600 uppercase tracking-wider">Advance Payment (₹)</label>
-                                        <input
-                                            type="number"
-                                            name="advance"
-                                            value={formData.advance}
-                                            onChange={handleInputChange}
-                                            min="0"
-                                            max={calc.totalAmount}
-                                            className="w-full px-4 py-2 bg-white border border-gray-100 rounded-xl outline-none font-bold text-sm"
-                                        />
+                                    <div className="flex justify-between items-center text-emerald-600 pt-2">
+                                        <p className="text-[11px] font-black uppercase tracking-widest">Advance Paid</p>
+                                        <p className="text-lg font-black italic">₹{Number(formData.advance).toLocaleString()}</p>
                                     </div>
                                 )}
                                 {formData.paymentType === 'cash' && (

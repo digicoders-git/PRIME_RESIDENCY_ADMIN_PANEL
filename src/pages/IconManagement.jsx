@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import * as FaIcons from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -9,6 +9,9 @@ const IconManagement = () => {
   const [loading, setLoading] = useState(false);
   const [newIcon, setNewIcon] = useState({ name: '', iconName: '', category: 'basic' });
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [iconSearch, setIconSearch] = useState('');
+  const [iconDropdownOpen, setIconDropdownOpen] = useState(false);
+  const iconDropdownRef = useRef(null);
 
   const categories = [
     { value: 'all', label: 'All Icons' },
@@ -69,6 +72,22 @@ const IconManagement = () => {
     { value: 'FaUserFriends', label: 'Family Room' },
     { value: 'FaUser', label: 'Single Room' }
   ];
+
+  const filteredAvailableIcons = availableIcons.filter(icon =>
+    icon.label.toLowerCase().includes(iconSearch.toLowerCase())
+  );
+
+  const selectedAvailableIcon = availableIcons.find(i => i.value === newIcon.iconName);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (iconDropdownRef.current && !iconDropdownRef.current.contains(e.target)) {
+        setIconDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     fetchIcons();
@@ -147,18 +166,68 @@ const IconManagement = () => {
               placeholder="Icon display name (e.g., Swimming Pool)"
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
             />
-            <select
-              value={newIcon.iconName}
-              onChange={(e) => setNewIcon({ ...newIcon, iconName: e.target.value })}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] cursor-pointer"
-            >
-              <option value="">Select Icon</option>
-              {availableIcons.map(icon => (
-                <option key={icon.value} value={icon.value}>
-                  {icon.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative" ref={iconDropdownRef}>
+              {/* Trigger */}
+              <button
+                type="button"
+                onClick={() => setIconDropdownOpen(prev => !prev)}
+                className="w-full flex items-center gap-3 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] bg-white text-left"
+              >
+                {selectedAvailableIcon ? (
+                  <>
+                    {React.createElement(FaIcons[selectedAvailableIcon.value] || FaIcons.FaHome, { className: 'text-[#D4AF37] text-lg shrink-0' })}
+                    <span className="text-gray-800 text-sm">{selectedAvailableIcon.label}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400 text-sm">Select Icon</span>
+                )}
+                <FaIcons.FaChevronDown className="ml-auto text-gray-400 text-xs" />
+              </button>
+
+              {/* Dropdown */}
+              {iconDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl">
+                  <div className="p-2 border-b border-gray-100">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+                      <FaIcons.FaSearch className="text-gray-400 text-xs shrink-0" />
+                      <input
+                        type="text"
+                        value={iconSearch}
+                        onChange={(e) => setIconSearch(e.target.value)}
+                        placeholder="Search icons..."
+                        className="bg-transparent text-sm outline-none w-full"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <ul className="max-h-52 overflow-y-auto py-1">
+                    {filteredAvailableIcons.length === 0 ? (
+                      <li className="px-4 py-3 text-sm text-gray-400 text-center">No icons found</li>
+                    ) : (
+                      filteredAvailableIcons.map(icon => {
+                        const Icon = FaIcons[icon.value] || FaIcons.FaHome;
+                        return (
+                          <li
+                            key={icon.value}
+                            onClick={() => {
+                              setNewIcon({ ...newIcon, iconName: icon.value });
+                              setIconDropdownOpen(false);
+                              setIconSearch('');
+                            }}
+                            className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-yellow-50 transition-colors ${
+                              newIcon.iconName === icon.value ? 'bg-yellow-50 font-semibold' : ''
+                            }`}
+                          >
+                            <Icon className="text-[#D4AF37] text-lg shrink-0" />
+                            <span className="text-sm text-gray-700">{icon.label}</span>
+                          </li>
+                        );
+                      })
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -178,6 +247,7 @@ const IconManagement = () => {
                 {React.createElement(getIconComponent(newIcon.iconName), {
                   className: 'text-2xl text-[#D4AF37]'
                 })}
+                <span className="text-sm text-gray-700 font-medium">{selectedAvailableIcon?.label}</span>
               </div>
             )}
           </div>

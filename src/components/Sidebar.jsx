@@ -66,24 +66,24 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: FaHome, permission: null },
-    { name: 'My Profile', path: '/profile', icon: FaUserCircle, permission: null },
-    { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck, permission: 'checkInOut' },
-    { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt, permission: 'viewBookings' },
+    { name: 'Icon Management', path: '/icon-management', icon: FaPalette, permission: 'admin' },
+    { name: 'Services Mgmt', path: '/services-management', icon: FaCog, permission: 'admin' },
     { name: 'Rooms', path: '/rooms', icon: FaBed, permission: 'viewRooms' },
     { name: 'Banquets & Lawns', path: '/banquets', icon: FaGlassCheers, permission: 'viewRooms' },
+    { name: 'Bookings', path: '/bookings', icon: FaCalendarAlt, permission: 'viewBookings' },
+    { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck, permission: 'checkInOut' },
     { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar, permission: 'billing' },
     { name: 'Revenue', path: '/revenue', icon: FaRupeeSign, permission: 'viewHistory' },
-    { name: 'Food Stock', path: '/food-stock', icon: FaUtensils, permission: null },
     { name: 'Create Order', path: '/create-order', icon: FaPlusCircle, permission: 'manager' },
+    { name: 'Food Stock', path: '/food-stock', icon: FaUtensils, permission: null },
     { name: 'Order History', path: '/order-history', icon: FaHistory, permission: null },
     { name: 'Managers', path: '/managers', icon: FaUserTie, permission: 'admin' },
-    { name: 'Services Mgmt', path: '/services-management', icon: FaCog, permission: 'admin' },
-    { name: 'Icon Management', path: '/icon-management', icon: FaPalette, permission: 'admin' },
     { name: 'Reviews', path: '/reviews', icon: FaStar, permission: 'admin' },
     { name: 'Contacts', path: '/contacts', icon: FaEnvelope, permission: 'admin' },
     { name: 'Enquiries', path: '/enquiries', icon: FaQuestionCircle, count: enquiryCount, permission: 'admin' },
     { name: 'Gallery', path: '/gallery', icon: FaImages, permission: 'admin' },
     { name: 'Services', path: '/services', icon: FaConciergeBell, permission: 'admin' },
+    { name: 'My Profile', path: '/profile', icon: FaUserCircle, permission: null },
   ];
 
   // Filter menu items based on user role and permissions
