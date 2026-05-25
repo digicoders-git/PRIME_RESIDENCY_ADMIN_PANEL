@@ -62,10 +62,9 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
     const grandTotal = Math.round(booking.amount + totalFoodAmount + totalExtraCharges);
     const amountInWords = numberToWords(grandTotal);
 
-    // Empty rows filler
+    // Max 3 empty rows — taaki 1 A4 page mein sab fit ho
     const filledRows = 1 + (booking.foodOrders?.length || 0) + (booking.extraCharges?.length || 0);
-    const totalRowsNeeded = 14; 
-    const emptyRowsCount = Math.max(0, totalRowsNeeded - filledRows);
+    const emptyRowsCount = Math.max(0, Math.min(3, 5 - filledRows));
     const emptyRows = Array(emptyRowsCount).fill(0);
 
     return (
@@ -279,16 +278,26 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                 {/* Print Styles */}
                 <style>{`
                     @media print {
+                        @page {
+                            size: A4 portrait;
+                            margin: 8mm 6mm;
+                        }
                         body * { visibility: hidden; }
                         .invoice-container, .invoice-container * { visibility: visible; }
                         .invoice-container {
-                            position: absolute;
-                            left: 0;
+                            position: fixed;
                             top: 0;
+                            left: 0;
                             width: 100%;
                             padding: 0;
                         }
-                        /* Ensure background colors print */
+                        .invoice-container table {
+                            font-size: 10px !important;
+                        }
+                        .invoice-container td,
+                        .invoice-container th {
+                            padding: 3px 3px !important;
+                        }
                         * {
                             -webkit-print-color-adjust: exact !important;
                             print-color-adjust: exact !important;
