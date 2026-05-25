@@ -1,9 +1,23 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPrint, FaTimes, FaPhone, FaEnvelope, FaMapMarkerAlt, FaDownload } from 'react-icons/fa';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { FaPrint, FaTimes, FaFileExcel } from 'react-icons/fa';
 import logo from '../assets/logo.png';
+import { exportFormattedInvoice } from '../utils/exportInvoiceExcel';
+
+const numberToWords = (num) => {
+    const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+    const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+    if ((num = num.toString()).length > 9) return 'Overflow';
+    let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return ''; 
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'And ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+    return str.trim() ? str.trim().toUpperCase() + ' ONLY' : 'ZERO ONLY';
+};
 
 const ReceiptModal = ({ isOpen, onClose, booking }) => {
     const receiptRef = useRef(null);
@@ -14,53 +28,45 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
         window.print();
     };
 
-    const handleDownload = async () => {
-        try {
-            const btn = document.getElementById('download-btn');
-            const originalText = btn?.innerText || 'Download PDF';
-            if (btn) btn.innerText = 'Generating...';
-
-            const element = receiptRef.current;
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            });
-
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Bill_${booking.bookingId || booking.id.slice(-6).toUpperCase()}.pdf`);
-
-            if (btn) btn.innerText = originalText;
-        } catch (error) {
-            console.error("Error generating PDF", error);
-            const btn = document.getElementById('download-btn');
-            if (btn) btn.innerText = 'Failed';
-        }
+    const handleExportExcel = () => {
+        exportFormattedInvoice(booking, amountInWords, cgst, sgst, grandTotal, formatDateTime, logo);
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('en-IN', {
-            day: '2-digit', month: 'short', year: 'numeric'
-        });
+    const formatDateTime = (dateString) => {
+        if (!dateString) return '';
+        const d = new Date(dateString);
+        const datePart = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+        let hours = d.getHours();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; 
+        const timePart = `${String(hours).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${ampm}`;
+        return `${datePart} ${timePart}`;
     };
 
-    const formatCurrency = (amount) => {
-        return Number(amount || 0).toLocaleString('en-IN', {
-            style: 'currency',
-            currency: 'INR'
-        });
-    };
+    let pricePerDay = booking.roomDetails?.numericPrice || Math.round(booking.amount / (booking.nights || 1));
+    let cgst = 0;
+    let sgst = 0;
+    
+    // Reverse calculate tax if total amount is > base amount
+    if (booking.amount > pricePerDay * (booking.nights || 1)) {
+        let taxTotal = booking.amount - (pricePerDay * (booking.nights || 1));
+        cgst = taxTotal / 2;
+        sgst = taxTotal / 2;
+    } else {
+        pricePerDay = Math.round(booking.amount / (booking.nights || 1));
+    }
 
     const totalFoodAmount = (booking.foodOrders || []).reduce((sum, order) => sum + (order.amount || 0), 0);
     const totalExtraCharges = (booking.extraCharges || []).reduce((sum, charge) => sum + (charge.amount || 0), 0);
-    const grandTotal = booking.amount + totalFoodAmount + totalExtraCharges;
+    const grandTotal = Math.round(booking.amount + totalFoodAmount + totalExtraCharges);
+    const amountInWords = numberToWords(grandTotal);
+
+    // Empty rows filler
+    const filledRows = 1 + (booking.foodOrders?.length || 0) + (booking.extraCharges?.length || 0);
+    const totalRowsNeeded = 14; 
+    const emptyRowsCount = Math.max(0, totalRowsNeeded - filledRows);
+    const emptyRows = Array(emptyRowsCount).fill(0);
 
     return (
         <AnimatePresence>
@@ -68,7 +74,7 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:block print:bg-white"
+                className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 py-10 overflow-y-auto print:p-0 print:block print:bg-white"
                 onClick={onClose}
             >
                 <motion.div
@@ -76,194 +82,197 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.95, opacity: 0, y: 20 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden print:shadow-none print:max-w-none print:rounded-none"
+                    className="bg-white shadow-2xl max-w-[900px] w-full overflow-hidden print:shadow-none print:max-w-none print:w-full mx-auto mt-10 print:mt-0"
                 >
-                    {/* Header - Hidden when printing */}
-                    <div className="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4 flex justify-between items-center print:hidden">
-                        <h3 className="text-white font-bold text-lg">Tax Invoice / Bill</h3>
-                        <button onClick={onClose} className="text-white/80 hover:text-white transition-colors p-2">
-                            <FaTimes />
-                        </button>
+                    {/* Header Controls */}
+                    <div className="bg-gray-800 px-6 py-4 flex justify-between items-center print:hidden">
+                        <h3 className="text-white font-bold text-lg">Hotel Bill Preview</h3>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handlePrint}
+                                className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded font-bold text-sm transition-colors cursor-pointer"
+                            >
+                                <FaPrint /> Print Bill
+                            </button>
+                            <button
+                                onClick={handleExportExcel}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-bold text-sm transition-colors cursor-pointer"
+                            >
+                                <FaFileExcel /> Export Excel
+                            </button>
+                            <button onClick={onClose} className="text-white/80 hover:text-white transition-colors p-2 ml-2 cursor-pointer">
+                                <FaTimes size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Receipt Content */}
-                    <div className="p-12 bg-white print:p-8" ref={receiptRef} id="receipt-content">
-
-                        {/* Header */}
-                        <div className="flex justify-between items-start border-b-2 border-gray-200 pb-6 mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="w-20 h-20 bg-amber-50 rounded-lg flex items-center justify-center p-2">
-                                    <img src={logo} alt="Prime Residency" className="w-full h-full object-contain" />
-                                </div>
-                                <div>
-                                    <h1 className="text-3xl font-black text-gray-900 uppercase">Prime Residency</h1>
-                                    <p className="text-sm text-gray-600 font-medium">Premium Hotel & Suites</p>
-                                    <p className="text-xs text-gray-500 mt-1">GST: 07AABCP1234F1Z5</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <h2 className="text-5xl font-black text-gray-300 uppercase">BILL</h2>
-                                <div className="mt-2 space-y-1">
-                                    <p className="text-sm font-bold text-gray-700">Bill No: #{booking.bookingId || booking.id.slice(-6).toUpperCase()}</p>
-                                    <p className="text-xs text-gray-600">Date: {new Date().toLocaleDateString('en-IN')}</p>
-                                    <p className="text-xs text-gray-600">Time: {new Date().toLocaleTimeString('en-IN')}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Customer & Hotel Info */}
-                        <div className="grid grid-cols-2 gap-8 mb-8">
-                            <div>
-                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Bill To</h3>
-                                <div className="space-y-1">
-                                    <p className="font-bold text-lg text-gray-900">{booking.guest}</p>
-                                    <p className="text-sm text-gray-600 flex items-center gap-2"><FaPhone size={10} /> {booking.phone}</p>
-                                    <p className="text-sm text-gray-600 flex items-center gap-2"><FaEnvelope size={10} /> {booking.email}</p>
-                                    {booking.address && <p className="text-sm text-gray-600">{booking.address}</p>}
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">From</h3>
-                                <div className="space-y-1">
-                                    <p className="font-bold text-lg text-gray-900">Prime Residency</p>
-                                    <p className="text-sm text-gray-600 flex items-center justify-end gap-2"><FaMapMarkerAlt size={10} /> Near Railway Station, Delhi</p>
-                                    <p className="text-sm text-gray-600 flex items-center justify-end gap-2"><FaPhone size={10} /> +91 9118808054</p>
-                                    <p className="text-sm text-gray-600 flex items-center justify-end gap-2"><FaEnvelope size={10} /> info@primeresidency.com</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Booking Details */}
-                        <div className="bg-gray-50 rounded-lg p-4 mb-8 grid grid-cols-4 gap-4 text-center">
-                            <div>
-                                <p className="text-xs text-gray-500 font-semibold">Room</p>
-                                <p className="text-sm font-bold text-gray-900">{booking.room}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-semibold">Check-In</p>
-                                <p className="text-sm font-bold text-gray-900">{formatDate(booking.checkIn)}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-semibold">Check-Out</p>
-                                <p className="text-sm font-bold text-gray-900">{formatDate(booking.checkOut)}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-semibold">Nights</p>
-                                <p className="text-sm font-bold text-gray-900">{booking.nights}</p>
-                            </div>
-                        </div>
-
-                        {/* Bill Table */}
-                        <table className="w-full mb-8">
-                            <thead>
-                                <tr className="bg-gray-100 border-y-2 border-gray-300">
-                                    <th className="py-3 px-4 text-left text-xs font-black text-gray-700 uppercase">Description</th>
-                                    <th className="py-3 px-4 text-center text-xs font-black text-gray-700 uppercase">Rate</th>
-                                    <th className="py-3 px-4 text-center text-xs font-black text-gray-700 uppercase">Qty</th>
-                                    <th className="py-3 px-4 text-right text-xs font-black text-gray-700 uppercase">Amount</th>
+                    <div className="p-8 bg-white print:p-0 invoice-container" ref={receiptRef}>
+                        
+                        <table id="invoice-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid black', fontFamily: 'Arial, sans-serif', fontSize: '13px', color: 'black' }}>
+                            <tbody>
+                                {/* Row 1: Header */}
+                                <tr style={{ backgroundColor: '#fcd5b4' }}>
+                                    <td colSpan="3" style={{ border: '1px solid black', padding: '4px 8px', fontWeight: 'bold' }}>Page No.1</td>
+                                    <td colSpan="4" style={{ border: '1px solid black', padding: '4px 8px', textAlign: 'center', fontWeight: 'bold', fontSize: '16px' }}>Hotel Bill</td>
+                                    <td colSpan="2" style={{ border: '1px solid black', padding: '4px 8px', textAlign: 'right' }}>Original Copy</td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
+
+                                {/* Row 2: Hotel Details */}
                                 <tr>
-                                    <td className="py-3 px-4">
-                                        <p className="font-bold text-gray-900">Room Charges - {booking.room}</p>
-                                        <p className="text-xs text-gray-500">{formatDate(booking.checkIn)} to {formatDate(booking.checkOut)}</p>
+                                    <td colSpan="3" style={{ border: '1px solid black', padding: '10px', textAlign: 'center', width: '30%', verticalAlign: 'middle' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px' }}>
+                                            <img src={logo} alt="PRIME RESIDENCY" style={{ width: '120px', height: 'auto', maxHeight: '100px', objectFit: 'contain' }} />
+                                        </div>
                                     </td>
-                                    <td className="py-3 px-4 text-center text-gray-700">{formatCurrency(booking.amount / (booking.nights || 1))}</td>
-                                    <td className="py-3 px-4 text-center text-gray-700">{booking.nights}</td>
-                                    <td className="py-3 px-4 text-right font-bold text-gray-900">{formatCurrency(booking.amount)}</td>
+                                    <td colSpan="6" style={{ border: '1px solid black', padding: '15px' }}>
+                                        <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: 'bold' }}>Hotel Name - PRIME RESIDENCY</h2>
+                                        <p style={{ margin: '2px 0' }}><strong>Address -</strong> Harpur, Ballia (UP) 277001 India</p>
+                                        <p style={{ margin: '2px 0' }}><strong>Mobile:</strong> +91 09118808054, 7522808054 | <strong>Email:</strong> primeresidencyballia@gmail.com</p>
+                                        <p style={{ margin: '2px 0' }}><strong>GSTIN -</strong> 09DWBPS1315G1ZM | <strong>PAN -</strong> xxxxxxxxxx</p>
+                                    </td>
                                 </tr>
-                                {(booking.foodOrders || []).map((order, idx) => (
-                                    <tr key={`food-${idx}`}>
-                                        <td className="py-3 px-4">
-                                            <p className="font-bold text-gray-900">Food: {order.item}</p>
-                                            <p className="text-xs text-gray-500">{new Date(order.date).toLocaleDateString('en-IN')}</p>
-                                        </td>
-                                        <td className="py-3 px-4 text-center text-gray-700">{formatCurrency(order.price)}</td>
-                                        <td className="py-3 px-4 text-center text-gray-700">{order.quantity}</td>
-                                        <td className="py-3 px-4 text-right font-bold text-gray-900">{formatCurrency(order.amount)}</td>
+
+                                {/* Row 3: Billing Details */}
+                                <tr style={{ backgroundColor: '#cce6eb' }}>
+                                    <td colSpan="5" style={{ border: '1px solid black', padding: '10px', verticalAlign: 'top', width: '60%' }}>
+                                        <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>Billing Details</p>
+                                        <p style={{ margin: '2px 0' }}><strong>Name - </strong> {booking.guest?.toUpperCase()}</p>
+                                        <p style={{ margin: '2px 0' }}><strong>Address - </strong> {booking.address ? booking.address.toUpperCase() : ''}</p>
+                                        <p style={{ margin: '2px 0' }}><strong>Phone No - </strong> {booking.phone}</p>
+                                        <p style={{ margin: '2px 0' }}><strong>Email ID - </strong> {booking.email}</p>
+                                        <p style={{ margin: '2px 0' }}><strong>{booking.idType || 'Aadhar'} No - </strong> {booking.idNumber}</p>
+                                    </td>
+                                    <td colSpan="4" style={{ border: '1px solid black', padding: '10px', verticalAlign: 'top' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ padding: '2px 0' }}>Invoice Number</td>
+                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {booking.bookingId || booking.id?.slice(-6).toUpperCase()}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ padding: '2px 0' }}>Invoice Date</td>
+                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {formatDateTime(new Date())}</td>
+                                                </tr>
+                                                <tr><td colSpan="2" style={{ padding: '4px 0' }}></td></tr>
+                                                <tr>
+                                                    <td style={{ padding: '2px 0' }}>Check In</td>
+                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {formatDateTime(booking.checkIn)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ padding: '2px 0' }}>Check Out</td>
+                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {formatDateTime(booking.checkOut)}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                {/* Row 4: Column Headers */}
+                                <tr style={{ backgroundColor: '#eef5e0', textAlign: 'center', fontWeight: 'bold' }}>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '9%' }}>Room No</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '9%' }}>No of Days</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '9%' }}>Extra Bed</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '11%' }}>HSN/SAC</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '9%' }}>IGST 5%</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '11%' }}>CGST 2.5%</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '11%' }}>SGST 2.5%</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '14%' }}>Price/Day</td>
+                                    <td style={{ border: '1px solid black', padding: '8px 2px', width: '17%' }}>Amount (₹)</td>
+                                </tr>
+
+                                {/* Main Room Entry */}
+                                <tr style={{ textAlign: 'center' }}>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{booking.room}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{booking.nights || 1}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{booking.extraBed ? '1' : ''}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>996311</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>0</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{cgst}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{sgst}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{pricePerDay.toFixed(2)}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{booking.amount.toFixed(2)}</td>
+                                </tr>
+
+                                {/* Extra Items (Food/Charges) */}
+                                {(booking.foodOrders || []).map((order, i) => (
+                                    <tr key={`food-${i}`} style={{ textAlign: 'center' }}>
+                                        <td colSpan="7" style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px', textAlign: 'left', paddingLeft: '10px' }}>Food Order: {order.item} (Qty: {order.quantity})</td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{order.price.toFixed(2)}</td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{order.amount.toFixed(2)}</td>
                                     </tr>
                                 ))}
-                                {(booking.extraCharges || []).map((charge, idx) => (
-                                    <tr key={`extra-${idx}`}>
-                                        <td className="py-3 px-4">
-                                            <p className="font-bold text-gray-900">Extra: {charge.description}</p>
-                                            <p className="text-xs text-gray-500">{new Date(charge.date).toLocaleDateString('en-IN')}</p>
-                                        </td>
-                                        <td className="py-3 px-4 text-center text-gray-700">-</td>
-                                        <td className="py-3 px-4 text-center text-gray-700">1</td>
-                                        <td className="py-3 px-4 text-right font-bold text-gray-900">{formatCurrency(charge.amount)}</td>
+                                {(booking.extraCharges || []).map((charge, i) => (
+                                    <tr key={`extra-${i}`} style={{ textAlign: 'center' }}>
+                                        <td colSpan="7" style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px', textAlign: 'left', paddingLeft: '10px' }}>Extra Charge: {charge.description}</td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>-</td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{charge.amount.toFixed(2)}</td>
                                     </tr>
                                 ))}
+
+                                {/* Empty Spacer Rows */}
+                                {emptyRows.map((_, i) => (
+                                    <tr key={`empty-${i}`} style={{ textAlign: 'center' }}>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}>&nbsp;</td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                        <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '12px 4px' }}></td>
+                                    </tr>
+                                ))}
+
+                                {/* Footer Totals */}
+                                <tr>
+                                    <td colSpan="8" style={{ border: '1px solid black', borderBottom: 'none', padding: '6px 10px', textAlign: 'center', fontWeight: 'bold' }}>Rounded Off (+)</td>
+                                    <td style={{ border: '1px solid black', borderBottom: 'none', padding: '6px 4px', textAlign: 'center' }}>+0.00</td>
+                                </tr>
+                                <tr style={{ backgroundColor: '#cce6eb' }}>
+                                    <td colSpan="8" style={{ border: '1px solid black', padding: '6px 10px', textAlign: 'center', fontWeight: 'bold' }}>Total</td>
+                                    <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontWeight: 'bold' }}>{grandTotal.toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <td colSpan="8" style={{ border: '1px solid black', padding: '6px 10px', textAlign: 'center', fontWeight: 'bold' }}>Advance Paid</td>
+                                    <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontWeight: 'bold', color: 'green' }}>{Number(booking.advance || 0).toFixed(2)}</td>
+                                </tr>
+                                <tr style={{ backgroundColor: '#fff3cd' }}>
+                                    <td colSpan="8" style={{ border: '1px solid black', padding: '6px 10px', textAlign: 'center', fontWeight: 'bold' }}>Balance Due</td>
+                                    <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontWeight: 'bold', color: 'red' }}>{Math.max(0, grandTotal - (booking.advance || 0)).toFixed(2)}</td>
+                                </tr>
+
+                                {/* Amount in Words */}
+                                <tr style={{ backgroundColor: '#e2dae6' }}>
+                                    <td colSpan="9" style={{ border: '1px solid black', padding: '8px 10px', fontWeight: 'bold' }}>
+                                        In Words - Rs. {amountInWords}
+                                    </td>
+                                </tr>
+
+                                {/* Rules and Signatures */}
+                                <tr>
+                                    <td colSpan="5" style={{ border: '1px solid black', padding: '10px', verticalAlign: 'top' }}>
+                                        <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', fontSize: '12px' }}>Please Note -</p>
+                                        <p style={{ margin: '2px 0', fontSize: '12px' }}>1. Deposited your Key card at the receptionist</p>
+                                        <p style={{ margin: '2px 0', fontSize: '12px' }}>2. Cross-check the room thoroughly before checking out</p>
+                                    </td>
+                                    <td colSpan="2" style={{ border: '1px solid black', padding: '10px', verticalAlign: 'top', textAlign: 'center' }}>
+                                        <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 'bold', color: booking.paymentStatus === 'Paid' ? 'green' : 'red' }}>
+                                            {booking.paymentStatus?.toUpperCase() || 'UNPAID'}
+                                        </p>
+                                        <p style={{ margin: '0', fontSize: '13px' }}>Billing Officer's</p>
+                                        <p style={{ margin: '0', fontSize: '13px' }}>Signature</p>
+                                    </td>
+                                    <td colSpan="2" style={{ border: '1px solid black', padding: '10px', verticalAlign: 'top', textAlign: 'center' }}>
+                                        <p style={{ margin: '0', fontSize: '13px' }}>Guest's</p>
+                                        <p style={{ margin: '0', fontSize: '13px' }}>Signature</p>
+                                        <div style={{ height: '40px' }}></div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
 
-                        {/* Totals */}
-                        <div className="flex justify-end mb-8">
-                            <div className="w-80 space-y-3">
-                                <div className="flex justify-between py-2 border-b border-gray-200">
-                                    <span className="text-sm font-semibold text-gray-600">Subtotal</span>
-                                    <span className="text-sm font-bold text-gray-900">{formatCurrency(grandTotal)}</span>
-                                </div>
-                                <div className="flex justify-between py-2 border-b border-gray-200">
-                                    <span className="text-sm font-semibold text-gray-600">Advance Paid</span>
-                                    <span className="text-sm font-bold text-emerald-600">(-) {formatCurrency(booking.advance)}</span>
-                                </div>
-                                <div className="flex justify-between py-3 bg-amber-50 px-4 rounded-lg border-2 border-amber-200">
-                                    <span className="text-base font-black text-gray-900 uppercase">Balance Due</span>
-                                    <span className="text-xl font-black text-amber-600">{formatCurrency(grandTotal - booking.advance)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="border-t-2 border-gray-200 pt-6 flex justify-between items-end">
-                            <div>
-                                <p className="text-xs text-gray-500 font-semibold mb-2">Terms & Conditions:</p>
-                                <p className="text-xs text-gray-500 leading-relaxed max-w-md">
-                                    1. Payment is due upon receipt of this bill.<br />
-                                    2. Late checkout charges may apply after 11:00 AM.<br />
-                                    3. This is a computer-generated bill and requires no signature.
-                                </p>
-                            </div>
-                            <div className="text-center">
-                                <div className={`px-6 py-2 border-2 rounded-lg font-black text-lg uppercase rotate-[-12deg] ${booking.paymentStatus === 'Paid' ? 'border-emerald-500 text-emerald-500' :
-                                        booking.paymentStatus === 'Partial' ? 'border-amber-500 text-amber-500' :
-                                            'border-rose-500 text-rose-500'
-                                    }`}>
-                                    {booking.paymentStatus}
-                                </div>
-                                <p className="text-xs text-gray-400 font-bold uppercase mt-4">Authorized Signature</p>
-                            </div>
-                        </div>
-
-                        {/* Bottom Bar */}
-                        <div className="mt-8 pt-4 border-t border-gray-200 text-center">
-                            <p className="text-xs text-gray-500">Thank you for choosing Prime Residency. We hope to serve you again!</p>
-                        </div>
-                    </div>
-
-                    {/* Footer Actions - Hidden when printing */}
-                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3 print:hidden">
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm transition-colors cursor-pointer shadow-lg"
-                        >
-                            <FaPrint /> Print Bill
-                        </button>
-                        <button
-                            id="download-btn"
-                            onClick={handleDownload}
-                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-colors cursor-pointer shadow-lg"
-                        >
-                            <FaDownload /> Download PDF
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl font-bold text-sm transition-colors cursor-pointer"
-                        >
-                            Close
-                        </button>
                     </div>
                 </motion.div>
 
@@ -271,15 +280,19 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                 <style>{`
                     @media print {
                         body * { visibility: hidden; }
-                        #receipt-content, #receipt-content * { visibility: visible; }
-                        #receipt-content {
-                            position: fixed;
+                        .invoice-container, .invoice-container * { visibility: visible; }
+                        .invoice-container {
+                            position: absolute;
                             left: 0;
                             top: 0;
                             width: 100%;
-                            padding: 20px;
+                            padding: 0;
                         }
-                        @page { size: A4; margin: 10mm; }
+                        /* Ensure background colors print */
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
                     }
                 `}</style>
             </motion.div>

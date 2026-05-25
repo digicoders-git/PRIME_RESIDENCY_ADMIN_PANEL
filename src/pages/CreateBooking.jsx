@@ -145,18 +145,18 @@ const CreateBooking = () => {
             const start = new Date(formData.checkIn);
             const end = new Date(formData.checkOut);
             const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            const baseTotal = diffDays * room.numericPrice;
+            
+            // Minimum 1 night charge even if booked for 2 hours
+            const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            let baseTotal = diffDays * room.numericPrice;
+            let finalTotal = baseTotal;
 
             // Calculate with charges if enabled
-            let finalTotal = baseTotal;
             if (room.enableExtraCharges) {
                 const discount = parseFloat(formData.discount) || 0;
                 const extraBed = parseFloat(formData.extraBedPrice) || 0;
                 const tax = parseFloat(formData.taxGST) || 0;
 
-                // Per night calculation: (price + extraBed) - discount + tax
                 const pricePerNight = room.numericPrice;
                 const subtotal = pricePerNight + extraBed;
                 const afterDiscount = subtotal - (subtotal * discount / 100);
@@ -169,7 +169,7 @@ const CreateBooking = () => {
             const advanceVal = parseInt(formData.advance) || 0;
 
             setCalc({
-                nights: diffDays > 0 ? diffDays : 0,
+                nights: diffDays,
                 baseAmount: baseTotal > 0 ? baseTotal : 0,
                 totalAmount: finalTotal > 0 ? finalTotal : 0,
                 balance: (finalTotal - advanceVal) > 0 ? (finalTotal - advanceVal) : 0
@@ -215,8 +215,8 @@ const CreateBooking = () => {
             return;
         }
 
-        if (calc.nights <= 0) {
-            toast.error('Please select valid check-in and check-out dates.');
+        if (calc.totalAmount <= 0) {
+            toast.error('Please select valid check-in and check-out dates/times.');
             return;
         }
 
@@ -638,10 +638,10 @@ const CreateBooking = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-In Date</label>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-In Time</label>
                                         <input
                                             required
-                                            type="date"
+                                            type="datetime-local"
                                             name="checkIn"
                                             value={formData.checkIn}
                                             onChange={handleInputChange}
@@ -649,10 +649,10 @@ const CreateBooking = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-Out Date</label>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-Out Time</label>
                                         <input
                                             required
-                                            type="date"
+                                            type="datetime-local"
                                             name="checkOut"
                                             value={formData.checkOut}
                                             onChange={handleInputChange}

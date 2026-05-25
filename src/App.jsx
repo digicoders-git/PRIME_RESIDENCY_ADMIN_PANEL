@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Loader from './components/Loader';
+import CheckoutNotifier from './components/CheckoutNotifier';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -138,6 +139,7 @@ function App() {
         ) : (
           <AnimatedRoutes isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
         )}
+        <CheckoutNotifier isAuthenticated={isAuthenticated} />
         <ToastContainer position="top-right" theme="dark" />
       </Router>
     </div>
