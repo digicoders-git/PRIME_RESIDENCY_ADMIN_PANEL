@@ -19,7 +19,8 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
     discount: '',
     offerPrice: '',
     extraBedPrice: '',
-    taxGST: '',
+    taxGST: '5',
+    gstType: 'CGST+SGST',
     roomStatus: 'Available',
 
     // 3. Images & Media
@@ -82,6 +83,31 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGstTypeChange = (type) => {
+    setFormData(prev => {
+      let newTax = '0';
+      if (type === 'CGST+SGST' || type === 'IGST') {
+        newTax = '5';
+      }
+
+      const price = parseFloat(prev.pricePerNight) || 0;
+      const discount = parseFloat(prev.discount) || 0;
+      const tax = parseFloat(newTax) || 0;
+      const extraBed = parseFloat(prev.extraBedPrice) || 0;
+
+      const discounted = price - (price * discount / 100);
+      const withTax = discounted + (discounted * tax / 100);
+      const final = Math.round(withTax + extraBed);
+
+      return {
+        ...prev,
+        gstType: type,
+        taxGST: newTax,
+        offerPrice: final > 0 ? final.toString() : ''
+      };
+    });
   };
 
   const handleAmenityChange = (amenity) => {
@@ -158,7 +184,7 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
     setFormData({
       roomName: '', roomNumber: '', roomType: '', bedType: '', maxAdults: '', maxChildren: '',
       roomSize: '', floorNumber: '', pricePerNight: '', discount: '', offerPrice: '', extraBedPrice: '',
-      taxGST: '', roomStatus: 'Available',
+      taxGST: '5', gstType: 'CGST+SGST', roomStatus: 'Available',
       mainImage: null, mainImagePreview: '', galleryImages: [], galleryPreviews: [], video360: '', imageAltText: '',
       amenities: { ac: false, wifi: false, tv: false, geyser: false, balcony: false, roomService: false, powerBackup: false, miniFridge: false, safeLocker: false, workDesk: false },
       shortDescription: '', fullDescription: '', specialNotes: '', checkInTime: '14:00', checkOutTime: '11:00',
@@ -396,29 +422,43 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tax/GST (%)</label>
-                    <input
-                      type="number"
-                      name="taxGST"
-                      value={formData.taxGST}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData(prev => {
-                          const price = parseFloat(prev.pricePerNight) || 0;
-                          const discount = parseFloat(prev.discount) || 0;
-                          const tax = parseFloat(val) || 0;
-                          const extraBed = parseFloat(prev.extraBedPrice) || 0;
-
-                          const discounted = price - (price * discount / 100);
-                          const withTax = discounted + (discounted * tax / 100);
-                          const final = Math.round(withTax + extraBed);
-
-                          return { ...prev, taxGST: val, offerPrice: final > 0 ? final.toString() : '' };
-                        });
-                      }}
-                      placeholder="18"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tax/GST Type</label>
+                    <div className="flex bg-gray-200 rounded-lg p-1 w-fit">
+                      <button
+                        type="button"
+                        onClick={() => handleGstTypeChange('CGST+SGST')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          formData.gstType === 'CGST+SGST'
+                            ? 'bg-[#D4AF37] text-white shadow-sm'
+                            : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                      >
+                        CGST+SGST (5%)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleGstTypeChange('IGST')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          formData.gstType === 'IGST'
+                            ? 'bg-[#D4AF37] text-white shadow-sm'
+                            : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                      >
+                        IGST (5%)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleGstTypeChange('None')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          formData.gstType === 'None'
+                            ? 'bg-[#D4AF37] text-white shadow-sm'
+                            : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                      >
+                        None (0%)
+                      </button>
+                    </div>
+                    <input type="hidden" name="taxGST" value={formData.taxGST} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Room Status</label>

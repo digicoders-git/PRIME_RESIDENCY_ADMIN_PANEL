@@ -40,7 +40,8 @@ const AddRoom = () => {
     pricePerNight: '',
     discount: '',
     extraBedPrice: '',
-    taxGST: '',
+    taxGST: '5',
+    gstType: 'CGST+SGST',
     totalPrice: '',
     enableExtraCharges: false,
     roomStatus: 'Available',
@@ -145,6 +146,36 @@ const AddRoom = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleGstTypeChange = (type) => {
+    setFormData(prev => {
+      let newTax = '0';
+      if (type === 'CGST+SGST' || type === 'IGST') {
+        newTax = '5';
+      }
+      
+      if (!prev.enableExtraCharges) {
+        return { ...prev, gstType: type, taxGST: newTax, totalPrice: prev.pricePerNight };
+      }
+
+      const taxVal = parseFloat(newTax) || 0;
+      const priceVal = parseFloat(prev.pricePerNight) || 0;
+      const discountVal = parseFloat(prev.discount) || 0;
+      const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+
+      const subtotal = priceVal + extraBedVal;
+      const afterDiscount = subtotal - (subtotal * discountVal / 100);
+      const gstAmount = afterDiscount * taxVal / 100;
+      const newTotalPrice = Math.round(afterDiscount + gstAmount);
+
+      return {
+        ...prev,
+        gstType: type,
+        taxGST: newTax,
+        totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+      };
+    });
+  };
+
   const handleAmenityChange = (amenity) => {
     setFormData(prev => ({
       ...prev,
@@ -237,6 +268,7 @@ const AddRoom = () => {
       if (formData.discount) form.append('discount', formData.discount);
       if (formData.extraBedPrice) form.append('extraBedPrice', formData.extraBedPrice);
       if (formData.taxGST) form.append('taxGST', formData.taxGST);
+      if (formData.gstType) form.append('gstType', formData.gstType);
       if (formData.totalPrice) {
         form.append('totalPrice', formData.totalPrice);
         form.append('enableExtraCharges', true);
@@ -627,39 +659,43 @@ const AddRoom = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax/GST (%)</label>
-                  <input
-                    type="number"
-                    name="taxGST"
-                    value={formData.taxGST}
-                    onChange={(e) => {
-                      const newTax = e.target.value;
-
-                      setFormData(prev => {
-                        if (!prev.enableExtraCharges) {
-                          return { ...prev, taxGST: newTax };
-                        }
-
-                        const taxVal = parseFloat(newTax) || 0;
-                        const priceVal = parseFloat(prev.pricePerNight) || 0;
-                        const discountVal = parseFloat(prev.discount) || 0;
-                        const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
-
-                        const subtotal = priceVal + extraBedVal;
-                        const afterDiscount = subtotal - (subtotal * discountVal / 100);
-                        const gstAmount = afterDiscount * taxVal / 100;
-                        const newTotalPrice = Math.round(afterDiscount + gstAmount);
-
-                        return {
-                          ...prev,
-                          taxGST: newTax,
-                          totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
-                        };
-                      });
-                    }}
-                    placeholder="18"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax/GST Type</label>
+                  <div className="flex bg-gray-200 rounded-lg p-1 w-fit">
+                    <button
+                      type="button"
+                      onClick={() => handleGstTypeChange('CGST+SGST')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                        formData.gstType === 'CGST+SGST'
+                          ? 'bg-[#D4AF37] text-white shadow-sm'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                    >
+                      CGST+SGST (5%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleGstTypeChange('IGST')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                        formData.gstType === 'IGST'
+                          ? 'bg-[#D4AF37] text-white shadow-sm'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                    >
+                      IGST (5%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleGstTypeChange('None')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                        formData.gstType === 'None'
+                          ? 'bg-[#D4AF37] text-white shadow-sm'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                    >
+                      None (0%)
+                    </button>
+                  </div>
+                  <input type="hidden" name="taxGST" value={formData.taxGST} />
                 </div>
               </>
             )}

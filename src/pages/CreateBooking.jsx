@@ -48,7 +48,8 @@ const CreateBooking = () => {
 
         discount: '0',
         extraBedPrice: '0',
-        taxGST: '0'
+        taxGST: '5',
+        gstType: 'CGST+SGST'
     });
 
     const [calc, setCalc] = useState({
@@ -81,7 +82,8 @@ const CreateBooking = () => {
                         enableExtraCharges: shouldEnableCharges,
                         discount: r.discount || 0,
                         extraBedPrice: r.extraBedPrice || 0,
-                        taxGST: r.taxGST || 0
+                        taxGST: r.taxGST || 0,
+                        gstType: r.gstType || 'CGST+SGST'
                     };
                 });
                 setRooms(fetchedRooms);
@@ -95,7 +97,8 @@ const CreateBooking = () => {
                             ...prev,
                             discount: found.discount?.toString() || '0',
                             extraBedPrice: found.extraBedPrice?.toString() || '0',
-                            taxGST: found.taxGST?.toString() || '0'
+                            taxGST: found.taxGST?.toString() || '0',
+                            gstType: found.gstType || 'CGST+SGST'
                         }));
                     }
                 }
@@ -134,20 +137,23 @@ const CreateBooking = () => {
                     ...prev,
                     discount: found.discount?.toString() || '0',
                     extraBedPrice: found.extraBedPrice?.toString() || '0',
-                    taxGST: found.taxGST?.toString() || '0'
+                    taxGST: found.taxGST?.toString() || '0',
+                    gstType: found.gstType || 'CGST+SGST'
                 }));
             }
         }
     };
 
     useEffect(() => {
-        if (formData.checkIn && formData.checkOut && room) {
-            const start = new Date(formData.checkIn);
-            const end = new Date(formData.checkOut);
-            const diffTime = Math.abs(end - start);
-            
-            // Minimum 1 night charge even if booked for 2 hours
-            const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        if (formData.checkIn && room) {
+            let diffDays = 1;
+            if (formData.checkOut) {
+                const start = new Date(formData.checkIn);
+                const end = new Date(formData.checkOut);
+                const diffTime = Math.abs(end - start);
+                // Minimum 1 night charge even if booked for 2 hours
+                diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            }
             let baseTotal = diffDays * room.numericPrice;
             let finalTotal = baseTotal;
 
@@ -202,6 +208,20 @@ const CreateBooking = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleGstTypeChange = (type) => {
+        setFormData(prev => {
+            let newTax = '0';
+            if (type === 'CGST+SGST' || type === 'IGST') {
+                newTax = '5';
+            }
+            return {
+                ...prev,
+                gstType: type,
+                taxGST: newTax
+            };
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -216,7 +236,7 @@ const CreateBooking = () => {
         }
 
         if (calc.totalAmount <= 0) {
-            toast.error('Please select valid check-in and check-out dates/times.');
+            toast.error('Please select a valid check-in date/time.');
             return;
         }
 
@@ -231,7 +251,8 @@ const CreateBooking = () => {
                 dataToSend.append('room', room.name);
                 dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
                 dataToSend.append('checkIn', formData.checkIn);
-                dataToSend.append('checkOut', formData.checkOut);
+                const finalCheckOut = formData.checkOut || new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                dataToSend.append('checkOut', finalCheckOut);
                 dataToSend.append('adults', formData.adults);
                 dataToSend.append('children', formData.children);
                 dataToSend.append('amount', calc.totalAmount);
@@ -248,6 +269,10 @@ const CreateBooking = () => {
                 dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
                 dataToSend.append('property', room.property);
                 dataToSend.append('category', room.category || 'Room');
+                dataToSend.append('discount', Number(formData.discount) || 0);
+                dataToSend.append('extraBedPrice', Number(formData.extraBedPrice) || 0);
+                dataToSend.append('taxGST', Number(formData.taxGST) || 0);
+                dataToSend.append('gstType', formData.gstType || 'CGST+SGST');
 
                 if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
                 if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
@@ -298,7 +323,8 @@ const CreateBooking = () => {
                             dataToSend.append('room', room.name);
                             dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
                             dataToSend.append('checkIn', formData.checkIn);
-                            dataToSend.append('checkOut', formData.checkOut);
+                            const finalCheckOut = formData.checkOut || new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                            dataToSend.append('checkOut', finalCheckOut);
                             dataToSend.append('adults', formData.adults);
                             dataToSend.append('children', formData.children);
                             dataToSend.append('amount', calc.totalAmount);
@@ -314,6 +340,10 @@ const CreateBooking = () => {
                             dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
                             dataToSend.append('property', room.property);
                             dataToSend.append('category', room.category || 'Room');
+                            dataToSend.append('discount', Number(formData.discount) || 0);
+                            dataToSend.append('extraBedPrice', Number(formData.extraBedPrice) || 0);
+                            dataToSend.append('taxGST', Number(formData.taxGST) || 0);
+                            dataToSend.append('gstType', formData.gstType || 'CGST+SGST');
                             dataToSend.append('razorpayOrderId', result.razorpay_order_id);
                             dataToSend.append('razorpayPaymentId', result.razorpay_payment_id);
 
@@ -354,7 +384,8 @@ const CreateBooking = () => {
             dataToSend.append('room', room.name);
             dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
             dataToSend.append('checkIn', formData.checkIn);
-            dataToSend.append('checkOut', formData.checkOut);
+            const finalCheckOut = formData.checkOut || new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+            dataToSend.append('checkOut', finalCheckOut);
             dataToSend.append('adults', formData.adults);
             dataToSend.append('children', formData.children);
             dataToSend.append('amount', calc.totalAmount);
@@ -370,6 +401,10 @@ const CreateBooking = () => {
             dataToSend.append('extraBed', Number(formData.extraBedPrice) > 0);
             dataToSend.append('property', room.property);
             dataToSend.append('category', room.category || 'Room');
+            dataToSend.append('discount', Number(formData.discount) || 0);
+            dataToSend.append('extraBedPrice', Number(formData.extraBedPrice) || 0);
+            dataToSend.append('taxGST', Number(formData.taxGST) || 0);
+            dataToSend.append('gstType', formData.gstType || 'CGST+SGST');
 
             if (formData.idFrontImage) dataToSend.append('idFrontImage', formData.idFrontImage);
             if (formData.idBackImage) dataToSend.append('idBackImage', formData.idBackImage);
@@ -649,9 +684,8 @@ const CreateBooking = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-Out Time</label>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-Out Time (Optional)</label>
                                         <input
-                                            required
                                             type="datetime-local"
                                             name="checkOut"
                                             value={formData.checkOut}
@@ -796,16 +830,43 @@ const CreateBooking = () => {
                                         </div>
 
                                         <div>
-                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">Tax/GST (%)</label>
-                                            <input
-                                                type="number"
-                                                name="taxGST"
-                                                value={formData.taxGST}
-                                                onChange={handleInputChange}
-                                                min="0"
-                                                max="100"
-                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-sm"
-                                            />
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">Tax/GST Type</label>
+                                            <div className="flex bg-gray-100 rounded-xl p-1 w-full justify-between border border-gray-200">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleGstTypeChange('CGST+SGST')}
+                                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer text-center ${
+                                                        formData.gstType === 'CGST+SGST'
+                                                            ? 'bg-[#D4AF37] text-white shadow-sm'
+                                                            : 'text-gray-500 hover:text-gray-900'
+                                                    }`}
+                                                >
+                                                    CGST+SGST (5%)
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleGstTypeChange('IGST')}
+                                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer text-center ${
+                                                        formData.gstType === 'IGST'
+                                                            ? 'bg-[#D4AF37] text-white shadow-sm'
+                                                            : 'text-gray-500 hover:text-gray-900'
+                                                    }`}
+                                                >
+                                                    IGST (5%)
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleGstTypeChange('None')}
+                                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer text-center ${
+                                                        formData.gstType === 'None'
+                                                            ? 'bg-[#D4AF37] text-white shadow-sm'
+                                                            : 'text-gray-500 hover:text-gray-900'
+                                                    }`}
+                                                >
+                                                    None (0%)
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="taxGST" value={formData.taxGST} />
                                         </div>
                                     </div>
                                 </div>

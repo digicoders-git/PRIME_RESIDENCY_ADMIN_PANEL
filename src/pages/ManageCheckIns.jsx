@@ -11,10 +11,16 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 
 const ManageCheckIns = () => {
+    const getTodayStr = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
     const [loading, setLoading] = useState(true);
     const [bookings, setBookings] = useState([]);
     const [activeTab, setActiveTab] = useState('arrivals'); // arrivals, departures, in-house
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDate, setSelectedDate] = useState(getTodayStr());
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [user, setUser] = useState({ role: 'Admin', property: '' });
@@ -37,7 +43,7 @@ const ManageCheckIns = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeTab, searchTerm]);
+    }, [activeTab, searchTerm, selectedDate]);
 
     const fetchData = async () => {
         try {
@@ -67,35 +73,28 @@ const ManageCheckIns = () => {
         }
     };
 
-    const getTodayStr = () => {
-        const d = new Date();
-        const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        // console.log("System Today:", str);
-        return str;
-    };
-
     const calculateStats = (data) => {
-        const today = getTodayStr();
+        const targetDate = selectedDate;
 
-        const arrivalsToday = data.filter(b => {
+        const arrivalsForDate = data.filter(b => {
             if (!b.checkIn) return false;
             const d = new Date(b.checkIn);
             const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            return checkInDate === today;
+            return checkInDate === targetDate;
         });
-        const checkIns = arrivalsToday.length;
+        const checkIns = arrivalsForDate.length;
         // Count confirmed or pending as 'Pending Arrival'. Checked-in are done.
-        const pendingArr = arrivalsToday.filter(b => b.status === 'Confirmed' || b.status === 'Pending').length;
+        const pendingArr = arrivalsForDate.filter(b => b.status === 'Confirmed' || b.status === 'Pending').length;
 
-        const departuresToday = data.filter(b => {
+        const departuresForDate = data.filter(b => {
             if (!b.checkOut) return false;
             const d = new Date(b.checkOut);
             const checkOutDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            return checkOutDate === today;
+            return checkOutDate === targetDate;
         });
-        const checkOuts = departuresToday.length;
+        const checkOuts = departuresForDate.length;
         // Count checked-in as 'Due Checkout'. Checked-out are done.
-        const pendingDep = departuresToday.filter(b => b.status === 'Checked-in').length;
+        const pendingDep = departuresForDate.filter(b => b.status === 'Checked-in').length;
 
         const occupied = data.filter(b => b.status === 'Checked-in').length;
 
@@ -107,6 +106,12 @@ const ManageCheckIns = () => {
             pendingDepartures: pendingDep
         });
     };
+
+    useEffect(() => {
+        if (bookings.length > 0) {
+            calculateStats(bookings);
+        }
+    }, [selectedDate, bookings]);
 
     const handleStatusUpdate = async (id, newStatus, guestName) => {
         Swal.fire({
@@ -139,7 +144,6 @@ const ManageCheckIns = () => {
 
     // Filter Data based on Active Tab
     const getFilteredData = () => {
-        const today = getTodayStr();
         let data = [];
 
         if (activeTab === 'arrivals') {
@@ -148,8 +152,7 @@ const ManageCheckIns = () => {
                 const d = new Date(b.checkIn);
                 const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-                // Show All Arrivals for Today (Pending + Completed)
-                return checkInDate === today;
+                return checkInDate === selectedDate;
             });
         } else if (activeTab === 'departures') {
             data = bookings.filter(b => {
@@ -157,8 +160,7 @@ const ManageCheckIns = () => {
                 const d = new Date(b.checkOut);
                 const checkOutDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-                // Show All Departures for Today (Pending + Completed)
-                return checkOutDate === today;
+                return checkOutDate === selectedDate;
             });
         } else if (activeTab === 'in-house') {
             // Show all currently checked-in guests
@@ -234,7 +236,9 @@ const ManageCheckIns = () => {
                 >
                     <div className="relative z-10 flex justify-between items-start">
                         <div>
-                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${activeTab === 'arrivals' ? 'text-yellow-50' : 'text-gray-400'}`}>Arrivals Today</p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${activeTab === 'arrivals' ? 'text-yellow-50' : 'text-gray-400'}`}>
+                                {selectedDate === getTodayStr() ? 'Arrivals Today' : `Arrivals (${selectedDate})`}
+                            </p>
                             <h3 className="text-3xl font-extrabold tracking-tight">{stats.pendingArrivals} <span className="text-base opacity-60 font-medium">/ {stats.checkInsToday}</span></h3>
                         </div>
                         <div className={`p-2.5 rounded-xl ${activeTab === 'arrivals' ? 'bg-white/20' : 'bg-yellow-50 text-[#D4AF37]'}`}>
@@ -253,7 +257,9 @@ const ManageCheckIns = () => {
                 >
                     <div className="relative z-10 flex justify-between items-start">
                         <div>
-                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${activeTab === 'departures' ? 'text-slate-200' : 'text-gray-400'}`}>Departures Today</p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${activeTab === 'departures' ? 'text-slate-200' : 'text-gray-400'}`}>
+                                {selectedDate === getTodayStr() ? 'Departures Today' : `Departures (${selectedDate})`}
+                            </p>
                             <h3 className="text-3xl font-extrabold tracking-tight">{stats.pendingDepartures} <span className="text-base opacity-60 font-medium">/ {stats.checkOutsToday}</span></h3>
                         </div>
                         <div className={`p-2.5 rounded-xl ${activeTab === 'departures' ? 'bg-white/20' : 'bg-slate-50 text-slate-500'}`}>
@@ -287,21 +293,31 @@ const ManageCheckIns = () => {
                 {/* Toolbar */}
                 <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/30">
                     <h2 className="text-xl font-bold flex items-center gap-3">
-                        {activeTab === 'arrivals' && <><FaSignInAlt className="text-[#D4AF37]" /> Arrivals Today</>}
-                        {activeTab === 'departures' && <><FaSignOutAlt className="text-slate-600" /> Departures Today</>}
+                        {activeTab === 'arrivals' && <><FaSignInAlt className="text-[#D4AF37]" /> Arrivals ({selectedDate === getTodayStr() ? 'Today' : selectedDate})</>}
+                        {activeTab === 'departures' && <><FaSignOutAlt className="text-slate-600" /> Departures ({selectedDate === getTodayStr() ? 'Today' : selectedDate})</>}
                         {activeTab === 'in-house' && <><FaUserCheck className="text-emerald-600" /> Active Guests</>}
                         <span className="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-500 font-bold">{allFilteredData.length} Records</span>
                     </h2>
 
-                    <div className="relative w-full md:w-96 group">
-                        <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-[#D4AF37] transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Search guest, room number, or ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10 transition-all font-medium"
-                        />
+                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
+                        <div className="relative w-full md:w-72 group">
+                            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-[#D4AF37] transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Search guest, room..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10 transition-all font-medium text-xs"
+                            />
+                        </div>
+                        <div className="relative w-full sm:w-auto">
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="w-full sm:w-auto px-4 py-2.5 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10 transition-all font-bold text-gray-700 text-xs cursor-pointer"
+                            />
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-4">

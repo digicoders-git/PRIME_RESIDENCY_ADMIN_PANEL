@@ -17,7 +17,7 @@ const RoomDetail = () => {
 
     const fetchRoomDetails = async () => {
         try {
-            const { data } = await api.get(`/rooms/by-number/${id}`);
+            const { data } = await api.get(`/rooms/${id}`);
             if (data.success) {
                 const r = data.data;
                 // console.log('Room data from API:', r); // Debug log

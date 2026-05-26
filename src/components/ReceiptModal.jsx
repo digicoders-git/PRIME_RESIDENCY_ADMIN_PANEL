@@ -47,12 +47,19 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
     let pricePerDay = booking.roomDetails?.numericPrice || Math.round(booking.amount / (booking.nights || 1));
     let cgst = 0;
     let sgst = 0;
+    let igst = 0;
+    
+    const gstType = booking.gstType || 'CGST+SGST';
     
     // Reverse calculate tax if total amount is > base amount
     if (booking.amount > pricePerDay * (booking.nights || 1)) {
         let taxTotal = booking.amount - (pricePerDay * (booking.nights || 1));
-        cgst = taxTotal / 2;
-        sgst = taxTotal / 2;
+        if (gstType === 'CGST+SGST') {
+            cgst = taxTotal / 2;
+            sgst = taxTotal / 2;
+        } else if (gstType === 'IGST') {
+            igst = taxTotal;
+        }
     } else {
         pricePerDay = Math.round(booking.amount / (booking.nights || 1));
     }
@@ -186,9 +193,9 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                     <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{booking.nights || 1}</td>
                                     <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{booking.extraBed ? '1' : ''}</td>
                                     <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>996311</td>
-                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>0</td>
-                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{cgst}</td>
-                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{sgst}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{igst > 0 ? igst.toFixed(2) : '0.00'}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{cgst > 0 ? cgst.toFixed(2) : '0.00'}</td>
+                                    <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{sgst > 0 ? sgst.toFixed(2) : '0.00'}</td>
                                     <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{pricePerDay.toFixed(2)}</td>
                                     <td style={{ borderLeft: '1px solid black', borderRight: '1px solid black', padding: '8px 4px' }}>{booking.amount.toFixed(2)}</td>
                                 </tr>

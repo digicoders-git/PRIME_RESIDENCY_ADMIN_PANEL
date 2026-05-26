@@ -134,9 +134,15 @@ const Bookings = () => {
     try {
       const { data } = await api.put(`/bookings/${id}`, { status: newStatus });
       if (data.success) {
+        const updated = {
+          ...data.data,
+          id: data.data._id,
+          bookingId: data.data._id.substring(data.data._id.length - 6).toUpperCase()
+        };
         setBookings(prev => prev.map(booking =>
-          booking.id === id ? { ...booking, status: newStatus } : booking
+          booking.id === id ? updated : booking
         ));
+        setSelectedBooking(prev => prev && prev.id === id ? updated : prev);
         toast.success(`Booking status updated to ${newStatus}`);
       }
     } catch (error) {

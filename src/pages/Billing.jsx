@@ -21,6 +21,50 @@ const Billing = () => {
         transactionRef: ''
     });
 
+    const [applyGST, setApplyGST] = useState(false);
+    const [gstRate, setGstRate] = useState(12);
+    const [baseAmount, setBaseAmount] = useState(0);
+    const [calculatedAmount, setCalculatedAmount] = useState(0);
+    const [calculatedBalance, setCalculatedBalance] = useState(0);
+
+    useEffect(() => {
+        if (selectedBooking) {
+            const currentTax = selectedBooking.taxGST || 0;
+            const isApplied = currentTax > 0;
+            setApplyGST(isApplied);
+            setGstRate(currentTax || 12);
+            
+            // Back-calculate the base amount without GST
+            const base = isApplied 
+                ? Math.round(selectedBooking.amount / (1 + currentTax / 100))
+                : selectedBooking.amount;
+            setBaseAmount(base);
+        }
+    }, [selectedBooking]);
+
+    useEffect(() => {
+        if (selectedBooking) {
+            const originalTaxApplied = (selectedBooking.taxGST || 0) > 0;
+            const currentTax = applyGST ? Number(gstRate) : 0;
+            
+            let newAmount = selectedBooking.amount;
+
+            // If toggle state or GST rate is different from the original booking, recalculate
+            if (applyGST !== originalTaxApplied || (applyGST && currentTax !== selectedBooking.taxGST)) {
+                newAmount = applyGST 
+                    ? Math.round(baseAmount * (1 + currentTax / 100))
+                    : baseAmount;
+            }
+
+            setCalculatedAmount(newAmount);
+
+            const foodTotal = (selectedBooking.foodOrders || []).reduce((sum, f) => sum + (f.amount || 0), 0);
+            const grandTotal = newAmount + foodTotal;
+            const newBalance = Math.max(0, grandTotal - selectedBooking.advance);
+            setCalculatedBalance(newBalance);
+        }
+    }, [applyGST, gstRate, baseAmount, selectedBooking]);
+
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('user') || '{}');
         setUser(userData);
@@ -66,6 +110,17 @@ const Billing = () => {
     const handlePaymentUpdate = async (e) => {
         e.preventDefault();
         try {
+            // 1. If GST or Amount changed, first save the updated booking details
+            const taxToSave = applyGST ? Number(gstRate) : 0;
+            if (taxToSave !== selectedBooking.taxGST || calculatedAmount !== selectedBooking.amount) {
+                await api.put(`/bookings/${selectedBooking._id}`, {
+                    amount: calculatedAmount,
+                    taxGST: taxToSave,
+                    balance: calculatedBalance
+                });
+            }
+
+            // 2. Then proceed with the payment update
             const { data } = await api.put(`/bookings/${selectedBooking._id}/payment`, paymentData);
             if (data.success) {
                 setBookings(prev => prev.map(b =>
@@ -362,30 +417,65 @@ const Billing = () => {
                         <h3 className="text-xl font-bold mb-4 text-slate-800">Update Payment</h3>
                         {selectedBooking && (() => {
                             const foodTotal = (selectedBooking.foodOrders || []).reduce((sum, f) => sum + (f.amount || 0), 0);
-                            const grandTotal = selectedBooking.amount + foodTotal;
+                            const grandTotal = calculatedAmount + foodTotal;
                             return (
-                            <div className="mb-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-sm text-slate-500">Room Amount:</span>
-                                    <span className="font-bold text-slate-800">₹{selectedBooking.amount}</span>
+                            <div className="mb-4 p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                                {/* GST Toggle and Options */}
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={applyGST}
+                                            onChange={(e) => setApplyGST(e.target.checked)}
+                                            className="w-4 h-4 text-[#D4AF37] focus:ring-[#D4AF37] border-slate-300 rounded cursor-pointer"
+                                        />
+                                        <span className="text-xs font-bold text-slate-700">Apply GST Tax</span>
+                                    </label>
+                                    {applyGST && (
+                                        <select
+                                            value={gstRate}
+                                            onChange={(e) => setGstRate(Number(e.target.value))}
+                                            className="p-1 px-2 text-[10px] border border-slate-200 rounded-lg focus:outline-none focus:border-[#D4AF37] font-bold text-slate-700 cursor-pointer"
+                                        >
+                                            <option value={5}>5% GST</option>
+                                            <option value={12}>12% GST</option>
+                                            <option value={18}>18% GST</option>
+                                            <option value={28}>28% GST</option>
+                                        </select>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Room Base Amount:</span>
+                                    <span className="font-bold text-slate-800">₹{baseAmount}</span>
+                                </div>
+                                {applyGST && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500">GST ({gstRate}%):</span>
+                                        <span className="font-bold text-[#D4AF37]">₹{Math.round(baseAmount * gstRate / 100)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Room Total:</span>
+                                    <span className="font-bold text-slate-800">₹{calculatedAmount}</span>
                                 </div>
                                 {foodTotal > 0 && (
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-sm text-slate-500">Food Amount:</span>
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500">Food Amount:</span>
                                         <span className="font-bold text-amber-600">₹{foodTotal}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-sm text-slate-500">Grand Total:</span>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Grand Total:</span>
                                     <span className="font-bold text-blue-600">₹{grandTotal}</span>
                                 </div>
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-sm text-slate-500">Already Paid:</span>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Already Paid:</span>
                                     <span className="font-bold text-emerald-600">₹{selectedBooking.advance}</span>
                                 </div>
-                                <div className="flex justify-between border-t border-slate-200 mt-2 pt-2">
-                                    <span className="text-sm font-bold text-slate-800">Remaining Due:</span>
-                                    <span className="font-bold text-rose-500">₹{selectedBooking.balance}</span>
+                                <div className="flex justify-between border-t border-slate-200 mt-2 pt-2 text-sm">
+                                    <span className="font-bold text-slate-800">Remaining Due:</span>
+                                    <span className="font-bold text-rose-500">₹{calculatedBalance}</span>
                                 </div>
                             </div>
                             );
@@ -401,7 +491,7 @@ const Billing = () => {
                                     className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4AF37]"
                                     placeholder="Enter amount received..."
                                     min={1}
-                                    max={selectedBooking?.balance}
+                                    max={calculatedBalance}
                                     required
                                 />
                                 <p className="text-[10px] text-slate-400 mt-1">Sirf abhi receive hua amount enter karein. Pehle ka amount automatically add ho jayega.</p>

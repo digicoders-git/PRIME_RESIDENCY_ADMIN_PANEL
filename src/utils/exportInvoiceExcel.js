@@ -111,18 +111,32 @@ export const exportFormattedInvoice = async (booking, amountInWords, cgst, sgst,
 
     // Data Row
     let pricePerDay = booking.roomDetails?.numericPrice || Math.round(booking.amount / (booking.nights || 1));
+    cgst = 0;
+    sgst = 0;
+    let igst = 0;
+    
+    const gstType = booking.gstType || 'CGST+SGST';
+    
+    // Reverse calculate tax if total amount is > base amount
     if (booking.amount > pricePerDay * (booking.nights || 1)) {
-        pricePerDay = Math.round(booking.amount / (booking.nights || 1)); 
-        // using the reverse calculated price from ReceiptModal logic
+        let taxTotal = booking.amount - (pricePerDay * (booking.nights || 1));
+        if (gstType === 'CGST+SGST') {
+            cgst = taxTotal / 2;
+            sgst = taxTotal / 2;
+        } else if (gstType === 'IGST') {
+            igst = taxTotal;
+        }
+    } else {
+        pricePerDay = Math.round(booking.amount / (booking.nights || 1));
     }
     const dataRow = worksheet.addRow([
         booking.room,
         booking.nights || 1,
         booking.extraBed ? '1' : '',
         '996311',
-        0,
-        cgst,
-        sgst,
+        igst > 0 ? igst.toFixed(2) : '0.00',
+        cgst > 0 ? cgst.toFixed(2) : '0.00',
+        sgst > 0 ? sgst.toFixed(2) : '0.00',
         pricePerDay.toFixed(2),
         booking.amount.toFixed(2)
     ]);
