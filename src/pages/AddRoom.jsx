@@ -573,38 +573,48 @@ const AddRoom = () => {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
-                  <input
-                    type="number"
-                    name="discount"
-                    value={formData.discount}
-                    onChange={(e) => {
-                      const newDiscount = e.target.value;
-
-                      setFormData(prev => {
-                        if (!prev.enableExtraCharges) {
-                          return { ...prev, discount: newDiscount };
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="discount"
+                      value={formData.discount}
+                      onChange={(e) => {
+                        let newDiscount = e.target.value;
+                        if (newDiscount !== '') {
+                          const numericValue = parseFloat(newDiscount);
+                          if (numericValue > 100) newDiscount = '100';
+                          if (numericValue < 0) newDiscount = '0';
                         }
 
-                        const discountVal = parseFloat(newDiscount) || 0;
-                        const priceVal = parseFloat(prev.pricePerNight) || 0;
-                        const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
-                        const taxVal = parseFloat(prev.taxGST) || 0;
+                        setFormData(prev => {
+                          if (!prev.enableExtraCharges) {
+                            return { ...prev, discount: newDiscount };
+                          }
 
-                        const subtotal = priceVal + extraBedVal;
-                        const afterDiscount = subtotal - (subtotal * discountVal / 100);
-                        const gstAmount = afterDiscount * taxVal / 100;
-                        const newTotalPrice = Math.round(afterDiscount + gstAmount);
+                          const discountVal = parseFloat(newDiscount) || 0;
+                          const priceVal = parseFloat(prev.pricePerNight) || 0;
+                          const extraBedVal = parseFloat(prev.extraBedPrice) || 0;
+                          const taxVal = parseFloat(prev.taxGST) || 0;
 
-                        return {
-                          ...prev,
-                          discount: newDiscount,
-                          totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
-                        };
-                      });
-                    }}
-                    placeholder="10"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                          const subtotal = priceVal + extraBedVal;
+                          const afterDiscount = subtotal - (subtotal * discountVal / 100);
+                          const gstAmount = afterDiscount * taxVal / 100;
+                          const newTotalPrice = Math.round(afterDiscount + gstAmount);
+
+                          return {
+                            ...prev,
+                            discount: newDiscount,
+                            totalPrice: newTotalPrice > 0 ? newTotalPrice.toString() : ''
+                          };
+                        });
+                      }}
+                      placeholder="0-100"
+                      className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                      <span className="text-gray-400 font-bold text-sm">%</span>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

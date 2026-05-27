@@ -205,6 +205,22 @@ const CreateBooking = () => {
             if (value.length > limit) return;
         }
 
+        if (name === 'discount') {
+            if (value === '') {
+                setFormData(prev => ({ ...prev, [name]: '' }));
+                return;
+            }
+            const numericValue = parseFloat(value);
+            if (numericValue > 100) {
+                setFormData(prev => ({ ...prev, [name]: '100' }));
+                return;
+            }
+            if (numericValue < 0) {
+                setFormData(prev => ({ ...prev, [name]: '0' }));
+                return;
+            }
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -806,15 +822,21 @@ const CreateBooking = () => {
                                     <div className="space-y-3">
                                         <div>
                                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">Discount (%)</label>
-                                            <input
-                                                type="number"
-                                                name="discount"
-                                                value={formData.discount}
-                                                onChange={handleInputChange}
-                                                min="0"
-                                                max="100"
-                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-sm"
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    name="discount"
+                                                    value={formData.discount}
+                                                    onChange={handleInputChange}
+                                                    min="0"
+                                                    max="100"
+                                                    placeholder="0-100"
+                                                    className="w-full pl-3 pr-8 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-sm"
+                                                />
+                                                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                                                    <span className="text-gray-400 font-bold text-xs">%</span>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div>

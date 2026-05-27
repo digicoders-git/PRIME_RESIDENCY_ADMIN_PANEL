@@ -978,12 +978,26 @@ const Bookings = () => {
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Discount (%)</label>
-                    <input
-                      type="number"
-                      value={editBillData.discount}
-                      onChange={(e) => setEditBillData({ ...editBillData, discount: e.target.value })}
-                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={editBillData.discount}
+                        onChange={(e) => {
+                          let val = e.target.value;
+                          if (val !== '') {
+                            const numericValue = parseFloat(val);
+                            if (numericValue > 100) val = '100';
+                            if (numericValue < 0) val = '0';
+                          }
+                          setEditBillData({ ...editBillData, discount: val });
+                        }}
+                        placeholder="0-100"
+                        className="w-full pl-4 pr-10 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 font-bold"
+                      />
+                      <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                        <span className="text-gray-400 font-bold text-sm">%</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

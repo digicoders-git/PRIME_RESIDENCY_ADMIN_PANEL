@@ -595,33 +595,43 @@ const EditRoom = () => {
                             <>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
-                                    <input
-                                        type="number"
-                                        name="discount"
-                                        value={formData.discount}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setFormData(prev => {
-                                                if (!prev.enableExtraCharges) {
-                                                    return { ...prev, discount: val };
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            name="discount"
+                                            value={formData.discount}
+                                            onChange={(e) => {
+                                                let val = e.target.value;
+                                                if (val !== '') {
+                                                    const numericValue = parseFloat(val);
+                                                    if (numericValue > 100) val = '100';
+                                                    if (numericValue < 0) val = '0';
                                                 }
+                                                setFormData(prev => {
+                                                    if (!prev.enableExtraCharges) {
+                                                        return { ...prev, discount: val };
+                                                    }
 
-                                                const price = parseFloat(prev.pricePerNight) || 0;
-                                                const discount = parseFloat(val) || 0;
-                                                const tax = parseFloat(prev.taxGST) || 0;
-                                                const extraBed = parseFloat(prev.extraBedPrice) || 0;
+                                                    const price = parseFloat(prev.pricePerNight) || 0;
+                                                    const discount = parseFloat(val) || 0;
+                                                    const tax = parseFloat(prev.taxGST) || 0;
+                                                    const extraBed = parseFloat(prev.extraBedPrice) || 0;
 
-                                                const subtotal = price + extraBed;
-                                                const afterDiscount = subtotal - (subtotal * discount / 100);
-                                                const taxAmount = afterDiscount * tax / 100;
-                                                const final = Math.round(afterDiscount + taxAmount);
+                                                    const subtotal = price + extraBed;
+                                                    const afterDiscount = subtotal - (subtotal * discount / 100);
+                                                    const taxAmount = afterDiscount * tax / 100;
+                                                    const final = Math.round(afterDiscount + taxAmount);
 
-                                                return { ...prev, discount: val, offerPrice: final > 0 ? final.toString() : '' };
-                                            });
-                                        }}
-                                        placeholder="10"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    />
+                                                    return { ...prev, discount: val, offerPrice: final > 0 ? final.toString() : '' };
+                                                });
+                                            }}
+                                            placeholder="0-100"
+                                            className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        />
+                                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                            <span className="text-gray-400 font-bold text-sm">%</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
