@@ -576,9 +576,8 @@ const CreateBooking = () => {
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Email Address <span className="normal-case font-normal text-gray-400">(Optional)</span></label>
                                         <input
-                                            required
                                             type="email"
                                             name="email"
                                             value={formData.email}
