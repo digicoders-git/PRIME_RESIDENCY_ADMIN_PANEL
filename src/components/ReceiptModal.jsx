@@ -44,24 +44,35 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
         return `${datePart} ${timePart}`;
     };
 
-    let pricePerDay = booking.roomDetails?.numericPrice || Math.round(booking.amount / (booking.nights || 1));
+    const taxRate = booking.taxGST || 0;
+    const gstType = booking.gstType || 'CGST+SGST';
+    
+    let pricePerDay = 0;
     let cgst = 0;
     let sgst = 0;
     let igst = 0;
     
-    const gstType = booking.gstType || 'CGST+SGST';
-    
-    // Reverse calculate tax if total amount is > base amount
-    if (booking.amount > pricePerDay * (booking.nights || 1)) {
-        let taxTotal = booking.amount - (pricePerDay * (booking.nights || 1));
+    if (taxRate > 0) {
+        const totalNights = booking.nights || 1;
+        
+        // Calculate total tax
+        const totalBase = booking.amount / (1 + (taxRate / 100));
+        const totalTax = booking.amount - totalBase;
+        
+        // Round tax amounts to 2 decimal places first
         if (gstType === 'CGST+SGST') {
-            cgst = taxTotal / 2;
-            sgst = taxTotal / 2;
+            cgst = Math.round((totalTax / 2) * 100) / 100;
+            sgst = Math.round((totalTax / 2) * 100) / 100;
         } else if (gstType === 'IGST') {
-            igst = taxTotal;
+            igst = Math.round(totalTax * 100) / 100;
         }
+        
+        // Calculate base price dynamically from the exact remaining amount to prevent 1-paisa mismatches
+        const baseAmount = booking.amount - (cgst + sgst + igst);
+        pricePerDay = baseAmount / totalNights;
     } else {
-        pricePerDay = Math.round(booking.amount / (booking.nights || 1));
+        // No tax: price per day is total amount divided by nights
+        pricePerDay = booking.amount / (booking.nights || 1);
     }
 
     const totalFoodAmount = (booking.foodOrders || []).reduce((sum, order) => sum + (order.amount || 0), 0);
@@ -146,8 +157,8 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                         <p style={{ margin: '2px 0' }}><strong>Name - </strong> {booking.guest?.toUpperCase()}</p>
                                         <p style={{ margin: '2px 0' }}><strong>Address - </strong> {booking.address ? booking.address.toUpperCase() : ''}</p>
                                         <p style={{ margin: '2px 0' }}><strong>Phone No - </strong> {booking.phone}</p>
-                                        <p style={{ margin: '2px 0' }}><strong>Email ID - </strong> {booking.email}</p>
-                                        <p style={{ margin: '2px 0' }}><strong>{booking.idType || 'Aadhar'} No - </strong> {booking.idNumber}</p>
+                                        {/* <p style={{ margin: '2px 0' }}><strong>Email ID - </strong> {booking.email}</p> */}
+                                        {/* <p style={{ margin: '2px 0' }}><strong>{booking.idType || 'Aadhar'} No - </strong> {booking.idNumber}</p> */}
                                     </td>
                                     <td colSpan="4" style={{ border: '1px solid black', padding: '10px', verticalAlign: 'top' }}>
                                         <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>

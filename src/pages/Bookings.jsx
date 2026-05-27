@@ -46,6 +46,7 @@ const Bookings = () => {
   const [editBillData, setEditBillData] = useState({ amount: '', discount: '', extraBedPrice: '', taxGST: '' });
   const [isEditCustomerModal, setIsEditCustomerModal] = useState(false);
   const [editCustomerData, setEditCustomerData] = useState({ guest: '', email: '', phone: '', idType: '', idNumber: '', adults: 1, children: 0, specialRequests: '', checkIn: '', checkOut: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [bookings, setBookings] = useState([]);
 
@@ -181,6 +182,7 @@ const Bookings = () => {
 
   const handlePaymentUpdate = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const { data } = await api.put(`/bookings/${selectedBooking.id}/payment`, paymentData);
       if (data.success) {
@@ -194,11 +196,14 @@ const Bookings = () => {
       }
     } catch (error) {
       toast.error('Failed to update payment');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleFinalPayment = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const paymentAmount = selectedBooking.balance;
       const { data } = await api.put(`/bookings/${selectedBooking.id}/payment`, {
@@ -216,6 +221,8 @@ const Bookings = () => {
       }
     } catch (error) {
       toast.error('Failed to process final payment');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -691,14 +698,16 @@ const Bookings = () => {
                 <div className="flex gap-3 pt-4">
                   <button
                     type="submit"
-                    className="flex-1 bg-[#D4AF37] text-white py-3 rounded-lg hover:bg-[#B8860B] font-medium"
+                    disabled={isSubmitting}
+                    className={`flex-1 bg-[#D4AF37] text-white py-3 rounded-lg hover:bg-[#B8860B] font-medium ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    Update Payment
+                    {isSubmitting ? 'Updating...' : 'Update Payment'}
                   </button>
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() => setShowPaymentModal(false)}
-                    className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 font-medium"
+                    className={`flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 font-medium ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     Cancel
                   </button>
@@ -874,14 +883,16 @@ const Bookings = () => {
                 <div className="flex gap-4 pt-4">
                   <button
                     type="submit"
-                    className="flex-1 bg-emerald-500 text-white py-4 rounded-2xl hover:bg-emerald-600 font-bold transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+                    disabled={isSubmitting}
+                    className={`flex-1 bg-emerald-500 text-white py-4 rounded-2xl hover:bg-emerald-600 font-bold transition-all shadow-lg shadow-emerald-500/20 cursor-pointer ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    Complete Payment
+                    {isSubmitting ? 'Completing...' : 'Complete Payment'}
                   </button>
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() => setShowFinalPayModal(false)}
-                    className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer"
+                    className={`flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl hover:bg-gray-200 font-bold transition-all cursor-pointer ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     Cancel
                   </button>

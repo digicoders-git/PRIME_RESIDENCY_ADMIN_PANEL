@@ -110,24 +110,35 @@ export const exportFormattedInvoice = async (booking, amountInWords, cgst, sgst,
     });
 
     // Data Row
-    let pricePerDay = booking.roomDetails?.numericPrice || Math.round(booking.amount / (booking.nights || 1));
+    const taxRate = booking.taxGST || 0;
+    const gstType = booking.gstType || 'CGST+SGST';
+    
+    let pricePerDay = 0;
     cgst = 0;
     sgst = 0;
     let igst = 0;
     
-    const gstType = booking.gstType || 'CGST+SGST';
-    
-    // Reverse calculate tax if total amount is > base amount
-    if (booking.amount > pricePerDay * (booking.nights || 1)) {
-        let taxTotal = booking.amount - (pricePerDay * (booking.nights || 1));
+    if (taxRate > 0) {
+        const totalNights = booking.nights || 1;
+        
+        // Calculate total tax
+        const totalBase = booking.amount / (1 + (taxRate / 100));
+        const totalTax = booking.amount - totalBase;
+        
+        // Round tax amounts to 2 decimal places first
         if (gstType === 'CGST+SGST') {
-            cgst = taxTotal / 2;
-            sgst = taxTotal / 2;
+            cgst = Math.round((totalTax / 2) * 100) / 100;
+            sgst = Math.round((totalTax / 2) * 100) / 100;
         } else if (gstType === 'IGST') {
-            igst = taxTotal;
+            igst = Math.round(totalTax * 100) / 100;
         }
+        
+        // Calculate base price dynamically from the exact remaining amount to prevent 1-paisa mismatches
+        const baseAmount = booking.amount - (cgst + sgst + igst);
+        pricePerDay = baseAmount / totalNights;
     } else {
-        pricePerDay = Math.round(booking.amount / (booking.nights || 1));
+        // No tax: price per day is total amount divided by nights
+        pricePerDay = booking.amount / (booking.nights || 1);
     }
     const dataRow = worksheet.addRow([
         booking.room,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaFileInvoiceDollar, FaSearch, FaPrint, FaEye, FaMoneyBillWave, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import api from '../api/api';
 
 const Billing = () => {
@@ -12,6 +13,7 @@ const Billing = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [user, setUser] = useState({ role: 'Admin', property: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -109,6 +111,7 @@ const Billing = () => {
 
     const handlePaymentUpdate = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             // 1. If GST or Amount changed, first save the updated booking details
             const taxToSave = applyGST ? Number(gstRate) : 0;
@@ -128,11 +131,13 @@ const Billing = () => {
                 ));
                 setShowPaymentModal(false);
                 setPaymentData({ advance: '', paymentMethod: 'Cash', transactionRef: '' });
-                alert('Payment updated successfully!');
+                toast.success('Payment updated successfully!');
             }
         } catch (error) {
             console.error('Payment update error:', error);
-            alert('Failed to update payment');
+            toast.error('Failed to update payment');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -550,17 +555,19 @@ const Billing = () => {
                                     />
                                 </div>
                             )}
-                            <div className="flex gap-3 pt-4">
+                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="submit"
-                                    className="flex-1 bg-[#D4AF37] text-white py-3 rounded-xl hover:bg-[#B8860B] font-bold shadow-lg shadow-yellow-500/20 transition-all"
+                                    disabled={isSubmitting}
+                                    className={`flex-1 bg-[#D4AF37] text-white py-3 rounded-xl hover:bg-[#B8860B] font-bold shadow-lg shadow-yellow-500/20 transition-all ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    Update Payment
+                                    {isSubmitting ? 'Updating...' : 'Update Payment'}
                                 </button>
                                 <button
                                     type="button"
+                                    disabled={isSubmitting}
                                     onClick={() => setShowPaymentModal(false)}
-                                    className="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl hover:bg-slate-200 font-bold transition-all"
+                                    className={`flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl hover:bg-slate-200 font-bold transition-all ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     Cancel
                                 </button>
