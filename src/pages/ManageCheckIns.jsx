@@ -196,7 +196,9 @@ const ManageCheckIns = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    const checkOutDateTime = new Date(result.value).toISOString();
+                    // datetime-local gives "YYYY-MM-DDTHH:MM" in local time (IST)
+                    // Append IST offset so backend stores correct time
+                    const checkOutDateTime = result.value + ':00+05:30';
                     const { data } = await api.put(`/bookings/${id}`, {
                         status: 'Checked-out',
                         checkOut: checkOutDateTime

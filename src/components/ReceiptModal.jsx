@@ -35,14 +35,25 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
     const formatDateTime = (dateString) => {
         if (!dateString) return '';
         const d = new Date(dateString);
-        const datePart = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-        let hours = d.getHours();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; 
-        const timePart = `${String(hours).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${ampm}`;
-        return `${datePart} ${timePart}`;
+        // Always display in IST (Asia/Kolkata) regardless of server timezone
+        const options = {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        };
+        const parts = new Intl.DateTimeFormat('en-IN', options).formatToParts(d);
+        const get = (type) => parts.find(p => p.type === type)?.value || '';
+        const datePart = `${get('day')}-${get('month')}-${get('year')}`;
+        const hour = get('hour');
+        const minute = get('minute');
+        const dayPeriod = get('dayPeriod').toUpperCase();
+        return `${datePart} ${hour}:${minute} ${dayPeriod}`;
     };
+
 
     const taxRate = booking.taxGST || 0;
     const gstType = booking.gstType || 'CGST+SGST';
@@ -169,7 +180,7 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                                 </tr>
                                                 <tr>
                                                     <td style={{ padding: '2px 0' }}>Invoice Date</td>
-                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {formatDateTime(new Date())}</td>
+                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {formatDateTime(booking.createdAt || booking.checkIn)}</td>
                                                 </tr>
                                                 <tr><td colSpan="2" style={{ padding: '4px 0' }}></td></tr>
                                                 <tr>
