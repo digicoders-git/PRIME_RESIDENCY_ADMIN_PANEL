@@ -113,26 +113,96 @@ const ManageCheckIns = () => {
         }
     }, [selectedDate, bookings]);
 
-    const handleStatusUpdate = async (id, newStatus, guestName) => {
+    const handleStatusUpdate = async (id, newStatus, guestName, booking) => {
+        // Check-in: simple confirm dialog
+        if (newStatus === 'Checked-in') {
+            Swal.fire({
+                title: `<span class="text-[#D4AF37]">Check In Guest</span>`,
+                html: `Proceed with <b>Check-in</b> for <br/><span class="text-xl font-bold">${guestName}</span>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#D4AF37',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Check In',
+                background: '#fff',
+                customClass: { popup: 'rounded-2xl', title: 'font-serif' }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const { data } = await api.put(`/bookings/${id}`, { status: 'Checked-in' });
+                        if (data.success) {
+                            toast.success(`${guestName} checked in successfully!`);
+                            fetchData();
+                        }
+                    } catch (error) {
+                        toast.error('Failed to update status');
+                    }
+                }
+            });
+            return;
+        }
+
+        // Check-out: show date/time picker
+        const now = new Date();
+        // Format to datetime-local value: YYYY-MM-DDTHH:MM
+        const pad = (n) => String(n).padStart(2, '0');
+        const defaultDateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
         Swal.fire({
-            title: `<span class="text-[#D4AF37]">${newStatus === 'Checked-in' ? 'Check In Guest' : 'Check Out Guest'}</span>`,
-            html: `Proceed with <b>${newStatus}</b> for <br/><span class="text-xl font-bold">${guestName}</span>?`,
+            title: `<span style="color:#D4AF37;font-family:serif;">Check Out Guest</span>`,
+            html: `
+                <div style="text-align:left;padding:4px 0;">
+                    <p style="font-size:15px;margin-bottom:16px;">Guest: <strong>${guestName}</strong></p>
+                    <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">
+                        Check-Out Date &amp; Time
+                    </label>
+                    <input
+                        id="swal-checkout-datetime"
+                        type="datetime-local"
+                        value="${defaultDateTime}"
+                        style="
+                            width:100%;
+                            padding:10px 14px;
+                            border:2px solid #e5e7eb;
+                            border-radius:10px;
+                            font-size:14px;
+                            font-weight:600;
+                            color:#1f2937;
+                            outline:none;
+                            box-sizing:border-box;
+                        "
+                        onfocus="this.style.borderColor='#D4AF37'"
+                        onblur="this.style.borderColor='#e5e7eb'"
+                    />
+                    <p style="font-size:11px;color:#9ca3af;margin-top:8px;">Default: current date &amp; time. Change if guest checked out earlier/later.</p>
+                </div>
+            `,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#D4AF37',
+            confirmButtonColor: '#475569',
             cancelButtonColor: '#d33',
-            confirmButtonText: newStatus === 'Checked-in' ? 'Yes, Check In' : 'Yes, Check Out',
+            confirmButtonText: '✓ Confirm Check Out',
+            cancelButtonText: 'Cancel',
             background: '#fff',
-            customClass: {
-                popup: 'rounded-2xl',
-                title: 'font-serif'
+            customClass: { popup: 'rounded-2xl', title: 'font-serif' },
+            preConfirm: () => {
+                const val = document.getElementById('swal-checkout-datetime').value;
+                if (!val) {
+                    Swal.showValidationMessage('Please select a checkout date & time');
+                    return false;
+                }
+                return val;
             }
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    const { data } = await api.put(`/bookings/${id}`, { status: newStatus });
+                    const checkOutDateTime = new Date(result.value).toISOString();
+                    const { data } = await api.put(`/bookings/${id}`, {
+                        status: 'Checked-out',
+                        checkOut: checkOutDateTime
+                    });
                     if (data.success) {
-                        toast.success(`${guestName} has been ${newStatus.toLowerCase()} successfully!`);
+                        toast.success(`${guestName} checked out successfully!`);
                         fetchData();
                     }
                 } catch (error) {
