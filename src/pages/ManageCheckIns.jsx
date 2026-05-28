@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaCalendarCheck, FaSignOutAlt, FaSignInAlt, FaUserCheck,
     FaClock, FaPhone, FaBed, FaCheckCircle, FaSpinner,
-    FaSearch, FaFilter, FaMoneyBillWave, FaConciergeBell, FaFileInvoiceDollar, FaChevronLeft, FaChevronRight
+    FaSearch, FaFilter, FaMoneyBillWave, FaConciergeBell, FaFileInvoiceDollar, FaChevronLeft, FaChevronRight, FaUtensils
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
@@ -444,6 +444,15 @@ const ManageCheckIns = () => {
                                                 >
                                                     <FaFileInvoiceDollar size={14} />
                                                 </Link>
+                                                {booking.status === 'Checked-in' && (
+                                                    <Link
+                                                        to="/create-order"
+                                                        title="Order Food"
+                                                        className="p-2.5 bg-orange-50 border border-orange-200 rounded-xl text-orange-400 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-100 shadow-sm transition-all"
+                                                    >
+                                                        <FaUtensils size={14} />
+                                                    </Link>
+                                                )}
                                                 {booking.status !== 'Cancelled' && (
                                                     <button
                                                         onClick={() => {

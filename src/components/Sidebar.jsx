@@ -74,7 +74,7 @@ const Sidebar = ({ isOpen, setIsAuthenticated }) => {
     { name: 'Check-in/Out', path: '/manage-checkins', icon: FaClipboardCheck, permission: 'checkInOut' },
     { name: 'Billing', path: '/billing', icon: FaFileInvoiceDollar, permission: 'billing' },
     { name: 'Revenue', path: '/revenue', icon: FaRupeeSign, permission: 'viewHistory' },
-    { name: 'Create Order', path: '/create-order', icon: FaPlusCircle, permission: 'manager' },
+    { name: 'Create Order', path: '/create-order', icon: FaPlusCircle, permission: null },
     { name: 'Food Stock', path: '/food-stock', icon: FaUtensils, permission: null },
     { name: 'Order History', path: '/order-history', icon: FaHistory, permission: null },
     { name: 'Managers', path: '/managers', icon: FaUserTie, permission: 'admin' },
