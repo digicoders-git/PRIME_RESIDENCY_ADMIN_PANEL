@@ -29,10 +29,16 @@ const FoodStock = () => {
     const [paymentMethod, setPaymentMethod] = useState('Cash');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
+    const [categories, setCategories] = useState([]);
+    const [categoryLoading, setCategoryLoading] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryProperty, setNewCategoryProperty] = useState('All');
+    const [categorySearchQuery, setCategorySearchQuery] = useState('');
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
-        category: 'Snacks',
+        category: '',
         price: '',
         stock: '',
         unit: 'piece',
@@ -54,8 +60,34 @@ const FoodStock = () => {
         if (propertyFilter) {
             fetchItems();
             fetchOrders();
+            fetchCategories();
         }
     }, [propertyFilter]);
+
+    const fetchCategories = async () => {
+        try {
+            setCategoryLoading(true);
+            const params = {};
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            if (userData.role === 'Manager' && userData.property) {
+                params.property = userData.property;
+            } else if (propertyFilter !== 'All') {
+                params.property = propertyFilter;
+            }
+            const { data } = await api.get('/food-items/categories', { params });
+            if (data.success) {
+                setCategories(data.data);
+                // Also default the category in formData if currently blank
+                if (data.data.length > 0 && !formData.category) {
+                    setFormData(prev => ({ ...prev, category: data.data[0].name }));
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch categories', error);
+        } finally {
+            setCategoryLoading(false);
+        }
+    };
 
     const fetchItems = async () => {
         try {
@@ -136,7 +168,7 @@ const FoodStock = () => {
     const resetForm = () => {
         setFormData({
             name: '',
-            category: 'Snacks',
+            category: categories[0]?.name || 'Other',
             price: '',
             stock: '',
             unit: 'piece',
@@ -144,6 +176,40 @@ const FoodStock = () => {
             description: ''
         });
         setEditItem(null);
+    };
+
+    const handleCategoryCreate = async (e) => {
+        if (e) e.preventDefault();
+        if (!newCategoryName.trim()) {
+            toast.error('Category name is required');
+            return;
+        }
+        try {
+            const { data } = await api.post('/food-items/categories', {
+                name: newCategoryName,
+                property: user.role === 'Manager' ? user.property : newCategoryProperty
+            });
+            if (data.success) {
+                toast.success('Category created successfully');
+                setNewCategoryName('');
+                fetchCategories();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to create category');
+        }
+    };
+
+    const handleCategoryDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this category?')) return;
+        try {
+            const { data } = await api.delete(`/food-items/categories/${id}`);
+            if (data.success) {
+                toast.success('Category deleted successfully');
+                fetchCategories();
+            }
+        } catch (error) {
+            toast.error('Failed to delete category');
+        }
     };
 
     const openEdit = (item) => {
@@ -411,120 +477,243 @@ const FoodStock = () => {
                 </div>
             </div>
 
-            <div className="flex gap-4 items-center">
-                {user.role === 'Admin' && (
-                    <div className="flex gap-2">
-                        {['All', 'Prime Residency', 'Prem Kunj'].map(p => (
-                            <button
-                                key={p}
-                                onClick={() => {
-                                    setPropertyFilter(p);
-                                    setCurrentPage(1);
-                                }}
-                                className={`px-4 py-2 rounded-lg font-bold ${propertyFilter === p ? 'bg-[#D4AF37] text-white' : 'bg-white border'}`}
-                            >
-                                {p}
-                            </button>
-                        ))}
-                    </div>
-                )}
+            {/* Tabs Layout */}
+            <div className="flex border-b border-gray-200">
+                <button
+                    onClick={() => setActiveTab('stock')}
+                    className={`px-6 py-3 font-bold text-sm transition-all border-b-2 -mb-px flex items-center gap-2 cursor-pointer ${
+                        activeTab === 'stock'
+                            ? 'border-[#D4AF37] text-[#D4AF37]'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                    <FaUtensils size={14} /> Food Items Stock
+                </button>
+                <button
+                    onClick={() => setActiveTab('categories')}
+                    className={`px-6 py-3 font-bold text-sm transition-all border-b-2 -mb-px flex items-center gap-2 cursor-pointer ${
+                        activeTab === 'categories'
+                            ? 'border-[#D4AF37] text-[#D4AF37]'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                    <FaClipboardList size={14} /> Categories
+                </button>
             </div>
 
             {activeTab === 'stock' && (
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Category</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Price</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Stock</th>
-                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Property</th>
-                                {user.role === 'Admin' && (
-                                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Actions</th>
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(item => (
-                                <tr key={item._id} className="hover:bg-gray-50">
-                                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                                    <td className="px-4 py-3">{item.category}</td>
-                                    <td className="px-4 py-3">₹{item.price}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`font-bold ${item.stock < 10 ? 'text-red-500' : 'text-green-500'}`}>
-                                            {item.stock} {item.unit}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">
-                                            {item.property}
-                                        </span>
-                                    </td>
+                <>
+                    <div className="flex gap-4 items-center">
+                        {user.role === 'Admin' && (
+                            <div className="flex gap-2">
+                                {['All', 'Prime Residency', 'Prem Kunj'].map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => {
+                                            setPropertyFilter(p);
+                                            setCurrentPage(1);
+                                        }}
+                                        className={`px-4 py-2 rounded-lg font-bold ${propertyFilter === p ? 'bg-[#D4AF37] text-white' : 'bg-white border'}`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Name</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Category</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Price</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Stock</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Property</th>
                                     {user.role === 'Admin' && (
-                                        <td className="px-4 py-3 text-center">
-                                            <button onClick={() => openEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded cursor-pointer">
-                                                <FaEdit />
-                                            </button>
-                                            <button onClick={() => handleDelete(item._id)} className="p-2 text-red-600 hover:bg-red-50 rounded cursor-pointer">
-                                                <FaTrash />
-                                            </button>
-                                        </td>
+                                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Actions</th>
                                     )}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y">
+                                {items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(item => (
+                                    <tr key={item._id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3 font-medium">{item.name}</td>
+                                        <td className="px-4 py-3">{item.category}</td>
+                                        <td className="px-4 py-3">₹{item.price}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`font-bold ${item.stock < 10 ? 'text-red-500' : 'text-green-500'}`}>
+                                                {item.stock} {item.unit}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">
+                                                {item.property}
+                                            </span>
+                                        </td>
+                                        {user.role === 'Admin' && (
+                                            <td className="px-4 py-3 text-center">
+                                                <button onClick={() => openEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded cursor-pointer">
+                                                    <FaEdit />
+                                                </button>
+                                                <button onClick={() => handleDelete(item._id)} className="p-2 text-red-600 hover:bg-red-50 rounded cursor-pointer">
+                                                    <FaTrash />
+                                                </button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {Math.ceil(items.length / itemsPerPage) > 1 && (
+                        <div className="flex justify-center mt-6">
+                            <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-lg transition-all disabled:opacity-30 cursor-pointer"
+                                >
+                                    <FaChevronLeft />
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    {[...Array(Math.ceil(items.length / itemsPerPage))].map((_, i) => {
+                                        const pageNum = i + 1;
+                                        const totalPages = Math.ceil(items.length / itemsPerPage);
+                                        if (
+                                            pageNum === 1 ||
+                                            pageNum === totalPages ||
+                                            (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                                        ) {
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() => setCurrentPage(pageNum)}
+                                                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${currentPage === pageNum
+                                                        ? 'bg-[#D4AF37] text-white shadow-md'
+                                                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                                            return <span key={pageNum} className="px-1 text-gray-300">...</span>;
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(items.length / itemsPerPage)))}
+                                    disabled={currentPage === Math.ceil(items.length / itemsPerPage)}
+                                    className="p-2 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-lg transition-all disabled:opacity-30 cursor-pointer"
+                                >
+                                    <FaChevronRight />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
-            {/* Pagination */}
-            {Math.ceil(items.length / itemsPerPage) > 1 && (
-                <div className="flex justify-center mt-6">
-                    <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="p-2 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-lg transition-all disabled:opacity-30 cursor-pointer"
-                        >
-                            <FaChevronLeft />
-                        </button>
+            {activeTab === 'categories' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Add Category Form */}
+                    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 h-fit">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <FaPlus className="text-[#D4AF37]" /> Add New Category
+                        </h3>
+                        <form onSubmit={handleCategoryCreate} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Category Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Starters, Dessert"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    className="w-full p-3 border rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm"
+                                    required
+                                />
+                            </div>
+                            
+                            {user.role === 'Admin' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Property</label>
+                                    <select
+                                        value={newCategoryProperty}
+                                        onChange={(e) => setNewCategoryProperty(e.target.value)}
+                                        className="w-full p-3 border rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm"
+                                    >
+                                        <option value="All">All Properties</option>
+                                        <option value="Prime Residency">Prime Residency</option>
+                                        <option value="Prem Kunj">Prem Kunj</option>
+                                    </select>
+                                </div>
+                            )}
 
-                        <div className="flex items-center gap-1">
-                            {[...Array(Math.ceil(items.length / itemsPerPage))].map((_, i) => {
-                                const pageNum = i + 1;
-                                const totalPages = Math.ceil(items.length / itemsPerPage);
-                                if (
-                                    pageNum === 1 ||
-                                    pageNum === totalPages ||
-                                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                                ) {
-                                    return (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${currentPage === pageNum
-                                                ? 'bg-[#D4AF37] text-white shadow-md'
-                                                : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    );
-                                } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                                    return <span key={pageNum} className="px-1 text-gray-300">...</span>;
-                                }
-                                return null;
-                            })}
+                            <button
+                                type="submit"
+                                className="w-full py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#B8860B] transition-colors cursor-pointer text-sm"
+                            >
+                                Create Category
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Categories List */}
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden md:col-span-2 border border-gray-100">
+                        <div className="p-4 bg-gray-50 border-b border-gray-200">
+                            <h3 className="text-lg font-bold text-gray-900">All Categories</h3>
                         </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(items.length / itemsPerPage)))}
-                            disabled={currentPage === Math.ceil(items.length / itemsPerPage)}
-                            className="p-2 text-gray-400 hover:text-[#D4AF37] hover:bg-gray-50 rounded-lg transition-all disabled:opacity-30 cursor-pointer"
-                        >
-                            <FaChevronRight />
-                        </button>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Category Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Property Scope</th>
+                                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {categories.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="3" className="px-6 py-8 text-center text-gray-400">
+                                                No categories found. Let's create one!
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        categories.map(cat => (
+                                            <tr key={cat._id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 font-semibold text-gray-900 text-sm">{cat.name}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500">
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                        cat.property === 'All' 
+                                                            ? 'bg-blue-50 text-blue-700 border border-blue-100' 
+                                                            : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                                    }`}>
+                                                        {cat.property === 'All' ? 'Global (All)' : cat.property}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button
+                                                        onClick={() => handleCategoryDelete(cat._id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
+                                                        title="Delete Category"
+                                                    >
+                                                        <FaTrash size={14} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
@@ -541,18 +730,92 @@ const FoodStock = () => {
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="w-full p-3 border rounded-xl"
                             />
-                            <select
-                                value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className="w-full p-3 border rounded-xl"
-                            >
-                                <option value="Breakfast">Breakfast</option>
-                                <option value="Lunch">Lunch</option>
-                                <option value="Dinner">Dinner</option>
-                                <option value="Snacks">Snacks</option>
-                                <option value="Beverages">Beverages</option>
-                                <option value="Other">Other</option>
-                            </select>
+                            {/* Dynamic Searchable Category Selector */}
+                            <div className="relative">
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                        className="w-full p-3 border rounded-xl text-left bg-white focus:outline-none focus:border-[#D4AF37] flex justify-between items-center text-sm font-semibold text-gray-700"
+                                    >
+                                        <span>
+                                            {formData.category ? `Category: ${formData.category}` : 'Select Category'}
+                                        </span>
+                                        <span className="text-gray-400 text-xs">{isCategoryDropdownOpen ? '▲' : '▼'}</span>
+                                    </button>
+
+                                    {isCategoryDropdownOpen && (
+                                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                                            {/* Search box inside dropdown */}
+                                            <div className="p-2 border-b border-gray-100 bg-gray-50">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search or type to add category..."
+                                                    value={categorySearchQuery}
+                                                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#D4AF37] text-xs bg-white"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            </div>
+
+                                            {/* Dynamic Categories List */}
+                                            <div className="max-h-40 overflow-y-auto">
+                                                {categories.filter(cat => cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())).length === 0 ? (
+                                                    <div className="px-4 py-2 text-xs text-gray-400 text-center">
+                                                        No matches found
+                                                    </div>
+                                                ) : (
+                                                    categories
+                                                        .filter(cat => cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+                                                        .map(cat => (
+                                                            <button
+                                                                key={cat._id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setFormData(prev => ({ ...prev, category: cat.name }));
+                                                                    setIsCategoryDropdownOpen(false);
+                                                                    setCategorySearchQuery('');
+                                                                }}
+                                                                className={`w-full px-4 py-2.5 text-left text-xs font-bold transition-all hover:bg-amber-50 hover:text-[#D4AF37] ${
+                                                                    formData.category === cat.name ? 'bg-amber-50 text-[#D4AF37]' : 'text-gray-600'
+                                                                }`}
+                                                            >
+                                                                {cat.name}
+                                                            </button>
+                                                        ))
+                                                )}
+
+                                                {/* Inline creation option */}
+                                                {categorySearchQuery.trim() && !categories.some(cat => cat.name.toLowerCase() === categorySearchQuery.toLowerCase().trim()) && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            try {
+                                                                const { data } = await api.post('/food-items/categories', {
+                                                                    name: categorySearchQuery.trim(),
+                                                                    property: formData.property || 'All'
+                                                                });
+                                                                if (data.success) {
+                                                                    toast.success(`Category "${categorySearchQuery}" created!`);
+                                                                    setFormData(prev => ({ ...prev, category: data.data.name }));
+                                                                    fetchCategories();
+                                                                    setIsCategoryDropdownOpen(false);
+                                                                    setCategorySearchQuery('');
+                                                                }
+                                                            } catch (err) {
+                                                                toast.error(err.response?.data?.message || 'Failed to create category');
+                                                            }
+                                                        }}
+                                                        className="w-full px-4 py-2.5 text-left text-xs font-black text-blue-600 bg-blue-50 hover:bg-blue-100 flex items-center gap-1.5 border-t border-blue-100 cursor-pointer"
+                                                    >
+                                                        <FaPlus size={10} /> Add "{categorySearchQuery.trim()}" Category
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <input
                                     required

@@ -21,6 +21,7 @@ const CreateOrder = () => {
     const [roomFilter, setRoomFilter] = useState('All');
     const [paymentMethod, setPaymentMethod] = useState('Cash');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [categories, setCategories] = useState([]);
 
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -28,7 +29,20 @@ const CreateOrder = () => {
         fetchAvailableRooms(userData.property);
         fetchFoodItems(userData.property);
         fetchRecentOrders(userData.property);
+        fetchCategories(userData.property);
     }, []);
+
+    const fetchCategories = async (property) => {
+        try {
+            const params = property ? { property } : {};
+            const { data } = await api.get('/food-items/categories', { params });
+            if (data.success) {
+                setCategories(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch categories', error);
+        }
+    };
 
     // Close selector on outside click
     useEffect(() => {
@@ -108,13 +122,36 @@ const CreateOrder = () => {
         setOrderItems(updated);
     };
 
-    const FOOD_CATEGORIES = ['All', 'Snacks', 'Beverages', 'Other'];
+    const FOOD_CATEGORIES = ['All', ...new Set(categories.map(c => c.name))];
 
-    const CATEGORY_COLORS = {
-        All: { bg: 'bg-gray-700', text: 'text-white', border: 'border-gray-700', lightBg: 'bg-gray-100', lightText: 'text-gray-700' },
-        Snacks: { bg: 'bg-yellow-500', text: 'text-white', border: 'border-yellow-500', lightBg: 'bg-yellow-50', lightText: 'text-yellow-700' },
-        Beverages: { bg: 'bg-cyan-500', text: 'text-white', border: 'border-cyan-500', lightBg: 'bg-cyan-50', lightText: 'text-cyan-700' },
-        Other: { bg: 'bg-purple-500', text: 'text-white', border: 'border-purple-500', lightBg: 'bg-purple-50', lightText: 'text-purple-700' },
+    const getCategoryColors = (cat) => {
+        const colors = {
+            All: { bg: 'bg-gray-700', text: 'text-white', border: 'border-gray-700', lightBg: 'bg-gray-100', lightText: 'text-gray-700' },
+            Snacks: { bg: 'bg-yellow-500', text: 'text-white', border: 'border-yellow-500', lightBg: 'bg-yellow-50', lightText: 'text-yellow-700' },
+            Beverages: { bg: 'bg-cyan-500', text: 'text-white', border: 'border-cyan-500', lightBg: 'bg-cyan-50', lightText: 'text-cyan-700' },
+            Other: { bg: 'bg-purple-500', text: 'text-white', border: 'border-purple-500', lightBg: 'bg-purple-50', lightText: 'text-purple-700' },
+            Breakfast: { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-500', lightBg: 'bg-orange-50', lightText: 'text-orange-700' },
+            Lunch: { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500', lightBg: 'bg-emerald-50', lightText: 'text-emerald-700' },
+            Dinner: { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500', lightBg: 'bg-indigo-50', lightText: 'text-indigo-700' }
+        };
+        
+        if (colors[cat]) return colors[cat];
+
+        const customPalettes = [
+            { bg: 'bg-rose-500', text: 'text-white', border: 'border-rose-500', lightBg: 'bg-rose-50', lightText: 'text-rose-700' },
+            { bg: 'bg-amber-600', text: 'text-white', border: 'border-amber-600', lightBg: 'bg-amber-50', lightText: 'text-amber-700' },
+            { bg: 'bg-teal-500', text: 'text-white', border: 'border-teal-500', lightBg: 'bg-teal-50', lightText: 'text-teal-700' },
+            { bg: 'bg-pink-500', text: 'text-white', border: 'border-pink-500', lightBg: 'bg-pink-50', lightText: 'text-pink-700' },
+            { bg: 'bg-lime-600', text: 'text-white', border: 'border-lime-600', lightBg: 'bg-lime-50', lightText: 'text-lime-700' }
+        ];
+
+        let hash = 0;
+        const str = cat || 'Other';
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const index = Math.abs(hash) % customPalettes.length;
+        return customPalettes[index];
     };
 
     const getFilteredFoodItems = () => {
@@ -493,7 +530,7 @@ const CreateOrder = () => {
                                 <div className="space-y-3">
                                     {orderItems.map((item, index) => {
                                         const selectedFood = foodItems.find(f => f._id === item.foodItemId);
-                                        const catColor = selectedFood ? CATEGORY_COLORS[selectedFood.category] || CATEGORY_COLORS['Other'] : null;
+                                        const catColor = selectedFood ? getCategoryColors(selectedFood.category) : null;
                                         return (
                                             <div key={index} className="flex flex-col gap-2">
                                                 {/* Trigger Button */}
@@ -581,7 +618,7 @@ const CreateOrder = () => {
                                                                 {FOOD_CATEGORIES.map(cat => {
                                                                     const catItems = cat === 'All' ? foodItems : foodItems.filter(f => f.category === cat);
                                                                     const isActive = selectedCategory === cat;
-                                                                    const color = CATEGORY_COLORS[cat];
+                                                                    const color = getCategoryColors(cat);
                                                                     return (
                                                                         <button
                                                                             key={cat}
@@ -613,7 +650,7 @@ const CreateOrder = () => {
                                                                     <div className="grid grid-cols-1 gap-1">
                                                                         {getFilteredFoodItems().map(food => {
                                                                             const isSelected = item.foodItemId === food._id;
-                                                                            const fColor = CATEGORY_COLORS[food.category] || CATEGORY_COLORS['Other'];
+                                                                            const fColor = getCategoryColors(food.category);
                                                                             return (
                                                                                 <button
                                                                                     key={food._id}
