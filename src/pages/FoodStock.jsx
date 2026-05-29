@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaUtensils, FaPlus, FaEdit, FaTrash, FaBuilding, FaClipboardList, FaFileInvoice, FaEye, FaPrint, FaMoneyBillWave, FaCreditCard, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaUtensils, FaPlus, FaEdit, FaTrash, FaBuilding, FaClipboardList, FaFileInvoice, FaEye, FaPrint, FaMoneyBillWave, FaCreditCard, FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../api/api';
 import { loadRazorpayScript, createRazorpayOrder } from '../utils/payment';
