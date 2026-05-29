@@ -153,28 +153,23 @@ const Bookings = () => {
 
   const handleDelete = (id, guest) => {
     Swal.fire({
-      title: 'Cancel Booking?',
-      text: `Cancel booking for ${guest}?`,
+      title: 'Delete Booking?',
+      text: `Are you sure you want to delete the booking for ${guest}? This action cannot be undone.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#D4AF37',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, cancel it!'
+      confirmButtonText: 'Yes, delete it!'
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          // Instead of hard delete, maybe just update status to Cancelled?
-          // But our route has a DELETE endpoint. Let's use it or status update.
-          // For now, let's update status to Cancelled via API.
-          const { data } = await api.put(`/bookings/${id}`, { status: 'Cancelled' });
+          const { data } = await api.delete(`/bookings/${id}`);
           if (data.success) {
-            setBookings(prev => prev.map(booking =>
-              booking.id === id ? { ...booking, status: 'Cancelled' } : booking
-            ));
-            toast.success('Booking cancelled successfully!');
+            setBookings(prev => prev.filter(booking => booking.id !== id));
+            toast.success('Booking deleted successfully!');
           }
         } catch (error) {
-          toast.error('Failed to cancel booking');
+          toast.error(error.response?.data?.message || 'Failed to delete booking');
         }
       }
     });
