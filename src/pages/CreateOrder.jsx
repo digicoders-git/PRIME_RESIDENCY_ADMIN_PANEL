@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FaPlus, FaTrash, FaUtensils, FaCheckCircle, FaFilter, FaMoneyBillWave, FaClipboardList, FaCreditCard } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaPlus, FaTrash, FaUtensils, FaCheckCircle, FaFilter, FaMoneyBillWave, FaClipboardList, FaCreditCard, FaSearch, FaTimes, FaTag } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../api/api';
 import { loadRazorpayScript, createRazorpayOrder } from '../utils/payment';
@@ -10,6 +10,10 @@ const CreateOrder = () => {
     const [foodItems, setFoodItems] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState('');
     const [orderItems, setOrderItems] = useState([{ foodItemId: '', quantity: '' }]);
+    const [openSelectorIndex, setOpenSelectorIndex] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const selectorRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState({ property: '' });
     const [recentOrders, setRecentOrders] = useState([]);
@@ -24,6 +28,19 @@ const CreateOrder = () => {
         fetchAvailableRooms(userData.property);
         fetchFoodItems(userData.property);
         fetchRecentOrders(userData.property);
+    }, []);
+
+    // Close selector on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (selectorRef.current && !selectorRef.current.contains(e.target)) {
+                setOpenSelectorIndex(null);
+                setSearchQuery('');
+                setSelectedCategory('All');
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const fetchAvailableRooms = async (property) => {
@@ -89,6 +106,39 @@ const CreateOrder = () => {
         const updated = [...orderItems];
         updated[index][field] = value;
         setOrderItems(updated);
+    };
+
+    const FOOD_CATEGORIES = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Beverages', 'Other'];
+
+    const CATEGORY_COLORS = {
+        All: { bg: 'bg-gray-700', text: 'text-white', border: 'border-gray-700', lightBg: 'bg-gray-100', lightText: 'text-gray-700' },
+        Breakfast: { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-500', lightBg: 'bg-orange-50', lightText: 'text-orange-700' },
+        Lunch: { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500', lightBg: 'bg-emerald-50', lightText: 'text-emerald-700' },
+        Dinner: { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500', lightBg: 'bg-indigo-50', lightText: 'text-indigo-700' },
+        Snacks: { bg: 'bg-yellow-500', text: 'text-white', border: 'border-yellow-500', lightBg: 'bg-yellow-50', lightText: 'text-yellow-700' },
+        Beverages: { bg: 'bg-cyan-500', text: 'text-white', border: 'border-cyan-500', lightBg: 'bg-cyan-50', lightText: 'text-cyan-700' },
+        Other: { bg: 'bg-purple-500', text: 'text-white', border: 'border-purple-500', lightBg: 'bg-purple-50', lightText: 'text-purple-700' },
+    };
+
+    const getFilteredFoodItems = () => {
+        return foodItems.filter(food => {
+            const matchesCategory = selectedCategory === 'All' || food.category === selectedCategory;
+            const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesCategory && matchesSearch;
+        });
+    };
+
+    const handleSelectFoodItem = (index, food) => {
+        updateOrderItem(index, 'foodItemId', food._id);
+        setOpenSelectorIndex(null);
+        setSearchQuery('');
+        setSelectedCategory('All');
+    };
+
+    const openSelector = (index) => {
+        setOpenSelectorIndex(index);
+        setSearchQuery('');
+        setSelectedCategory('All');
     };
 
     const calculateTotal = () => {
@@ -433,49 +483,178 @@ const CreateOrder = () => {
                                 </select>
                             </div>
 
-                            <div>
+                            <div ref={selectorRef}>
                                 <div className="flex justify-between items-center mb-3">
                                     <label className="block text-sm font-bold text-gray-700">Order Items</label>
                                     <button
                                         onClick={addOrderItem}
                                         className="flex items-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm font-bold cursor-pointer"
                                     >
-                                        <FaPlus /> Add
+                                        <FaPlus /> Add Item
                                     </button>
                                 </div>
                                 <div className="space-y-3">
-                                    {orderItems.map((item, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <select
-                                                value={item.foodItemId}
-                                                onChange={(e) => updateOrderItem(index, 'foodItemId', e.target.value)}
-                                                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]"
-                                            >
-                                                <option value="">-- Select item --</option>
-                                                {foodItems.map(food => (
-                                                    <option key={food._id} value={food._id}>
-                                                        {food.name} - ₹{food.price}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={item.quantity}
-                                                onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || '')}
-                                                placeholder="Qty"
-                                                className="w-20 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]"
-                                            />
-                                            {orderItems.length > 1 && (
-                                                <button
-                                                    onClick={() => removeOrderItem(index)}
-                                                    className="p-3 bg-red-500 text-white rounded-lg cursor-pointer"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
+                                    {orderItems.map((item, index) => {
+                                        const selectedFood = foodItems.find(f => f._id === item.foodItemId);
+                                        const catColor = selectedFood ? CATEGORY_COLORS[selectedFood.category] || CATEGORY_COLORS['Other'] : null;
+                                        return (
+                                            <div key={index} className="flex flex-col gap-2">
+                                                {/* Trigger Button */}
+                                                <div className="flex gap-2 items-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openSelectorIndex === index ? setOpenSelectorIndex(null) : openSelector(index)}
+                                                        className={`flex-1 flex items-center justify-between p-3 border-2 rounded-lg text-left transition-all cursor-pointer ${
+                                                            openSelectorIndex === index
+                                                                ? 'border-[#D4AF37] bg-amber-50'
+                                                                : selectedFood
+                                                                    ? 'border-gray-300 bg-gray-50 hover:border-[#D4AF37]'
+                                                                    : 'border-dashed border-gray-300 hover:border-[#D4AF37] bg-white'
+                                                        }`}
+                                                    >
+                                                        {selectedFood ? (
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${catColor?.lightBg} ${catColor?.lightText} whitespace-nowrap`}>
+                                                                    {selectedFood.category}
+                                                                </span>
+                                                                <span className="font-bold text-gray-800 truncate">{selectedFood.name}</span>
+                                                                <span className="text-[#D4AF37] font-bold whitespace-nowrap">₹{selectedFood.price}</span>
+                                                                <span className="text-xs text-gray-400 whitespace-nowrap">Stock: {selectedFood.stock}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400 flex items-center gap-2">
+                                                                <FaSearch className="text-sm" /> Search & select food item...
+                                                            </span>
+                                                        )}
+                                                        <span className="text-gray-400 ml-2 text-xs">{openSelectorIndex === index ? '▲' : '▼'}</span>
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={item.quantity}
+                                                        onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || '')}
+                                                        placeholder="Qty"
+                                                        className="w-20 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]"
+                                                    />
+                                                    {orderItems.length > 1 && (
+                                                        <button
+                                                            onClick={() => removeOrderItem(index)}
+                                                            className="p-3 bg-red-500 text-white rounded-lg cursor-pointer hover:bg-red-600"
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Smart Food Selector Dropdown */}
+                                                <AnimatePresence>
+                                                    {openSelectorIndex === index && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -8, scaleY: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                                                            exit={{ opacity: 0, y: -8, scaleY: 0.95 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="w-full bg-white border-2 border-[#D4AF37] rounded-xl shadow-xl overflow-hidden z-50"
+                                                        >
+                                                            {/* Search Bar */}
+                                                            <div className="p-3 border-b border-gray-100 bg-amber-50">
+                                                                <div className="relative">
+                                                                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                                                                    <input
+                                                                        autoFocus
+                                                                        type="text"
+                                                                        value={searchQuery}
+                                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                                        placeholder="Type to search food items..."
+                                                                        className="w-full pl-9 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#D4AF37] text-sm bg-white"
+                                                                    />
+                                                                    {searchQuery && (
+                                                                        <button
+                                                                            onClick={() => setSearchQuery('')}
+                                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                                        >
+                                                                            <FaTimes className="text-xs" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Category Tabs */}
+                                                            <div className="flex gap-1 p-2 overflow-x-auto border-b border-gray-100 bg-gray-50 scrollbar-hide">
+                                                                {FOOD_CATEGORIES.map(cat => {
+                                                                    const catItems = cat === 'All' ? foodItems : foodItems.filter(f => f.category === cat);
+                                                                    const isActive = selectedCategory === cat;
+                                                                    const color = CATEGORY_COLORS[cat];
+                                                                    return (
+                                                                        <button
+                                                                            key={cat}
+                                                                            onClick={() => setSelectedCategory(cat)}
+                                                                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
+                                                                                isActive
+                                                                                    ? `${color.bg} ${color.text} ${color.border} shadow-sm`
+                                                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                                                            }`}
+                                                                        >
+                                                                            <FaTag className="text-xs" />
+                                                                            {cat}
+                                                                            <span className={`ml-0.5 px-1 rounded-full text-xs ${
+                                                                                isActive ? 'bg-white/30' : 'bg-gray-100'
+                                                                            }`}>{catItems.length}</span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+
+                                                            {/* Items Grid */}
+                                                            <div className="max-h-52 overflow-y-auto p-2">
+                                                                {getFilteredFoodItems().length === 0 ? (
+                                                                    <div className="text-center py-6 text-gray-400">
+                                                                        <FaUtensils className="mx-auto text-2xl mb-2 opacity-30" />
+                                                                        <p className="text-sm">No items found</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="grid grid-cols-1 gap-1">
+                                                                        {getFilteredFoodItems().map(food => {
+                                                                            const isSelected = item.foodItemId === food._id;
+                                                                            const fColor = CATEGORY_COLORS[food.category] || CATEGORY_COLORS['Other'];
+                                                                            return (
+                                                                                <button
+                                                                                    key={food._id}
+                                                                                    type="button"
+                                                                                    onClick={() => handleSelectFoodItem(index, food)}
+                                                                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer ${
+                                                                                        isSelected
+                                                                                            ? 'bg-amber-50 border-2 border-[#D4AF37]'
+                                                                                            : 'hover:bg-gray-50 border-2 border-transparent'
+                                                                                    }`}
+                                                                                >
+                                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${fColor.lightBg} ${fColor.lightText} whitespace-nowrap`}>
+                                                                                            {food.category}
+                                                                                        </span>
+                                                                                        <span className="font-semibold text-gray-800 text-sm truncate">{food.name}</span>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-3 ml-2 shrink-0">
+                                                                                        <span className="text-[#D4AF37] font-bold text-sm">₹{food.price}</span>
+                                                                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                                                                            food.stock <= 5 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                                                                                        }`}>
+                                                                                            {food.stock <= 5 ? `Low: ${food.stock}` : `Stock: ${food.stock}`}
+                                                                                        </span>
+                                                                                        {isSelected && <FaCheckCircle className="text-[#D4AF37]" />}
+                                                                                    </div>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
