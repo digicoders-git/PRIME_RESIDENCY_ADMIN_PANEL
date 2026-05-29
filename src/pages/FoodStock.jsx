@@ -624,30 +624,32 @@ const FoodStock = () => {
             {activeTab === 'categories' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Add Category Form */}
-                    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 h-fit">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <FaPlus className="text-[#D4AF37]" /> Add New Category
-                        </h3>
-                        <form onSubmit={handleCategoryCreate} className="space-y-4">
+                    <div className="bg-white rounded-2xl shadow-xl border border-amber-100 overflow-hidden h-fit">
+                        {/* Elegant Mini Header */}
+                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-6 py-4 flex items-center gap-2">
+                            <FaPlus className="text-sm" />
+                            <h3 className="text-sm font-black tracking-wider uppercase">Add Category</h3>
+                        </div>
+                        <form onSubmit={handleCategoryCreate} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Category Name</label>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category Name</label>
                                 <input
                                     type="text"
                                     placeholder="e.g. Starters, Dessert"
                                     value={newCategoryName}
                                     onChange={(e) => setNewCategoryName(e.target.value)}
-                                    className="w-full p-3 border rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm"
+                                    className="w-full p-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
                                     required
                                 />
                             </div>
                             
                             {user.role === 'Admin' && (
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Property</label>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Property scope</label>
                                     <select
                                         value={newCategoryProperty}
                                         onChange={(e) => setNewCategoryProperty(e.target.value)}
-                                        className="w-full p-3 border rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm"
+                                        className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm font-bold text-gray-800 bg-white"
                                     >
                                         <option value="All">All Properties</option>
                                         <option value="Prime Residency">Prime Residency</option>
@@ -658,7 +660,7 @@ const FoodStock = () => {
 
                             <button
                                 type="submit"
-                                className="w-full py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#B8860B] transition-colors cursor-pointer text-sm"
+                                className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
                             >
                                 Create Category
                             </button>
@@ -719,27 +721,52 @@ const FoodStock = () => {
             )}
 
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 w-full max-w-md">
-                        <h3 className="text-2xl font-bold mb-6">{editItem ? 'Edit' : 'Add'} Food Item</h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <input
-                                required
-                                placeholder="Item Name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full p-3 border rounded-xl"
-                            />
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-amber-100 overflow-hidden"
+                    >
+                        {/* Gold Elegant Header */}
+                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-8 py-5 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                    <FaUtensils className="text-lg" />
+                                </div>
+                                <h3 className="text-lg font-black tracking-wide uppercase">{editItem ? 'Modify' : 'Register'} Food Item</h3>
+                            </div>
+                            <button
+                                onClick={() => { setShowModal(false); resetForm(); }}
+                                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer font-bold"
+                            >
+                                <FaTimes />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-8 space-y-5">
+                            {/* Item Name Input */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Item Name</label>
+                                <input
+                                    required
+                                    placeholder="Enter item name (e.g. Paneer Tikka)"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full p-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
+                                />
+                            </div>
+
                             {/* Dynamic Searchable Category Selector */}
                             <div className="relative">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Food Category</label>
                                 <div className="relative">
                                     <button
                                         type="button"
                                         onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                                        className="w-full p-3 border rounded-xl text-left bg-white focus:outline-none focus:border-[#D4AF37] flex justify-between items-center text-sm font-semibold text-gray-700"
+                                        className="w-full p-3.5 border border-gray-200 rounded-xl text-left bg-white focus:outline-none focus:border-[#D4AF37] flex justify-between items-center text-sm font-bold text-gray-700 shadow-sm"
                                     >
                                         <span>
-                                            {formData.category ? `Category: ${formData.category}` : 'Select Category'}
+                                            {formData.category ? `${formData.category}` : 'Select Category'}
                                         </span>
                                         <span className="text-gray-400 text-xs">{isCategoryDropdownOpen ? '▲' : '▼'}</span>
                                     </button>
@@ -816,39 +843,92 @@ const FoodStock = () => {
                                     )}
                                 </div>
                             </div>
+
                             <div className="grid grid-cols-2 gap-4">
-                                <input
-                                    required
-                                    type="number"
-                                    placeholder="Price"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                    className="p-3 border rounded-xl"
-                                />
-                                <input
-                                    required
-                                    type="number"
-                                    placeholder="Stock"
-                                    value={formData.stock}
-                                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                    className="p-3 border rounded-xl"
+                                {/* Price */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Price (₹)</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        placeholder="Price in INR"
+                                        value={formData.price}
+                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                        className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
+                                    />
+                                </div>
+                                {/* Unit */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Unit</label>
+                                    <select
+                                        value={formData.unit}
+                                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                                        className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm font-bold text-gray-800"
+                                    >
+                                        <option value="piece">Piece</option>
+                                        <option value="plate">Plate</option>
+                                        <option value="portion">Portion</option>
+                                        <option value="bowl">Bowl</option>
+                                        <option value="glass">Glass</option>
+                                        <option value="bottle">Bottle</option>
+                                        <option value="packet">Packet</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Stock Count */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Initial Stock</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        placeholder="Quantity"
+                                        value={formData.stock}
+                                        onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                                        className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
+                                    />
+                                </div>
+                                {/* Property Scope */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Property Scope</label>
+                                    <select
+                                        value={formData.property}
+                                        onChange={(e) => setFormData({ ...formData, property: e.target.value })}
+                                        disabled={user.role === 'Manager'}
+                                        className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm font-bold text-gray-800 disabled:bg-gray-100"
+                                    >
+                                        <option value="Prime Residency">Prime Residency</option>
+                                        <option value="Prem Kunj">Prem Kunj</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Description textarea */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Item Description (Optional)</label>
+                                <textarea
+                                    placeholder="Enter food description or ingredients..."
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm font-medium text-gray-800 h-20 resize-none shadow-inner"
                                 />
                             </div>
-                            <select
-                                value={formData.property}
-                                onChange={(e) => setFormData({ ...formData, property: e.target.value })}
-                                disabled={user.role === 'Manager'}
-                                className="w-full p-3 border rounded-xl"
-                            >
-                                <option value="Prime Residency">Prime Residency</option>
-                                <option value="Prem Kunj">Prem Kunj</option>
-                            </select>
-                            <div className="flex gap-3 pt-4">
-                                <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-3 rounded-xl font-bold cursor-pointer">
-                                    {editItem ? 'Update' : 'Add'}
+
+                            {/* Modal Actions */}
+                            <div className="flex gap-4 pt-4 border-t border-gray-100">
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
+                                >
+                                    {editItem ? 'Save Updates' : 'Add to Stock'}
                                 </button>
-                                <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 bg-gray-200 py-3 rounded-xl font-bold cursor-pointer">
-                                    Cancel
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowModal(false); resetForm(); }}
+                                    className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 transition-all uppercase tracking-wider text-xs cursor-pointer"
+                                >
+                                    Dismiss
                                 </button>
                             </div>
                         </form>

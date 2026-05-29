@@ -490,74 +490,100 @@ const CreateOrder = () => {
 
             {/* Create Order Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
+                        initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                        className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto shadow-2xl border border-amber-100"
                     >
-                        <div className="p-6 border-b border-gray-200">
-                            <h3 className="text-2xl font-black text-gray-900">Create New Order</h3>
+                        {/* Premium Gradient Header */}
+                        <div className="bg-gradient-to-r from-[#D4AF37] via-[#C5A028] to-[#B8860B] px-8 py-5 flex justify-between items-center text-white">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                    <FaUtensils className="text-xl" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black tracking-wide uppercase">New Food Order</h3>
+                                    <p className="text-xs text-yellow-100 mt-0.5 opacity-90">Select room and add culinary delights</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowModal(false);
+                                    setSelectedRoom('');
+                                    setOrderItems([{ foodItemId: '', quantity: '' }]);
+                                }}
+                                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer font-bold"
+                            >
+                                <FaTimes />
+                            </button>
                         </div>
 
-                        <div className="p-6 space-y-6">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Select Room</label>
-                                <select
-                                    value={selectedRoom}
-                                    onChange={(e) => setSelectedRoom(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]"
-                                >
-                                    <option value="">-- Choose a checked-in room --</option>
-                                    {availableRooms.map(booking => (
-                                        <option key={booking._id} value={booking._id}>
-                                            Room {booking.roomNumber} - {booking.guest}
-                                        </option>
-                                    ))}
-                                </select>
+                        <div className="p-8 space-y-6">
+                            {/* Room Selector Card */}
+                            <div className="bg-amber-50/45 p-6 rounded-2xl border border-amber-100/50 shadow-sm">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Select Checked-in Room</label>
+                                <div className="relative">
+                                    <select
+                                        value={selectedRoom}
+                                        onChange={(e) => setSelectedRoom(e.target.value)}
+                                        className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
+                                    >
+                                        <option value="">-- Choose a checked-in room --</option>
+                                        {availableRooms.map(booking => (
+                                            <option key={booking._id} value={booking._id}>
+                                                Room {booking.roomNumber} - {booking.guest}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
-                            <div ref={selectorRef}>
-                                <div className="flex justify-between items-center mb-3">
-                                    <label className="block text-sm font-bold text-gray-700">Order Items</label>
+                            {/* Order Items Section */}
+                            <div ref={selectorRef} className="space-y-4">
+                                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                                        <FaClipboardList className="text-[#D4AF37]" /> Items to Order
+                                    </h4>
                                     <button
                                         onClick={addOrderItem}
-                                        className="flex items-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm font-bold cursor-pointer"
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-xs font-bold cursor-pointer hover:shadow-lg transition-all"
                                     >
-                                        <FaPlus /> Add Item
+                                        <FaPlus size={10} /> Add Another Item
                                     </button>
                                 </div>
-                                <div className="space-y-3">
+
+                                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
                                     {orderItems.map((item, index) => {
                                         const selectedFood = foodItems.find(f => f._id === item.foodItemId);
                                         const catColor = selectedFood ? getCategoryColors(selectedFood.category) : null;
                                         return (
-                                            <div key={index} className="flex flex-col gap-2">
+                                            <div key={index} className="flex flex-col gap-2 p-4 bg-gray-50/70 border border-gray-100 rounded-xl hover:border-amber-200 transition-all hover:bg-amber-50/10">
                                                 {/* Trigger Button */}
-                                                <div className="flex gap-2 items-center">
+                                                <div className="flex gap-3 items-center">
                                                     <button
                                                         type="button"
                                                         onClick={() => openSelectorIndex === index ? setOpenSelectorIndex(null) : openSelector(index)}
-                                                        className={`flex-1 flex items-center justify-between p-3 border-2 rounded-lg text-left transition-all cursor-pointer ${
+                                                        className={`flex-1 flex items-center justify-between p-3.5 border rounded-xl text-left transition-all cursor-pointer ${
                                                             openSelectorIndex === index
-                                                                ? 'border-[#D4AF37] bg-amber-50'
+                                                                ? 'border-[#D4AF37] bg-amber-50/70 ring-2 ring-[#D4AF37]/20 shadow-md'
                                                                 : selectedFood
-                                                                    ? 'border-gray-300 bg-gray-50 hover:border-[#D4AF37]'
-                                                                    : 'border-dashed border-gray-300 hover:border-[#D4AF37] bg-white'
+                                                                    ? 'border-gray-200 bg-white hover:border-[#D4AF37]'
+                                                                    : 'border-dashed border-gray-300 hover:border-[#D4AF37] bg-white text-gray-400'
                                                         }`}
                                                     >
                                                         {selectedFood ? (
-                                                            <div className="flex items-center gap-2 min-w-0">
-                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${catColor?.lightBg} ${catColor?.lightText} whitespace-nowrap`}>
+                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${catColor?.lightBg} ${catColor?.lightText} whitespace-nowrap`}>
                                                                     {selectedFood.category}
                                                                 </span>
-                                                                <span className="font-bold text-gray-800 truncate">{selectedFood.name}</span>
-                                                                <span className="text-[#D4AF37] font-bold whitespace-nowrap">₹{selectedFood.price}</span>
-                                                                <span className="text-xs text-gray-400 whitespace-nowrap">Stock: {selectedFood.stock}</span>
+                                                                <span className="font-extrabold text-gray-800 truncate text-sm">{selectedFood.name}</span>
+                                                                <span className="text-[#D4AF37] font-black text-sm whitespace-nowrap">₹{selectedFood.price}</span>
+                                                                <span className="text-xs text-gray-400 whitespace-nowrap bg-gray-100 px-2 py-0.5 rounded">Stock: {selectedFood.stock}</span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-gray-400 flex items-center gap-2">
-                                                                <FaSearch className="text-sm" /> Search & select food item...
+                                                            <span className="text-gray-400 text-xs font-bold flex items-center gap-2">
+                                                                <FaSearch className="text-xs" /> Search & Select Food Item...
                                                             </span>
                                                         )}
                                                         <span className="text-gray-400 ml-2 text-xs">{openSelectorIndex === index ? '▲' : '▼'}</span>
@@ -568,14 +594,15 @@ const CreateOrder = () => {
                                                         value={item.quantity}
                                                         onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || '')}
                                                         placeholder="Qty"
-                                                        className="w-20 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]"
+                                                        className="w-24 p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm text-center font-bold text-gray-800"
                                                     />
                                                     {orderItems.length > 1 && (
                                                         <button
                                                             onClick={() => removeOrderItem(index)}
-                                                            className="p-3 bg-red-500 text-white rounded-lg cursor-pointer hover:bg-red-600"
+                                                            className="p-3.5 bg-rose-50 text-rose-600 rounded-xl cursor-pointer hover:bg-rose-100 border border-rose-100 transition-colors"
+                                                            title="Delete item"
                                                         >
-                                                            <FaTrash />
+                                                            <FaTrash size={14} />
                                                         </button>
                                                     )}
                                                 </div>
@@ -588,10 +615,10 @@ const CreateOrder = () => {
                                                             animate={{ opacity: 1, y: 0, scaleY: 1 }}
                                                             exit={{ opacity: 0, y: -8, scaleY: 0.95 }}
                                                             transition={{ duration: 0.15 }}
-                                                            className="w-full bg-white border-2 border-[#D4AF37] rounded-xl shadow-xl overflow-hidden z-50"
+                                                            className="w-full bg-white border border-[#D4AF37] rounded-xl shadow-xl overflow-hidden z-50 mt-1"
                                                         >
                                                             {/* Search Bar */}
-                                                            <div className="p-3 border-b border-gray-100 bg-amber-50">
+                                                            <div className="p-3 border-b border-gray-100 bg-amber-50/50">
                                                                 <div className="relative">
                                                                     <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                                                                     <input
@@ -599,15 +626,15 @@ const CreateOrder = () => {
                                                                         type="text"
                                                                         value={searchQuery}
                                                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                                                        placeholder="Type to search food items..."
-                                                                        className="w-full pl-9 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#D4AF37] text-sm bg-white"
+                                                                        placeholder="Search items by name..."
+                                                                        className="w-full pl-9 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#D4AF37] text-xs bg-white font-medium"
                                                                     />
                                                                     {searchQuery && (
                                                                         <button
                                                                             onClick={() => setSearchQuery('')}
                                                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                                                                         >
-                                                                            <FaTimes className="text-xs" />
+                                                                            <FaTimes className="text-[10px]" />
                                                                         </button>
                                                                     )}
                                                                 </div>
@@ -623,16 +650,16 @@ const CreateOrder = () => {
                                                                         <button
                                                                             key={cat}
                                                                             onClick={() => setSelectedCategory(cat)}
-                                                                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
+                                                                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
                                                                                 isActive
-                                                                                    ? `${color.bg} ${color.text} ${color.border} shadow-sm`
+                                                                                    ? `${color.bg} ${color.text} ${color.border} shadow-sm scale-105`
                                                                                     : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
                                                                             }`}
                                                                         >
-                                                                            <FaTag className="text-xs" />
+                                                                            <FaTag className="text-[10px]" />
                                                                             {cat}
-                                                                            <span className={`ml-0.5 px-1 rounded-full text-xs ${
-                                                                                isActive ? 'bg-white/30' : 'bg-gray-100'
+                                                                            <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                                                                                isActive ? 'bg-white/30' : 'bg-gray-100 text-gray-500'
                                                                             }`}>{catItems.length}</span>
                                                                         </button>
                                                                     );
@@ -640,11 +667,11 @@ const CreateOrder = () => {
                                                             </div>
 
                                                             {/* Items Grid */}
-                                                            <div className="max-h-52 overflow-y-auto p-2">
+                                                            <div className="max-h-52 overflow-y-auto p-2 bg-white">
                                                                 {getFilteredFoodItems().length === 0 ? (
                                                                     <div className="text-center py-6 text-gray-400">
-                                                                        <FaUtensils className="mx-auto text-2xl mb-2 opacity-30" />
-                                                                        <p className="text-sm">No items found</p>
+                                                                        <FaUtensils className="mx-auto text-xl mb-2 opacity-30" />
+                                                                        <p className="text-xs font-semibold">No items found</p>
                                                                     </div>
                                                                 ) : (
                                                                     <div className="grid grid-cols-1 gap-1">
@@ -658,19 +685,19 @@ const CreateOrder = () => {
                                                                                     onClick={() => handleSelectFoodItem(index, food)}
                                                                                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer ${
                                                                                         isSelected
-                                                                                            ? 'bg-amber-50 border-2 border-[#D4AF37]'
+                                                                                            ? 'bg-amber-50/70 border-2 border-[#D4AF37]'
                                                                                             : 'hover:bg-gray-50 border-2 border-transparent'
                                                                                     }`}
                                                                                 >
                                                                                     <div className="flex items-center gap-2 min-w-0">
-                                                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${fColor.lightBg} ${fColor.lightText} whitespace-nowrap`}>
+                                                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${fColor.lightBg} ${fColor.lightText} whitespace-nowrap`}>
                                                                                             {food.category}
                                                                                         </span>
-                                                                                        <span className="font-semibold text-gray-800 text-sm truncate">{food.name}</span>
+                                                                                        <span className="font-semibold text-gray-800 text-xs truncate">{food.name}</span>
                                                                                     </div>
                                                                                     <div className="flex items-center gap-3 ml-2 shrink-0">
-                                                                                        <span className="text-[#D4AF37] font-bold text-sm">₹{food.price}</span>
-                                                                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                                                                        <span className="text-[#D4AF37] font-black text-xs">₹{food.price}</span>
+                                                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                                                                             food.stock <= 5 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
                                                                                         }`}>
                                                                                             {food.stock <= 5 ? `Low: ${food.stock}` : `Stock: ${food.stock}`}
@@ -692,21 +719,24 @@ const CreateOrder = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 p-4 rounded-xl">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-lg font-bold">Total</span>
-                                    <span className="text-2xl font-black text-[#D4AF37]">₹{calculateTotal()}</span>
+                            {/* Luxury Total Bar */}
+                            <div className="bg-[#D4AF37]/5 p-5 rounded-2xl border border-[#D4AF37]/20 flex justify-between items-center shadow-inner">
+                                <span className="text-sm font-black text-gray-500 uppercase tracking-widest">Total Bill Amount</span>
+                                <div className="text-right">
+                                    <span className="text-3xl font-black text-[#D4AF37] drop-shadow-sm">₹{calculateTotal()}</span>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">Inclusive of all local taxes</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-6 border-t border-gray-200 flex gap-3">
+                        {/* Modal Actions */}
+                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-4">
                             <button
                                 onClick={handleCreateOrder}
                                 disabled={loading || !selectedRoom || orderItems.filter(i => i.foodItemId).length === 0}
-                                className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-600 disabled:opacity-50"
+                                className="flex-1 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold cursor-pointer hover:shadow-lg disabled:opacity-50 transition-all hover:scale-[1.01] uppercase tracking-wider text-xs"
                             >
-                                {loading ? 'Creating...' : 'Create Order'}
+                                {loading ? 'Processing Order...' : 'Confirm & Deliver Order'}
                             </button>
                             <button
                                 onClick={() => {
@@ -714,9 +744,9 @@ const CreateOrder = () => {
                                     setSelectedRoom('');
                                     setOrderItems([{ foodItemId: '', quantity: '' }]);
                                 }}
-                                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold cursor-pointer hover:bg-gray-300"
+                                className="flex-1 py-4 bg-white border border-gray-200 text-gray-500 rounded-xl font-bold cursor-pointer hover:bg-gray-50 transition-all uppercase tracking-wider text-xs"
                             >
-                                Cancel
+                                Dismiss
                             </button>
                         </div>
                     </motion.div>
