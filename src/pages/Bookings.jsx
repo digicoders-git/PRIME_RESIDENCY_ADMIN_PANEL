@@ -111,7 +111,12 @@ const Bookings = () => {
       booking.room.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || booking.status === statusFilter;
     const matchesProperty = propertyFilter === 'All' || booking.property === propertyFilter;
-    const matchesDate = !dateFilter || booking.checkIn === dateFilter;
+    const matchesDate = !dateFilter || (() => {
+      if (!booking.checkIn) return false;
+      const d = new Date(booking.checkIn);
+      const checkInDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return checkInDate === dateFilter;
+    })();
     return matchesSearch && matchesStatus && matchesProperty && matchesDate;
   });
 
