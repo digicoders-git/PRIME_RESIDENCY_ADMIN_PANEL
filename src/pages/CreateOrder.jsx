@@ -108,13 +108,10 @@ const CreateOrder = () => {
         setOrderItems(updated);
     };
 
-    const FOOD_CATEGORIES = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Beverages', 'Other'];
+    const FOOD_CATEGORIES = ['All', 'Snacks', 'Beverages', 'Other'];
 
     const CATEGORY_COLORS = {
         All: { bg: 'bg-gray-700', text: 'text-white', border: 'border-gray-700', lightBg: 'bg-gray-100', lightText: 'text-gray-700' },
-        Breakfast: { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-500', lightBg: 'bg-orange-50', lightText: 'text-orange-700' },
-        Lunch: { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-500', lightBg: 'bg-emerald-50', lightText: 'text-emerald-700' },
-        Dinner: { bg: 'bg-indigo-500', text: 'text-white', border: 'border-indigo-500', lightBg: 'bg-indigo-50', lightText: 'text-indigo-700' },
         Snacks: { bg: 'bg-yellow-500', text: 'text-white', border: 'border-yellow-500', lightBg: 'bg-yellow-50', lightText: 'text-yellow-700' },
         Beverages: { bg: 'bg-cyan-500', text: 'text-white', border: 'border-cyan-500', lightBg: 'bg-cyan-50', lightText: 'text-cyan-700' },
         Other: { bg: 'bg-purple-500', text: 'text-white', border: 'border-purple-500', lightBg: 'bg-purple-50', lightText: 'text-purple-700' },
