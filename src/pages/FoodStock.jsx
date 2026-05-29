@@ -35,6 +35,8 @@ const FoodStock = () => {
     const [newCategoryProperty, setNewCategoryProperty] = useState('All');
     const [categorySearchQuery, setCategorySearchQuery] = useState('');
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+    const [editCategoryName, setEditCategoryName] = useState('');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -209,6 +211,27 @@ const FoodStock = () => {
             }
         } catch (error) {
             toast.error('Failed to delete category');
+        }
+    };
+
+    const handleCategoryUpdate = async (e) => {
+        if (e) e.preventDefault();
+        if (!editCategoryName.trim()) {
+            toast.error('Category name is required');
+            return;
+        }
+        try {
+            const { data } = await api.put(`/food-items/categories/${editingCategory._id}`, {
+                name: editCategoryName
+            });
+            if (data.success) {
+                toast.success('Category updated successfully');
+                setEditingCategory(null);
+                setEditCategoryName('');
+                fetchCategories();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update category');
         }
     };
 
@@ -623,48 +646,91 @@ const FoodStock = () => {
 
             {activeTab === 'categories' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Add Category Form */}
+                    {/* Add / Edit Category Form */}
                     <div className="bg-white rounded-2xl shadow-xl border border-amber-100 overflow-hidden h-fit">
-                        {/* Elegant Mini Header */}
-                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-6 py-4 flex items-center gap-2">
-                            <FaPlus className="text-sm" />
-                            <h3 className="text-sm font-black tracking-wider uppercase">Add Category</h3>
-                        </div>
-                        <form onSubmit={handleCategoryCreate} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Starters, Dessert"
-                                    value={newCategoryName}
-                                    onChange={(e) => setNewCategoryName(e.target.value)}
-                                    className="w-full p-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
-                                    required
-                                />
-                            </div>
-                            
-                            {user.role === 'Admin' && (
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Property scope</label>
-                                    <select
-                                        value={newCategoryProperty}
-                                        onChange={(e) => setNewCategoryProperty(e.target.value)}
-                                        className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm font-bold text-gray-800 bg-white"
+                        {editingCategory ? (
+                            <>
+                                {/* Edit Header */}
+                                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <FaEdit className="text-sm" />
+                                        <h3 className="text-sm font-black tracking-wider uppercase">Edit Category</h3>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingCategory(null);
+                                            setEditCategoryName('');
+                                        }}
+                                        className="text-white hover:text-gray-200 text-xs font-bold"
                                     >
-                                        <option value="All">All Properties</option>
-                                        <option value="Prime Residency">Prime Residency</option>
-                                        <option value="Prem Kunj">Prem Kunj</option>
-                                    </select>
+                                        Cancel
+                                    </button>
                                 </div>
-                            )}
+                                <form onSubmit={handleCategoryUpdate} className="p-6 space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category Name</label>
+                                        <input
+                                            type="text"
+                                            value={editCategoryName}
+                                            onChange={(e) => setEditCategoryName(e.target.value)}
+                                            className="w-full p-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
+                                            required
+                                        />
+                                    </div>
 
-                            <button
-                                type="submit"
-                                className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
-                            >
-                                Create Category
-                            </button>
-                        </form>
+                                    <button
+                                        type="submit"
+                                        className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
+                                    >
+                                        Save Changes
+                                    </button>
+                                </form>
+                            </>
+                        ) : (
+                            <>
+                                {/* Elegant Mini Header */}
+                                <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-6 py-4 flex items-center gap-2">
+                                    <FaPlus className="text-sm" />
+                                    <h3 className="text-sm font-black tracking-wider uppercase">Add Category</h3>
+                                </div>
+                                <form onSubmit={handleCategoryCreate} className="p-6 space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Starters, Dessert"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                            className="w-full p-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 text-sm font-bold text-gray-800 transition-all shadow-inner"
+                                            required
+                                        />
+                                    </div>
+                                    
+                                    {user.role === 'Admin' && (
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Property scope</label>
+                                            <select
+                                                value={newCategoryProperty}
+                                                onChange={(e) => setNewCategoryProperty(e.target.value)}
+                                                className="w-full p-3.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm font-bold text-gray-800 bg-white"
+                                            >
+                                                <option value="All">All Properties</option>
+                                                <option value="Prime Residency">Prime Residency</option>
+                                                <option value="Prem Kunj">Prem Kunj</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
+                                    >
+                                        Create Category
+                                    </button>
+                                </form>
+                            </>
+                        )}
                     </div>
 
                     {/* Categories List */}
@@ -702,13 +768,25 @@ const FoodStock = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <button
-                                                        onClick={() => handleCategoryDelete(cat._id)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
-                                                        title="Delete Category"
-                                                    >
-                                                        <FaTrash size={14} />
-                                                    </button>
+                                                    <div className="flex justify-center gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingCategory(cat);
+                                                                setEditCategoryName(cat.name);
+                                                            }}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
+                                                            title="Edit Category"
+                                                        >
+                                                            <FaEdit size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleCategoryDelete(cat._id)}
+                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
+                                                            title="Delete Category"
+                                                        >
+                                                            <FaTrash size={14} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
