@@ -37,6 +37,7 @@ const FoodStock = () => {
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [editCategoryName, setEditCategoryName] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -136,6 +137,7 @@ const FoodStock = () => {
         }
 
         try {
+            setIsSubmitting(true);
             if (editItem) {
                 const { data } = await api.put(`/food-items/${editItem._id}`, formData);
                 if (data.success) {
@@ -153,6 +155,8 @@ const FoodStock = () => {
             resetForm();
         } catch (error) {
             toast.error('Operation failed');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -187,6 +191,7 @@ const FoodStock = () => {
             return;
         }
         try {
+            setIsSubmitting(true);
             const { data } = await api.post('/food-items/categories', {
                 name: newCategoryName,
                 property: user.role === 'Manager' ? user.property : newCategoryProperty
@@ -198,6 +203,8 @@ const FoodStock = () => {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create category');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -221,6 +228,7 @@ const FoodStock = () => {
             return;
         }
         try {
+            setIsSubmitting(true);
             const { data } = await api.put(`/food-items/categories/${editingCategory._id}`, {
                 name: editCategoryName
             });
@@ -232,6 +240,8 @@ const FoodStock = () => {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update category');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -303,6 +313,7 @@ const FoodStock = () => {
         }
 
         try {
+            setIsSubmitting(true);
             const { data } = await api.post('/food-orders', {
                 bookingId: selectedRoom,
                 items: validItems,
@@ -317,6 +328,8 @@ const FoodStock = () => {
             }
         } catch (error) {
             toast.error('Failed to create order');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -355,13 +368,14 @@ const FoodStock = () => {
     };
 
     const handlePaymentSubmit = async () => {
-        try {
-            const amount = parseFloat(paymentAmount);
-            if (isNaN(amount) || amount <= 0) {
-                toast.error('Please enter a valid amount');
-                return;
-            }
+        const amount = parseFloat(paymentAmount);
+        if (isNaN(amount) || amount <= 0) {
+            toast.error('Please enter a valid amount');
+            return;
+        }
 
+        try {
+            setIsSubmitting(true);
             const { data } = await api.put(`/bookings/${selectedOrder.bookingId}/payment`, {
                 advance: amount,
                 paymentMethod: 'Cash'
@@ -387,6 +401,8 @@ const FoodStock = () => {
             }
         } catch (error) {
             toast.error('Failed to record payment');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -403,15 +419,17 @@ const FoodStock = () => {
         const amount = selectedRoomForPay.totalAmount;
         const bookingId = selectedRoomForPay.orders[0]?.bookingId;
 
-        if (paymentMethod === 'Online') {
-            // Razorpay payment
-            const isLoaded = await loadRazorpayScript();
-            if (!isLoaded) {
-                toast.error('Failed to load payment gateway');
-                return;
-            }
+        setIsSubmitting(true);
+        try {
+            if (paymentMethod === 'Online') {
+                // Razorpay payment
+                const isLoaded = await loadRazorpayScript();
+                if (!isLoaded) {
+                    toast.error('Failed to load payment gateway');
+                    setIsSubmitting(false);
+                    return;
+                }
 
-            try {
                 const orderData = await createRazorpayOrder(amount, `FOOD_${selectedRoomForPay.roomNumber}_${Date.now()}`);
 
                 const options = {
@@ -423,6 +441,7 @@ const FoodStock = () => {
                     order_id: orderData.data.id,
                     handler: async (response) => {
                         try {
+                            setIsSubmitting(true);
                             await api.put(`/bookings/${bookingId}/payment`, {
                                 advance: amount,
                                 paymentMethod: 'Online'
@@ -441,22 +460,23 @@ const FoodStock = () => {
                             fetchOrders();
                         } catch (error) {
                             toast.error('Failed to record payment');
+                        } finally {
+                            setIsSubmitting(false);
                         }
                     },
                     theme: { color: '#D4AF37' },
                     modal: {
-                        ondismiss: () => toast.info('Payment cancelled')
+                        ondismiss: () => {
+                            toast.info('Payment cancelled');
+                            setIsSubmitting(false);
+                        }
                     }
                 };
 
                 const razorpay = new window.Razorpay(options);
                 razorpay.open();
-            } catch (error) {
-                toast.error('Failed to create payment order');
-            }
-        } else {
-            // Cash payment
-            try {
+            } else {
+                // Cash payment
                 await api.put(`/bookings/${bookingId}/payment`, {
                     advance: amount,
                     paymentMethod: 'Cash'
@@ -473,8 +493,12 @@ const FoodStock = () => {
                 toast.success('Cash payment recorded successfully!');
                 setShowRoomPayModal(false);
                 fetchOrders();
-            } catch (error) {
-                toast.error('Failed to record payment');
+            }
+        } catch (error) {
+            toast.error('Failed to record payment');
+        } finally {
+            if (paymentMethod !== 'Online') {
+                setIsSubmitting(false);
             }
         }
     };
@@ -681,9 +705,10 @@ const FoodStock = () => {
 
                                     <button
                                         type="submit"
-                                        className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
+                                        disabled={isSubmitting}
+                                        className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer disabled:opacity-50"
                                     >
-                                        Save Changes
+                                        {isSubmitting ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </form>
                             </>
@@ -724,9 +749,10 @@ const FoodStock = () => {
 
                                     <button
                                         type="submit"
-                                        className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
+                                        disabled={isSubmitting}
+                                        className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer disabled:opacity-50"
                                     >
-                                        Create Category
+                                        {isSubmitting ? 'Creating...' : 'Create Category'}
                                     </button>
                                 </form>
                             </>
@@ -997,9 +1023,10 @@ const FoodStock = () => {
                             <div className="flex gap-4 pt-4 border-t border-gray-100">
                                 <button
                                     type="submit"
-                                    className="flex-1 py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer"
+                                    disabled={isSubmitting}
+                                    className="flex-1 py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider text-xs cursor-pointer disabled:opacity-50"
                                 >
-                                    {editItem ? 'Save Updates' : 'Add to Stock'}
+                                    {isSubmitting ? 'Submitting...' : (editItem ? 'Save Updates' : 'Add to Stock')}
                                 </button>
                                 <button
                                     type="button"
@@ -1105,9 +1132,10 @@ const FoodStock = () => {
                                 <button
                                     type="button"
                                     onClick={handleCreateOrder}
-                                    className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold cursor-pointer hover:bg-green-700 transition-colors"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold cursor-pointer hover:bg-green-700 transition-colors disabled:opacity-50"
                                 >
-                                    Create Order
+                                    {isSubmitting ? 'Creating...' : 'Create Order'}
                                 </button>
                                 <button
                                     type="button"
@@ -1386,9 +1414,10 @@ const FoodStock = () => {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     onClick={handlePaymentSubmit}
-                                    className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold cursor-pointer hover:bg-green-700"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold cursor-pointer hover:bg-green-700 disabled:opacity-50"
                                 >
-                                    Record Payment
+                                    {isSubmitting ? 'Recording...' : 'Record Payment'}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -1465,9 +1494,10 @@ const FoodStock = () => {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     onClick={processRoomPayment}
-                                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold cursor-pointer hover:shadow-lg transition-all"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold cursor-pointer hover:shadow-lg transition-all disabled:opacity-50"
                                 >
-                                    {paymentMethod === 'Cash' ? 'Record Cash Payment' : 'Proceed to Payment'}
+                                    {isSubmitting ? 'Processing...' : (paymentMethod === 'Cash' ? 'Record Cash Payment' : 'Proceed to Payment')}
                                 </button>
                                 <button
                                     onClick={() => {

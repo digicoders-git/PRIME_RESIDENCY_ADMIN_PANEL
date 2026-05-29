@@ -263,14 +263,16 @@ const CreateOrder = () => {
             return;
         }
 
-        if (paymentMethod === 'Online') {
-            const isLoaded = await loadRazorpayScript();
-            if (!isLoaded) {
-                toast.error('Failed to load payment gateway');
-                return;
-            }
+        setLoading(true);
+        try {
+            if (paymentMethod === 'Online') {
+                const isLoaded = await loadRazorpayScript();
+                if (!isLoaded) {
+                    toast.error('Failed to load payment gateway');
+                    setLoading(false);
+                    return;
+                }
 
-            try {
                 const orderData = await createRazorpayOrder(amount, `FOOD_${roomFilter}_${Date.now()}`);
 
                 const options = {
@@ -282,6 +284,7 @@ const CreateOrder = () => {
                     order_id: orderData.data.id,
                     handler: async (response) => {
                         try {
+                            setLoading(true);
                             // Get current booking to check existing advance
                             const { data: bookingData } = await api.get(`/bookings/${bookingId}`);
                             const currentAdvance = bookingData.data.advance || 0;
@@ -297,21 +300,22 @@ const CreateOrder = () => {
                             fetchRecentOrders(user.property);
                         } catch (error) {
                             toast.error('Failed to record payment');
+                        } finally {
+                            setLoading(false);
                         }
                     },
                     theme: { color: '#D4AF37' },
                     modal: {
-                        ondismiss: () => toast.info('Payment cancelled')
+                        ondismiss: () => {
+                            toast.info('Payment cancelled');
+                            setLoading(false);
+                        }
                     }
                 };
 
                 const razorpay = new window.Razorpay(options);
                 razorpay.open();
-            } catch (error) {
-                toast.error('Failed to create payment order');
-            }
-        } else {
-            try {
+            } else {
                 await api.put(`/bookings/${bookingId}/payment`, {
                     advance: amount,
                     paymentMethod: 'Cash'
@@ -320,9 +324,13 @@ const CreateOrder = () => {
                 toast.success('Cash payment recorded successfully!');
                 setShowPaymentModal(false);
                 fetchRecentOrders(user.property);
-            } catch (error) {
-                console.error('Payment error:', error);
-                toast.error(error.response?.data?.message || 'Failed to record payment');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            toast.error(error.response?.data?.message || 'Failed to record payment');
+        } finally {
+            if (paymentMethod !== 'Online') {
+                setLoading(false);
             }
         }
     };
@@ -798,9 +806,10 @@ const CreateOrder = () => {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     onClick={handleRoomPayment}
-                                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold cursor-pointer hover:shadow-lg"
+                                    disabled={loading}
+                                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 rounded-xl font-bold cursor-pointer hover:shadow-lg disabled:opacity-50 transition-all"
                                 >
-                                    {paymentMethod === 'Cash' ? 'Record Cash Payment' : 'Proceed to Payment'}
+                                    {loading ? 'Processing...' : (paymentMethod === 'Cash' ? 'Record Cash Payment' : 'Proceed to Payment')}
                                 </button>
                                 <button
                                     onClick={() => {
