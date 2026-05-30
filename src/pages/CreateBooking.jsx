@@ -266,8 +266,11 @@ const CreateBooking = () => {
                 dataToSend.append('phone', formData.phone);
                 dataToSend.append('room', room.name);
                 dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
-                dataToSend.append('checkIn', formData.checkIn);
-                const finalCheckOut = formData.checkOut || new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                const finalCheckIn = new Date(formData.checkIn).toISOString();
+                const finalCheckOut = formData.checkOut 
+                    ? new Date(formData.checkOut).toISOString() 
+                    : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                dataToSend.append('checkIn', finalCheckIn);
                 dataToSend.append('checkOut', finalCheckOut);
                 dataToSend.append('adults', formData.adults);
                 dataToSend.append('children', formData.children);
@@ -338,8 +341,11 @@ const CreateBooking = () => {
                             dataToSend.append('phone', formData.phone);
                             dataToSend.append('room', room.name);
                             dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
-                            dataToSend.append('checkIn', formData.checkIn);
-                            const finalCheckOut = formData.checkOut || new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                            const finalCheckIn = new Date(formData.checkIn).toISOString();
+                            const finalCheckOut = formData.checkOut 
+                                ? new Date(formData.checkOut).toISOString() 
+                                : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                            dataToSend.append('checkIn', finalCheckIn);
                             dataToSend.append('checkOut', finalCheckOut);
                             dataToSend.append('adults', formData.adults);
                             dataToSend.append('children', formData.children);
@@ -399,8 +405,11 @@ const CreateBooking = () => {
             dataToSend.append('phone', formData.phone);
             dataToSend.append('room', room.name);
             dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
-            dataToSend.append('checkIn', formData.checkIn);
-            const finalCheckOut = formData.checkOut || new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+            const finalCheckIn = new Date(formData.checkIn).toISOString();
+            const finalCheckOut = formData.checkOut 
+                ? new Date(formData.checkOut).toISOString() 
+                : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+            dataToSend.append('checkIn', finalCheckIn);
             dataToSend.append('checkOut', finalCheckOut);
             dataToSend.append('adults', formData.adults);
             dataToSend.append('children', formData.children);
