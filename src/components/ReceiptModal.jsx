@@ -189,7 +189,7 @@ const ReceiptModal = ({ isOpen, onClose, booking }) => {
                                                 </tr>
                                                 <tr>
                                                     <td style={{ padding: '2px 0' }}>Check Out</td>
-                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {formatDateTime(booking.checkOut)}</td>
+                                                    <td style={{ padding: '2px 0', fontWeight: 'bold' }}>: {booking.status === 'Checked-out' ? formatDateTime(booking.checkOut) : ''}</td>
                                                 </tr>
                                             </tbody>
                                         </table>

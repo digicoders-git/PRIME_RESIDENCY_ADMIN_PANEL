@@ -88,7 +88,8 @@ export const exportFormattedInvoice = async (booking, amountInWords, cgst, sgst,
     billingLeft.border = borderStyle;
 
     const billingRight = worksheet.getCell(`F${rStart}`);
-    billingRight.value = `Invoice Number: ${booking.bookingId || booking.id?.slice(-6).toUpperCase()}\nInvoice Date: ${formatDate(new Date())}\n\nCheck In: ${formatDate(booking.checkIn)}\nCheck Out: ${formatDate(booking.checkOut)}`;
+    const checkOutStr = booking.status === 'Checked-out' ? `Check Out: ${formatDate(booking.checkOut)}` : 'Check Out:';
+    billingRight.value = `Invoice Number: ${booking.bookingId || booking.id?.slice(-6).toUpperCase()}\nInvoice Date: ${formatDate(new Date())}\n\nCheck In: ${formatDate(booking.checkIn)}\n${checkOutStr}`;
     billingRight.alignment = { wrapText: true, vertical: 'top' };
     billingRight.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCCE6EB' } };
     billingRight.border = borderStyle;
