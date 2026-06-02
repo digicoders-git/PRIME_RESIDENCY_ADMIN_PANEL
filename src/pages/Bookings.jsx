@@ -468,7 +468,7 @@ const Bookings = () => {
                   <div className="flex-1 text-center md:text-left">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Arrival</p>
                     <p className="text-2xl font-black text-gray-900 leading-tight">
-                      {new Date(selectedBooking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      {selectedBooking.checkIn ? new Date(selectedBooking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
                     </p>
                     <p className="text-xs font-bold text-emerald-600 mt-1 uppercase tracking-widest">12:00 PM Check-in</p>
                   </div>
@@ -481,7 +481,7 @@ const Bookings = () => {
                   <div className="flex-1 text-center md:text-right">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Departure</p>
                     <p className="text-2xl font-black text-gray-900 leading-tight">
-                      {new Date(selectedBooking.checkOut).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      {selectedBooking.checkOut ? new Date(selectedBooking.checkOut).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
                     </p>
                     <p className="text-xs font-bold text-rose-600 mt-1 uppercase tracking-widest">11:00 AM Check-out</p>
                   </div >
@@ -1240,7 +1240,7 @@ const Bookings = () => {
                       </td>
                       <td className="px-4 py-5">
                         <div className="flex flex-col text-left">
-                          <span className="font-black text-gray-900 tracking-tight text-xs">{new Date(booking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                          <span className="font-black text-gray-900 tracking-tight text-xs">{booking.checkIn ? new Date(booking.checkIn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'N/A'}</span>
                           <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{booking.nights} Nights stay</span>
                         </div>
                       </td>

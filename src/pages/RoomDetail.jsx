@@ -226,7 +226,7 @@ const RoomDetail = () => {
                                                     <div className="min-w-0">
                                                         <p className="font-bold text-gray-800 text-xs sm:text-sm truncate capitalize">{booking.guest || 'Guest'}</p>
                                                         <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">
-                                                            {new Date(booking.checkIn).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(booking.checkOut).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                            {booking.checkIn ? new Date(booking.checkIn).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'} - {booking.checkOut ? new Date(booking.checkOut).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                                                         </p>
                                                     </div>
                                                 </div>

@@ -145,9 +145,9 @@ const CreateBooking = () => {
     };
 
     useEffect(() => {
-        if (formData.checkIn && room) {
+        if (room) {
             let diffDays = 1;
-            if (formData.checkOut) {
+            if (formData.checkIn && formData.checkOut) {
                 const start = new Date(formData.checkIn);
                 const end = new Date(formData.checkOut);
                 const diffTime = Math.abs(end - start);
@@ -175,7 +175,7 @@ const CreateBooking = () => {
             const advanceVal = parseInt(formData.advance) || 0;
 
             setCalc({
-                nights: diffDays,
+                nights: formData.checkIn ? diffDays : 0,
                 baseAmount: baseTotal > 0 ? baseTotal : 0,
                 totalAmount: finalTotal > 0 ? finalTotal : 0,
                 balance: (finalTotal - advanceVal) > 0 ? (finalTotal - advanceVal) : 0
@@ -251,11 +251,6 @@ const CreateBooking = () => {
             return;
         }
 
-        if (calc.totalAmount <= 0) {
-            toast.error('Please select a valid check-in date/time.');
-            return;
-        }
-
         setSubmitting(true);
 
         try {
@@ -266,12 +261,14 @@ const CreateBooking = () => {
                 dataToSend.append('phone', formData.phone);
                 dataToSend.append('room', room.name);
                 dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
-                const finalCheckIn = new Date(formData.checkIn).toISOString();
-                const finalCheckOut = formData.checkOut 
-                    ? new Date(formData.checkOut).toISOString() 
-                    : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
-                dataToSend.append('checkIn', finalCheckIn);
-                dataToSend.append('checkOut', finalCheckOut);
+                if (formData.checkIn) {
+                    const finalCheckIn = new Date(formData.checkIn).toISOString();
+                    const finalCheckOut = formData.checkOut 
+                        ? new Date(formData.checkOut).toISOString() 
+                        : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                    dataToSend.append('checkIn', finalCheckIn);
+                    dataToSend.append('checkOut', finalCheckOut);
+                }
                 dataToSend.append('adults', formData.adults);
                 dataToSend.append('children', formData.children);
                 dataToSend.append('amount', calc.totalAmount);
@@ -341,12 +338,14 @@ const CreateBooking = () => {
                             dataToSend.append('phone', formData.phone);
                             dataToSend.append('room', room.name);
                             dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
-                            const finalCheckIn = new Date(formData.checkIn).toISOString();
-                            const finalCheckOut = formData.checkOut 
-                                ? new Date(formData.checkOut).toISOString() 
-                                : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
-                            dataToSend.append('checkIn', finalCheckIn);
-                            dataToSend.append('checkOut', finalCheckOut);
+                            if (formData.checkIn) {
+                                const finalCheckIn = new Date(formData.checkIn).toISOString();
+                                const finalCheckOut = formData.checkOut 
+                                    ? new Date(formData.checkOut).toISOString() 
+                                    : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                                dataToSend.append('checkIn', finalCheckIn);
+                                dataToSend.append('checkOut', finalCheckOut);
+                            }
                             dataToSend.append('adults', formData.adults);
                             dataToSend.append('children', formData.children);
                             dataToSend.append('amount', calc.totalAmount);
@@ -405,12 +404,14 @@ const CreateBooking = () => {
             dataToSend.append('phone', formData.phone);
             dataToSend.append('room', room.name);
             dataToSend.append('roomNumber', room?.roomNumber?.toString() || 'N/A');
-            const finalCheckIn = new Date(formData.checkIn).toISOString();
-            const finalCheckOut = formData.checkOut 
-                ? new Date(formData.checkOut).toISOString() 
-                : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
-            dataToSend.append('checkIn', finalCheckIn);
-            dataToSend.append('checkOut', finalCheckOut);
+            if (formData.checkIn) {
+                const finalCheckIn = new Date(formData.checkIn).toISOString();
+                const finalCheckOut = formData.checkOut 
+                    ? new Date(formData.checkOut).toISOString() 
+                    : new Date(new Date(formData.checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString();
+                dataToSend.append('checkIn', finalCheckIn);
+                dataToSend.append('checkOut', finalCheckOut);
+            }
             dataToSend.append('adults', formData.adults);
             dataToSend.append('children', formData.children);
             dataToSend.append('amount', calc.totalAmount);
@@ -697,9 +698,8 @@ const CreateBooking = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-In Time</label>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Check-In Time (Optional)</label>
                                         <input
-                                            required
                                             type="datetime-local"
                                             name="checkIn"
                                             value={formData.checkIn}
