@@ -459,9 +459,17 @@ const Bookings = () => {
 
               {/* Refined Timeline (Minimalist) */}
               <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
-                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Reservation Period</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
+                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Reservation Period</h3>
+                  </div>
+                  <button
+                    onClick={openEditCustomer}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-amber-100 transition-all cursor-pointer"
+                  >
+                    <FaEdit size={10} /> Edit Dates
+                  </button>
                 </div>
 
                 <div className="bg-gray-50/50 rounded-[2.5rem] p-8 border border-gray-100/50 flex flex-col md:flex-row items-center gap-10">
