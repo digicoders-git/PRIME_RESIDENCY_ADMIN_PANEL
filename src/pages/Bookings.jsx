@@ -300,8 +300,8 @@ const Bookings = () => {
       adults: selectedBooking.adults || 1,
       children: selectedBooking.children || 0,
       specialRequests: selectedBooking.specialRequests || '',
-      checkIn: selectedBooking.checkIn ? new Date(selectedBooking.checkIn).toISOString().split('T')[0] : '',
-      checkOut: selectedBooking.checkOut ? new Date(selectedBooking.checkOut).toISOString().split('T')[0] : ''
+      checkIn: selectedBooking.checkIn ? new Date(selectedBooking.checkIn).toISOString().slice(0, 16) : '',
+      checkOut: selectedBooking.checkOut ? new Date(selectedBooking.checkOut).toISOString().slice(0, 16) : ''
     });
     setIsEditCustomerModal(true);
   };
@@ -955,12 +955,12 @@ const Bookings = () => {
                     <input type="number" min="0" value={editCustomerData.children} onChange={(e) => setEditCustomerData({ ...editCustomerData, children: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Check-In Date</label>
-                    <input type="date" value={editCustomerData.checkIn} onChange={(e) => setEditCustomerData({ ...editCustomerData, checkIn: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer" />
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Check-In Time</label>
+                    <input type="datetime-local" value={editCustomerData.checkIn} onChange={(e) => setEditCustomerData({ ...editCustomerData, checkIn: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Check-Out Date</label>
-                    <input type="date" value={editCustomerData.checkOut} onChange={(e) => setEditCustomerData({ ...editCustomerData, checkOut: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer" />
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Check-Out Time</label>
+                    <input type="datetime-local" value={editCustomerData.checkOut} onChange={(e) => setEditCustomerData({ ...editCustomerData, checkOut: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer" />
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Special Requests</label>

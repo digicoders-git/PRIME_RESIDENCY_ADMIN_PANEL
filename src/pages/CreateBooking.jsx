@@ -640,50 +640,7 @@ const CreateBooking = () => {
                                         />
                                     </div>
 
-                                    {/* Image Uploads */}
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">ID Card (Front)</label>
-                                        <div className="relative group">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => setFormData(prev => ({ ...prev, idFrontImage: e.target.files[0] }))}
-                                                className="hidden"
-                                                id="idFront"
-                                            />
-                                            <label
-                                                htmlFor="idFront"
-                                                className="flex items-center justify-between w-full px-5 py-4 bg-gray-50 border border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-[#D4AF37] hover:bg-amber-50/30 transition-all font-bold text-gray-800"
-                                            >
-                                                <span className="text-xs truncate max-w-[150px]">
-                                                    {formData.idFrontImage ? formData.idFrontImage.name : 'Choose Front Photo'}
-                                                </span>
-                                                <FaImage className="text-gray-400 group-hover:text-[#D4AF37]" />
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">ID Card (Back)</label>
-                                        <div className="relative group">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => setFormData(prev => ({ ...prev, idBackImage: e.target.files[0] }))}
-                                                className="hidden"
-                                                id="idBack"
-                                            />
-                                            <label
-                                                htmlFor="idBack"
-                                                className="flex items-center justify-between w-full px-5 py-4 bg-gray-50 border border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-[#D4AF37] hover:bg-amber-50/30 transition-all font-bold text-gray-800"
-                                            >
-                                                <span className="text-xs truncate max-w-[150px]">
-                                                    {formData.idBackImage ? formData.idBackImage.name : 'Choose Back Photo'}
-                                                </span>
-                                                <FaImage className="text-gray-400 group-hover:text-[#D4AF37]" />
-                                            </label>
-                                        </div>
-                                    </div>
+                                    {/* Removed Image Uploads as requested */}
                                 </div>
                             </div>
 
